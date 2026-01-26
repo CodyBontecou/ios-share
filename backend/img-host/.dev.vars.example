@@ -1,0 +1,16 @@
+# Example environment variables for local development
+# Copy this to .dev.vars and fill in your values
+
+# Required: Secret key for signing JWT tokens
+# Generate with: openssl rand -base64 32
+JWT_SECRET=your-secret-key-here-generate-with-openssl
+
+# Legacy support (optional)
+UPLOAD_TOKEN=legacy-test-token
+
+# Email configuration (optional - emails will be logged if not configured)
+EMAIL_FROM=noreply@your-domain.com
+EMAIL_API_KEY=your-sendgrid-or-postmark-api-key
+
+# Base URL for email links (used in verification and reset emails)
+BASE_URL=http://localhost:8787

@@ -249,11 +249,18 @@ GROUP BY u.id;
 
 ## Security
 
-- Passwords are hashed using SHA-256 (consider upgrading to bcrypt/Argon2 for production)
-- API tokens are cryptographically secure UUIDs
-- All database queries use parameterized statements
-- Per-image delete tokens prevent unauthorized deletion
-- Storage quotas enforce tier limits
+- **Passwords:** PBKDF2 with 100,000 iterations (upgradeable to bcrypt/Argon2)
+- **JWT Tokens:** HMAC SHA-256 signed with configurable secret
+- **Refresh Tokens:** 30-day expiry with automatic rotation
+- **Rate Limiting:** Protects all authentication endpoints
+- **Email Verification:** Required for account activation
+- **Secure Password Reset:** Time-limited reset tokens
+- **API Tokens:** Backward compatible UUID tokens
+- **Parameterized Queries:** All database queries use prepared statements
+- **Delete Tokens:** Per-image tokens prevent unauthorized deletion
+- **Storage Quotas:** Enforce tier limits
+
+See [AUTHENTICATION.md](./AUTHENTICATION.md) for complete authentication documentation.
 
 ## Migration from Single-User
 
@@ -261,12 +268,15 @@ The legacy `UPLOAD_TOKEN` environment variable is still supported for backward c
 
 ## Next Steps
 
+- [x] Add rate limiting on auth endpoints
+- [x] Add email verification
+- [x] Implement password reset
+- [x] JWT token authentication
 - [ ] Implement Stripe webhook handlers
-- [ ] Add rate limiting using api_usage table
 - [ ] Set up automated cleanup of orphaned R2 objects
-- [ ] Add email verification
-- [ ] Implement password reset
 - [ ] Add OAuth providers (Google, GitHub)
+- [ ] Two-factor authentication (TOTP)
+- [ ] Integrate email service (SendGrid/Postmark)
 
 ## Troubleshooting
 
