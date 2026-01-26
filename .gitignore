@@ -1,1 +1,11 @@
 .env
+
+# Node
+node_modules/
+
+# Cloudflare Wrangler
+.wrangler/
+
+# Xcode user data
+*.xcuserstate
+xcuserdata/
