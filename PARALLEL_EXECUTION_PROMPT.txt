@@ -1,0 +1,167 @@
+Launch 3 agents in parallel to implement Phase 1 of iOS Share integration. Use a single message with 3 Task tool calls.
+
+========================================
+AGENT 1: Update SettingsView for SaaS Mode (ios-share-1ht)
+========================================
+
+Issue: ios-share-1ht
+Priority: P2 | Effort: 2-3 hours
+
+Task:
+Enhance frontend/ImageHost/ImageHost/Views/SettingsView.swift to differentiate between SaaS and Self-Hosted modes.
+
+Requirements:
+1. In SaaS mode: Show backend URL as read-only with indicator (🌐 Production Backend)
+2. In Self-Hosted mode: Keep editable TextField for backend URL
+3. Use Config.hostingMode for detection
+4. Add visual indicators and professional polish
+5. Include mode switching capability
+
+Steps:
+- Read SettingsView.swift
+- Add conditional UI based on Config.hostingMode
+- Update loadSettings() for mode handling
+- Test in simulator
+- Run: bd update ios-share-1ht --status=in_progress (when starting)
+- Run: bd close ios-share-1ht (when done)
+- Commit: "Implement SaaS-aware SettingsView UI"
+
+Success Criteria:
+✅ SaaS mode shows read-only URL
+✅ Self-hosted mode allows editing
+✅ Builds without errors
+✅ Professional visual design
+
+========================================
+AGENT 2: Create ExportService (ios-share-4ky)
+========================================
+
+Issue: ios-share-4ky
+Priority: P2 | Effort: 4-6 hours
+
+Task:
+Create frontend/ImageHost/Shared/Services/ExportService.swift for bulk image export.
+
+Backend API already exists:
+- POST /api/export (start job)
+- GET /api/export/{jobId}/status (check status)
+- GET /api/export/{jobId}/download (download ZIP)
+
+Requirements:
+1. Create ExportService.swift with methods:
+   - startExport() -> ExportJob
+   - checkStatus(jobId: String) -> ExportStatus
+   - downloadArchive(jobId: String, progress: @escaping (Double) -> Void) -> URL
+   - cancelExport(jobId: String)
+
+2. Data models:
+   - ExportJob (jobId, status, createdAt)
+   - ExportStatus enum (pending, processing, completed, failed)
+
+3. Integration:
+   - Use Config.effectiveBackendURL
+   - Use KeychainService for auth token
+   - Add Authorization: Bearer {token} header
+   - Poll status every 2 seconds
+   - Progress tracking via callback
+   - Comprehensive error handling
+
+Steps:
+- Create ExportService.swift
+- Implement data models
+- Implement API integration methods
+- Add progress tracking with URLSessionDownloadDelegate
+- Implement cancellation support
+- Add error handling
+- Write documentation
+- Test with backend
+- Run: bd update ios-share-4ky --status=in_progress (when starting)
+- Run: bd close ios-share-4ky (when done)
+- Commit: "Implement ExportService for bulk image downloads"
+
+Success Criteria:
+✅ Can start export and get job ID
+✅ Status polling works
+✅ Archive downloads successfully
+✅ Progress tracking works
+✅ Cancellation works
+✅ Error handling comprehensive
+✅ Well-documented code
+
+========================================
+AGENT 3: Add Export UI to HistoryView (ios-share-3r6)
+========================================
+
+Issue: ios-share-3r6
+Priority: P2 | Effort: 3-4 hours
+
+IMPORTANT: Wait for Agent 2 (ExportService) to complete before starting.
+
+Task:
+Add export UI to frontend/ImageHost/ImageHost/Views/HistoryView.swift
+
+Requirements:
+1. Add "Export All" button to toolbar (SF Symbol: square.and.arrow.down)
+2. Present modal sheet with:
+   - Export options (all images, include metadata)
+   - Image count and estimated size
+   - "Start Export" button
+3. Show progress view:
+   - Progress indicator with stages
+   - Download progress bar
+   - Cancellation support
+   - Error messages
+4. On completion:
+   - Success message
+   - Share sheet to save/share
+   - Option to open in Files
+5. Handle empty state (no images)
+
+Steps:
+- WAIT for Agent 2 ExportService to be complete
+- Read HistoryView.swift
+- Add export button to toolbar
+- Create export modal/sheet
+- Integrate ExportService calls
+- Add progress tracking UI
+- Implement share sheet
+- Handle error states
+- Test complete flow
+- Run: bd update ios-share-3r6 --status=in_progress (when starting)
+- Run: bd close ios-share-3r6 (when done)
+- Commit: "Add bulk export UI to HistoryView"
+
+Success Criteria:
+✅ Export button in HistoryView
+✅ Modal with options
+✅ Progress tracking works
+✅ Share sheet works
+✅ Error handling clear
+✅ Empty state handled
+✅ End-to-end flow works
+
+========================================
+EXECUTION
+========================================
+
+Launch all 3 agents in a SINGLE message with 3 Task tool calls:
+
+<Task subagent_type="general-purpose" for ios-share-1ht>
+<Task subagent_type="general-purpose" for ios-share-4ky>
+<Task subagent_type="general-purpose" for ios-share-3r6>
+
+Dependencies:
+- Agent 1: Independent
+- Agent 2: Independent
+- Agent 3: Depends on Agent 2 (will wait)
+
+Post-completion checklist:
+[ ] All 3 agents finished successfully
+[ ] Build iOS app (no errors)
+[ ] Test SettingsView in SaaS mode
+[ ] Test export flow end-to-end
+[ ] Run: git add frontend/ImageHost/
+[ ] Run: bd sync
+[ ] Run: git commit -m "Implement Phase 1: Export feature and SaaS UI polish"
+[ ] Run: bd sync
+[ ] Run: git push

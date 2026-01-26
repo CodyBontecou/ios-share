@@ -2,6 +2,5 @@
 // https://help.apple.com/xcode/#/dev745c5c974
 
 // Backend URL for Debug builds
-// In Debug mode, you can use localhost or the production URL
-// For local testing, uncomment: BACKEND_URL = http:/$()/localhost:8787
-BACKEND_URL = https:/$()/img-host.costream.workers.dev
+BACKEND_URL = http:/$()/localhost:8787
+// Production: BACKEND_URL = https:/$()/img-host.costream.workers.dev
