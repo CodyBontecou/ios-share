@@ -177,14 +177,14 @@ struct ShareView: View {
 
     private var notConfiguredView: some View {
         VStack(spacing: 16) {
-            Image(systemName: "gear.badge.xmark")
+            Image(systemName: "person.crop.circle.badge.exclamationmark")
                 .font(.system(size: 50))
                 .foregroundStyle(.orange)
 
-            Text("Not Configured")
+            Text("Not Logged In")
                 .font(.headline)
 
-            Text("Open the ImageHost app to set up your backend URL and token.")
+            Text("Please log in via the ImageHost app to upload images.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

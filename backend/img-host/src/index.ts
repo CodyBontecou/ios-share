@@ -73,18 +73,37 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   const rateLimiter = new RateLimiter(env.DB);
   const moderator = new ContentModerator(env.DB);
 
-  // Validate auth - check for API token
+  // Validate auth - check for JWT or API token
   const authHeader = request.headers.get('Authorization');
-  const apiToken = Auth.extractBearerToken(authHeader);
+  const token = Auth.extractBearerToken(authHeader);
 
-  if (!apiToken) {
+  if (!token) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  // Get user by API token
-  const user = await db.getUserByApiToken(apiToken);
-  if (!user) {
-    return json({ error: 'Invalid API token' }, 401);
+  let user;
+
+  // Try JWT verification first
+  const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+  const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
+
+  if (jwtPayload && jwtPayload.type === 'access') {
+    // JWT is valid - get user by ID from payload
+    user = await db.getUserById(jwtPayload.sub);
+    if (!user) {
+      return json({ error: 'User not found' }, 401);
+    }
+  } else {
+    // Fall back to API token lookup (backward compatibility)
+    user = await db.getUserByApiToken(token);
+    if (!user) {
+      return json({ error: 'Invalid token' }, 401);
+    }
+  }
+
+  // Check if email is verified
+  if (user.email_verified !== 1) {
+    return json({ error: 'Email verification required', email_verified: false }, 403);
   }
 
   // Check if user is suspended

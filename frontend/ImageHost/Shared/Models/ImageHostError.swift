@@ -10,6 +10,7 @@ enum ImageHostError: LocalizedError {
     case fileSystemError(underlying: Error)
     case imageProcessingFailed
     case deleteFailed(statusCode: Int, message: String?)
+    case emailVerificationRequired
 
     var errorDescription: String? {
         switch self {
@@ -37,6 +38,8 @@ enum ImageHostError: LocalizedError {
                 return "Delete failed (\(statusCode)): \(message)"
             }
             return "Delete failed with status code \(statusCode)"
+        case .emailVerificationRequired:
+            return "Please verify your email before uploading images."
         }
     }
 
@@ -60,6 +63,8 @@ enum ImageHostError: LocalizedError {
             return "The image may be corrupted or in an unsupported format."
         case .deleteFailed:
             return "The image may have already been deleted, or your token may not have delete permissions."
+        case .emailVerificationRequired:
+            return "Open the ImageHost app and verify your email address to enable uploads."
         }
     }
 }

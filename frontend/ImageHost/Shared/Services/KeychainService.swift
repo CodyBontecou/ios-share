@@ -89,7 +89,7 @@ final class KeychainService {
         }
     }
 
-    // MARK: - Convenience Methods for Upload Token
+    // MARK: - Convenience Methods for Upload Token (Legacy)
 
     func saveUploadToken(_ token: String) throws {
         try save(key: Config.uploadTokenKey, value: token)
@@ -101,5 +101,65 @@ final class KeychainService {
 
     func deleteUploadToken() throws {
         try delete(key: Config.uploadTokenKey)
+    }
+
+    // MARK: - JWT Token Methods
+
+    private let accessTokenKey = "accessToken"
+    private let refreshTokenKey = "refreshToken"
+    private let tokenExpiryKey = "tokenExpiry"
+
+    func saveAccessToken(_ token: String) throws {
+        try save(key: accessTokenKey, value: token)
+    }
+
+    func loadAccessToken() -> String? {
+        try? load(key: accessTokenKey)
+    }
+
+    func deleteAccessToken() throws {
+        try delete(key: accessTokenKey)
+    }
+
+    func saveRefreshToken(_ token: String) throws {
+        try save(key: refreshTokenKey, value: token)
+    }
+
+    func loadRefreshToken() -> String? {
+        try? load(key: refreshTokenKey)
+    }
+
+    func deleteRefreshToken() throws {
+        try delete(key: refreshTokenKey)
+    }
+
+    func saveTokenExpiry(_ date: Date) throws {
+        let timestamp = String(date.timeIntervalSince1970)
+        try save(key: tokenExpiryKey, value: timestamp)
+    }
+
+    func loadTokenExpiry() -> Date? {
+        guard let timestampString = try? load(key: tokenExpiryKey),
+              let timestamp = Double(timestampString) else {
+            return nil
+        }
+        return Date(timeIntervalSince1970: timestamp)
+    }
+
+    func deleteTokenExpiry() throws {
+        try delete(key: tokenExpiryKey)
+    }
+
+    /// Clears all authentication tokens
+    func clearAllTokens() {
+        try? deleteAccessToken()
+        try? deleteRefreshToken()
+        try? deleteTokenExpiry()
+        try? deleteUploadToken()
+    }
+
+    /// Check if user has valid tokens stored
+    var hasValidTokens: Bool {
+        loadAccessToken() != nil
     }
 }
