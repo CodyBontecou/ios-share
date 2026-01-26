@@ -37,6 +37,24 @@ enum ExportStatus: Codable {
             )
         }
     }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        switch self {
+        case .pending:
+            try container.encode("pending", forKey: .status)
+        case .processing(let progress):
+            try container.encode("processing", forKey: .status)
+            try container.encode(progress, forKey: .progress)
+        case .completed(let downloadUrl):
+            try container.encode("completed", forKey: .status)
+            try container.encode(downloadUrl, forKey: .downloadUrl)
+        case .failed(let error):
+            try container.encode("failed", forKey: .status)
+            try container.encode(error, forKey: .error)
+        }
+    }
 }
 
 enum ExportError: LocalizedError {
