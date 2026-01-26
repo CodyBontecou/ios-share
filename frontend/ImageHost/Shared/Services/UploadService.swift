@@ -21,18 +21,12 @@ final class UploadService: NSObject {
     // MARK: - Configuration
 
     var isConfigured: Bool {
-        // Check if we have a valid backend URL (from build config or user settings)
-        let backendUrl = Config.effectiveBackendURL
-        guard !backendUrl.isEmpty,
-              let token = try? keychainService.loadUploadToken(),
-              !token.isEmpty else {
-            return false
-        }
-        return true
+        // Check if we have access token (user is authenticated)
+        keychainService.hasValidTokens
     }
 
     func getBackendURL() -> String? {
-        let url = Config.effectiveBackendURL
+        let url = Config.backendURL
         return url.isEmpty ? nil : url
     }
 
@@ -51,13 +45,15 @@ final class UploadService: NSObject {
         self.progressHandler = progressHandler
 
         // Get configuration
-        let backendUrl = Config.effectiveBackendURL
+        let backendUrl = Config.backendURL
         guard !backendUrl.isEmpty else {
             throw ImageHostError.notConfigured
         }
 
-        guard let token = try keychainService.loadUploadToken(),
-              !token.isEmpty else {
+        // Ensure we have a valid token, refresh if needed
+        try await AuthService.shared.ensureValidToken()
+
+        guard let token = keychainService.loadAccessToken() else {
             throw ImageHostError.notConfigured
         }
 
@@ -84,12 +80,44 @@ final class UploadService: NSObject {
             throw ImageHostError.invalidResponse
         }
 
+        // Handle 401 - try to refresh token and retry once
+        if httpResponse.statusCode == 401 {
+            try await AuthService.shared.refreshTokens()
+            guard let newToken = keychainService.loadAccessToken() else {
+                throw ImageHostError.notConfigured
+            }
+
+            // Retry with new token
+            var retryRequest = request
+            retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+            let (retryData, retryResponse) = try await uploadWithProgress(request: retryRequest, bodyData: body)
+
+            guard let retryHttpResponse = retryResponse as? HTTPURLResponse else {
+                throw ImageHostError.invalidResponse
+            }
+
+            guard retryHttpResponse.statusCode == 200 else {
+                let message = String(data: retryData, encoding: .utf8)
+                throw ImageHostError.uploadFailed(statusCode: retryHttpResponse.statusCode, message: message)
+            }
+
+            return try parseUploadResponse(data: retryData, imageData: imageData, filename: filename)
+        }
+
+        // Handle 403 - email verification required
+        if httpResponse.statusCode == 403 {
+            throw ImageHostError.emailVerificationRequired
+        }
+
         guard httpResponse.statusCode == 200 else {
             let message = String(data: data, encoding: .utf8)
             throw ImageHostError.uploadFailed(statusCode: httpResponse.statusCode, message: message)
         }
 
-        // Parse response
+        return try parseUploadResponse(data: data, imageData: imageData, filename: filename)
+    }
+
+    private func parseUploadResponse(data: Data, imageData: Data, filename: String) throws -> UploadRecord {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let id = json["id"] as? String,
               let urlString = json["url"] as? String,
@@ -113,8 +141,10 @@ final class UploadService: NSObject {
     // MARK: - Delete
 
     func delete(record: UploadRecord) async throws {
-        guard let token = try keychainService.loadUploadToken(),
-              !token.isEmpty else {
+        // Ensure we have a valid token
+        try await AuthService.shared.ensureValidToken()
+
+        guard let token = keychainService.loadAccessToken() else {
             throw ImageHostError.notConfigured
         }
 
@@ -130,6 +160,29 @@ final class UploadService: NSObject {
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ImageHostError.invalidResponse
+        }
+
+        // Handle 401 - try to refresh and retry
+        if httpResponse.statusCode == 401 {
+            try await AuthService.shared.refreshTokens()
+            guard let newToken = keychainService.loadAccessToken() else {
+                throw ImageHostError.notConfigured
+            }
+
+            var retryRequest = URLRequest(url: url)
+            retryRequest.httpMethod = "DELETE"
+            retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+
+            let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
+            guard let retryHttpResponse = retryResponse as? HTTPURLResponse else {
+                throw ImageHostError.invalidResponse
+            }
+
+            guard retryHttpResponse.statusCode == 200 || retryHttpResponse.statusCode == 204 else {
+                let message = String(data: retryData, encoding: .utf8)
+                throw ImageHostError.deleteFailed(statusCode: retryHttpResponse.statusCode, message: message)
+            }
+            return
         }
 
         guard httpResponse.statusCode == 200 || httpResponse.statusCode == 204 else {

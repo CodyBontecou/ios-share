@@ -1,0 +1,32 @@
+import Foundation
+
+struct User: Codable, Equatable {
+    let id: String
+    let email: String
+    let subscriptionTier: String
+    let emailVerified: Bool
+    let storageUsedBytes: Int
+    let storageLimitBytes: Int
+
+    var storageUsedFormatted: String {
+        ByteCountFormatter.string(fromByteCount: Int64(storageUsedBytes), countStyle: .file)
+    }
+
+    var storageLimitFormatted: String {
+        ByteCountFormatter.string(fromByteCount: Int64(storageLimitBytes), countStyle: .file)
+    }
+
+    var storagePercentUsed: Double {
+        guard storageLimitBytes > 0 else { return 0 }
+        return Double(storageUsedBytes) / Double(storageLimitBytes) * 100
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id = "user_id"
+        case email
+        case subscriptionTier = "subscription_tier"
+        case emailVerified = "email_verified"
+        case storageUsedBytes = "storage_used_bytes"
+        case storageLimitBytes = "storage_limit_bytes"
+    }
+}

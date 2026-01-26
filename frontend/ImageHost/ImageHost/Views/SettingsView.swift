@@ -1,51 +1,74 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @Binding var isConfigured: Bool
+    @EnvironmentObject var authState: AuthState
 
-    @State private var backendUrl: String = ""
-    @State private var uploadToken: String = ""
-    @State private var isSaving = false
     @State private var isTesting = false
+    @State private var isLoadingUser = false
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
     @State private var showClearConfirmation = false
-
-    private let keychainService = KeychainService.shared
+    @State private var showLogoutConfirmation = false
 
     var body: some View {
         NavigationStack {
             Form {
+                // Account Section
                 Section {
-                    TextField("Backend URL", text: $backendUrl)
-                        .textContentType(.URL)
-                        .keyboardType(.URL)
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled()
-
-                    SecureField("Upload Token", text: $uploadToken)
-                        .textContentType(.password)
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled()
-                } header: {
-                    Text("Server Configuration")
-                } footer: {
-                    Text("Enter your image hosting backend URL (e.g., https://img.example.com) and your upload token.")
-                }
-
-                Section {
-                    Button(action: saveSettings) {
+                    if let user = authState.currentUser {
                         HStack {
-                            if isSaving {
+                            Text("Email")
+                            Spacer()
+                            Text(user.email)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        HStack {
+                            Text("Plan")
+                            Spacer()
+                            Text(user.subscriptionTier.capitalized)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        // Storage usage
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Storage")
+                                Spacer()
+                                Text("\(user.storageUsedFormatted) / \(user.storageLimitFormatted)")
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            ProgressView(value: min(user.storagePercentUsed / 100, 1.0))
+                                .tint(user.storagePercentUsed > 90 ? .red : .blue)
+                        }
+                    } else {
+                        HStack {
+                            Text("Loading account info...")
+                            Spacer()
+                            if isLoadingUser {
+                                ProgressView()
+                            }
+                        }
+                    }
+
+                    Button(action: refreshUserInfo) {
+                        HStack {
+                            if isLoadingUser {
                                 ProgressView()
                                     .padding(.trailing, 8)
                             }
-                            Text("Save Settings")
+                            Text("Refresh Account Info")
                         }
                     }
-                    .disabled(isSaving || backendUrl.isEmpty || uploadToken.isEmpty)
+                    .disabled(isLoadingUser)
+                } header: {
+                    Text("Account")
+                }
 
+                // Actions Section
+                Section {
                     Button(action: testConnection) {
                         HStack {
                             if isTesting {
@@ -55,28 +78,39 @@ struct SettingsView: View {
                             Text("Test Connection")
                         }
                     }
-                    .disabled(isTesting || !isConfigured)
-                }
+                    .disabled(isTesting)
 
-                Section {
                     Button(role: .destructive) {
                         showClearConfirmation = true
                     } label: {
                         Text("Clear Upload History")
                     }
-                    .disabled(!isConfigured)
+                } header: {
+                    Text("Actions")
                 } footer: {
-                    if isConfigured {
-                        Text("Connected to \(backendUrl)")
-                            .foregroundStyle(.green)
-                    } else {
-                        Text("Not configured. Please enter your server details above.")
-                            .foregroundStyle(.orange)
+                    Text("Connected to \(Config.backendURL)")
+                        .foregroundStyle(.green)
+                }
+
+                // Logout Section
+                Section {
+                    Button(role: .destructive) {
+                        showLogoutConfirmation = true
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text("Log Out")
+                            Spacer()
+                        }
                     }
                 }
             }
             .navigationTitle("Settings")
-            .onAppear(perform: loadSettings)
+            .onAppear {
+                if authState.currentUser == nil || authState.currentUser?.storageUsedBytes == 0 {
+                    refreshUserInfo()
+                }
+            }
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -94,53 +128,38 @@ struct SettingsView: View {
             } message: {
                 Text("This will remove all upload history from this device. Images on the server will not be affected.")
             }
+            .confirmationDialog(
+                "Log Out",
+                isPresented: $showLogoutConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Log Out", role: .destructive) {
+                    authState.logout()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Are you sure you want to log out?")
+            }
         }
     }
 
-    private func loadSettings() {
-        // Load user-configured URL if in self-hosted mode, otherwise show SaaS URL
-        if Config.hostingMode == .selfHosted {
-            backendUrl = Config.sharedDefaults?.string(forKey: Config.backendUrlKey) ?? ""
-        } else {
-            // In SaaS mode, show the build-configured URL
-            backendUrl = Config.saasBackendURL
+    private func refreshUserInfo() {
+        isLoadingUser = true
+
+        Task {
+            do {
+                let user = try await AuthService.shared.getCurrentUser()
+                await MainActor.run {
+                    authState.updateUser(user)
+                    isLoadingUser = false
+                }
+            } catch {
+                await MainActor.run {
+                    showError(title: "Error", message: "Failed to load account info: \(error.localizedDescription)")
+                    isLoadingUser = false
+                }
+            }
         }
-        uploadToken = (try? keychainService.loadUploadToken()) ?? ""
-        isConfigured = UploadService.shared.isConfigured
-    }
-
-    private func saveSettings() {
-        isSaving = true
-
-        // Validate URL format
-        var normalizedUrl = backendUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-        if normalizedUrl.hasSuffix("/") {
-            normalizedUrl = String(normalizedUrl.dropLast())
-        }
-
-        guard let url = URL(string: normalizedUrl),
-              url.scheme == "https" || url.scheme == "http" else {
-            showError(title: "Invalid URL", message: "Please enter a valid URL starting with https:// or http://")
-            isSaving = false
-            return
-        }
-
-        do {
-            // Save to UserDefaults
-            Config.sharedDefaults?.set(normalizedUrl, forKey: Config.backendUrlKey)
-
-            // Save token to Keychain
-            try keychainService.saveUploadToken(uploadToken)
-
-            backendUrl = normalizedUrl
-            isConfigured = UploadService.shared.isConfigured
-
-            showError(title: "Settings Saved", message: "Your settings have been saved successfully.")
-        } catch {
-            showError(title: "Error", message: "Failed to save settings: \(error.localizedDescription)")
-        }
-
-        isSaving = false
     }
 
     private func testConnection() {
@@ -150,7 +169,7 @@ struct SettingsView: View {
             do {
                 try await UploadService.shared.testConnection()
                 await MainActor.run {
-                    showError(title: "Success", message: "Connection test successful! Your server is configured correctly.")
+                    showError(title: "Success", message: "Connection test successful!")
                     isTesting = false
                 }
             } catch {
@@ -179,5 +198,6 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(isConfigured: .constant(false))
+    SettingsView()
+        .environmentObject(AuthState.shared)
 }
