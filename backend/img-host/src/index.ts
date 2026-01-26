@@ -160,6 +160,9 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     return json({ error: 'File must be an image' }, 400);
   }
 
+  // Read file into ArrayBuffer ONCE to avoid stream consumption issues
+  const fileBuffer = await file.arrayBuffer();
+
   // Advanced file type validation and malware scanning
   const malwareScan = await moderator.scanForMalware(file);
   if (malwareScan.flagged) {
@@ -212,8 +215,8 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   const ext = getExtension(file.name);
   const key = `${id}.${ext}`;
 
-  // Upload to R2
-  await env.IMAGES.put(key, file.stream(), {
+  // Upload to R2 using the ArrayBuffer we already read
+  await env.IMAGES.put(key, fileBuffer, {
     httpMetadata: {
       contentType: file.type,
     },
