@@ -2,6 +2,7 @@
 import { Database } from './database';
 import { Auth } from './auth';
 import { Analytics } from './analytics';
+import { RateLimiter } from './rate-limiter';
 
 interface Env {
   DB: D1Database;
@@ -53,16 +54,17 @@ async function sendEmail(to: string, subject: string, body: string, env: Env): P
 export async function handleRegisterV2(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
   const analytics = new Analytics(env.DB);
+  const rateLimiter = new RateLimiter(env.DB);
 
   try {
     // Rate limiting for registration
     const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const rateLimitCheck = await db.checkRateLimit(clientIp, '/auth/register', 5, 3600000); // 5 per hour
+    const rateLimitCheck = await rateLimiter.checkIpRateLimit(clientIp, '/auth/register', { windowMs: 3600000, maxRequests: 5 }); // 5 per hour
 
     if (!rateLimitCheck.allowed) {
       return json({
         error: 'Too many registration attempts. Please try again later.',
-        retry_after: Math.ceil((rateLimitCheck.resetTime - Date.now()) / 1000)
+        retry_after: Math.ceil((rateLimitCheck.reset - Date.now()) / 1000)
       }, 429);
     }
 
@@ -155,16 +157,17 @@ export async function handleRegisterV2(request: Request, env: Env): Promise<Resp
  */
 export async function handleLoginV2(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
+  const rateLimiter = new RateLimiter(env.DB);
 
   try {
     // Rate limiting for login
     const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const rateLimitCheck = await db.checkRateLimit(clientIp, '/auth/login', 10, 900000); // 10 per 15 minutes
+    const rateLimitCheck = await rateLimiter.checkIpRateLimit(clientIp, '/auth/login', { windowMs: 900000, maxRequests: 10 }); // 10 per 15 minutes
 
     if (!rateLimitCheck.allowed) {
       return json({
         error: 'Too many login attempts. Please try again later.',
-        retry_after: Math.ceil((rateLimitCheck.resetTime - Date.now()) / 1000)
+        retry_after: Math.ceil((rateLimitCheck.reset - Date.now()) / 1000)
       }, 429);
     }
 
@@ -288,16 +291,17 @@ export async function handleRefreshToken(request: Request, env: Env): Promise<Re
  */
 export async function handleForgotPassword(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
+  const rateLimiter = new RateLimiter(env.DB);
 
   try {
     // Rate limiting
     const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const rateLimitCheck = await db.checkRateLimit(clientIp, '/auth/forgot-password', 3, 3600000); // 3 per hour
+    const rateLimitCheck = await rateLimiter.checkIpRateLimit(clientIp, '/auth/forgot-password', { windowMs: 3600000, maxRequests: 3 }); // 3 per hour
 
     if (!rateLimitCheck.allowed) {
       return json({
         error: 'Too many password reset requests. Please try again later.',
-        retry_after: Math.ceil((rateLimitCheck.resetTime - Date.now()) / 1000)
+        retry_after: Math.ceil((rateLimitCheck.reset - Date.now()) / 1000)
       }, 429);
     }
 
@@ -467,16 +471,17 @@ export async function handleVerifyEmail(request: Request, env: Env): Promise<Res
  */
 export async function handleResendVerification(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
+  const rateLimiter = new RateLimiter(env.DB);
 
   try {
     // Rate limiting
     const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const rateLimitCheck = await db.checkRateLimit(clientIp, '/auth/resend-verification', 3, 3600000); // 3 per hour
+    const rateLimitCheck = await rateLimiter.checkIpRateLimit(clientIp, '/auth/resend-verification', { windowMs: 3600000, maxRequests: 3 }); // 3 per hour
 
     if (!rateLimitCheck.allowed) {
       return json({
         error: 'Too many requests. Please try again later.',
-        retry_after: Math.ceil((rateLimitCheck.resetTime - Date.now()) / 1000)
+        retry_after: Math.ceil((rateLimitCheck.reset - Date.now()) / 1000)
       }, 429);
     }
 
