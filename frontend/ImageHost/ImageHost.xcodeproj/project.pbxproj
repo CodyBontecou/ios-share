@@ -76,6 +76,8 @@
 		A1000023000 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		A1000040000 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000080000 /* ImageHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ImageHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000F1000 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		A10000F2000 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +101,7 @@
 		A10000A0000 = {
 			isa = PBXGroup;
 			children = (
+				A10000F3000 /* Config */,
 				A10000B0000 /* ImageHost */,
 				A10000C0000 /* ShareExtension */,
 				A10000D0000 /* Shared */,
@@ -176,6 +179,15 @@
 				A1000040000 /* ShareExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A10000F3000 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A10000F1000 /* Debug.xcconfig */,
+				A10000F2000 /* Release.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -320,6 +332,7 @@
 /* Begin XCBuildConfiguration section */
 		A1000180000 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A10000F1000 /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -383,6 +396,7 @@
 		};
 		A1000190000 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A10000F2000 /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

@@ -2,4 +2,4 @@
 // https://help.apple.com/xcode/#/dev745c5c974
 
 // Backend URL for Release builds (SaaS production)
-BACKEND_URL = https:/$()/img.yourdomain.com
+BACKEND_URL = https:/$()/img-host.costream.workers.dev
