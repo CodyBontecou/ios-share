@@ -1,13 +1,22 @@
 # img-host
 
-Minimal image hosting backend using Cloudflare Workers and R2 storage.
+Multi-user image hosting backend using Cloudflare Workers, R2 storage, and D1 database.
 
-## Setup
+## Features
 
-### 1. Install Wrangler
+- Multi-user authentication with API tokens
+- Tiered subscriptions (free, pro, enterprise)
+- Storage quotas and limits per tier
+- Per-user image management
+- Stripe integration ready
+- API usage tracking and analytics
+
+## Quick Start
+
+### 1. Install Dependencies
 
 ```bash
-npm install -g wrangler
+npm install
 ```
 
 ### 2. Login to Cloudflare
@@ -22,94 +31,256 @@ wrangler login
 wrangler r2 bucket create images
 ```
 
-### 4. Install Dependencies
+### 4. Initialize Database
+
+Run the interactive setup script:
 
 ```bash
-cd img-host
-npm install
+npm run db:init
 ```
 
-### 5. Set Upload Token Secret
+Or manually:
 
 ```bash
-wrangler secret put UPLOAD_TOKEN
-# Enter your secret token when prompted
+# Create D1 database
+wrangler d1 create imagehost
+
+# Update wrangler.toml with the database_id from above
+
+# Run migrations
+npm run db:migrate:local  # For local development
+npm run db:migrate        # For production
 ```
 
-### 6. Run Locally
+### 5. Run Locally
 
 ```bash
 npm run dev
-# or
-wrangler dev
 ```
 
 For local development, create a `.dev.vars` file:
 
 ```
-UPLOAD_TOKEN=test-token
+UPLOAD_TOKEN=legacy-test-token
+```
+
+### 6. Test the API
+
+```bash
+./examples/api-examples.sh
 ```
 
 ### 7. Deploy
 
 ```bash
 npm run deploy
-# or
-wrangler deploy
 ```
 
-## API
+## Database Setup
 
-### Upload Image
+See [DATABASE.md](./DATABASE.md) for detailed database schema, migration instructions, and API documentation.
+
+### Quick Database Commands
 
 ```bash
-curl -X POST http://localhost:8787/upload \
-  -H "Authorization: Bearer test-token" \
-  -F "image=@test.png"
+# Initialize database
+npm run db:init
+
+# Run migrations
+npm run db:migrate:local      # Local
+npm run db:migrate            # Production
+
+# List tables
+npm run db:tables:local       # Local
+npm run db:tables             # Production
+
+# Execute custom query
+npm run db:query:local "SELECT * FROM users LIMIT 5;"
+npm run db:query "SELECT * FROM users LIMIT 5;"
 ```
 
-Response:
-```json
+## API Endpoints
+
+### Authentication
+
+#### Register User
+```bash
+POST /auth/register
+Content-Type: application/json
+
 {
-  "url": "http://localhost:8787/abc12345.png",
-  "id": "abc12345",
-  "deleteUrl": "http://localhost:8787/delete/abc12345?token=<delete-token>"
+  "email": "user@example.com",
+  "password": "secure-password"
 }
 ```
 
-### Fetch Image
-
+#### Login
 ```bash
-curl -I http://localhost:8787/abc12345.png
-```
+POST /auth/login
+Content-Type: application/json
 
-### Delete Image
-
-```bash
-curl -X DELETE "http://localhost:8787/delete/abc12345?token=<delete-token>"
-```
-
-Response:
-```json
 {
-  "deleted": true
+  "email": "user@example.com",
+  "password": "secure-password"
 }
+```
+
+### User Management
+
+#### Get User Info
+```bash
+GET /user
+Authorization: Bearer <api_token>
+```
+
+#### List User Images
+```bash
+GET /images?limit=100&offset=0
+Authorization: Bearer <api_token>
+```
+
+### Image Operations
+
+#### Upload Image
+```bash
+POST /upload
+Authorization: Bearer <api_token>
+Content-Type: multipart/form-data
+
+image=<file>
+```
+
+#### Get Image
+```bash
+GET /<id>.<ext>
+```
+
+#### Delete Image
+```bash
+DELETE /delete/<id>?token=<delete_token>
 ```
 
 ### Health Check
+```bash
+GET /health
+```
+
+## Subscription Tiers
+
+### Free Tier
+- 100MB storage
+- 10MB max file size
+- 100 images maximum
+- API access
+
+### Pro Tier
+- 10GB storage
+- 50MB max file size
+- Unlimited images
+- Custom domains
+- Analytics
+- API access
+
+### Enterprise Tier
+- 100GB storage
+- 100MB max file size
+- Unlimited images
+- Custom domains
+- Analytics
+- API access
+- Priority support
+
+## Project Structure
+
+```
+img-host/
+├── src/
+│   ├── index.ts        # Main worker entry point
+│   ├── database.ts     # D1 database utilities
+│   ├── auth.ts         # Authentication utilities
+│   └── types.ts        # TypeScript type definitions
+├── migrations/
+│   └── 0001_initial_schema.sql
+├── scripts/
+│   └── init-db.sh      # Database initialization script
+├── examples/
+│   └── api-examples.sh # API usage examples
+├── schema.sql          # Complete database schema
+├── DATABASE.md         # Database documentation
+├── wrangler.toml       # Cloudflare configuration
+└── package.json
+```
+
+## Development
+
+### Local Development with Database
 
 ```bash
-curl http://localhost:8787/health
+# Start local dev server
+npm run dev
+
+# In another terminal, run migrations
+npm run db:migrate:local
+
+# Create test user and get API token
+./examples/api-examples.sh
 ```
 
-Response:
-```json
-{
-  "status": "ok"
-}
+### Testing
+
+```bash
+# Test API endpoints
+./examples/api-examples.sh
+
+# Query database
+npm run db:query:local "SELECT * FROM storage_usage;"
+
+# Check user storage
+npm run db:query:local "
+SELECT
+  u.email,
+  COUNT(i.id) as image_count,
+  SUM(i.size_bytes) as total_bytes
+FROM users u
+LEFT JOIN images i ON u.id = i.user_id
+GROUP BY u.id;
+"
 ```
 
-## Limits
+## Security
 
-- Max file size: 10MB
-- Accepted types: `image/*`
+- Passwords are hashed using SHA-256 (consider upgrading to bcrypt/Argon2 for production)
+- API tokens are cryptographically secure UUIDs
+- All database queries use parameterized statements
+- Per-image delete tokens prevent unauthorized deletion
+- Storage quotas enforce tier limits
+
+## Migration from Single-User
+
+The legacy `UPLOAD_TOKEN` environment variable is still supported for backward compatibility, but new users should register via `/auth/register` and use API tokens.
+
+## Next Steps
+
+- [ ] Implement Stripe webhook handlers
+- [ ] Add rate limiting using api_usage table
+- [ ] Set up automated cleanup of orphaned R2 objects
+- [ ] Add email verification
+- [ ] Implement password reset
+- [ ] Add OAuth providers (Google, GitHub)
+
+## Troubleshooting
+
+### Database Not Found
+Verify `database_id` in `wrangler.toml` matches the output from `wrangler d1 create imagehost`
+
+### Migration Failed
+Check SQL syntax and ensure you're using SQLite-compatible SQL
+
+### Permission Denied
+Ensure you're authenticated: `wrangler login`
+
+See [DATABASE.md](./DATABASE.md) for more troubleshooting tips.
+
+## License
+
+Private - All rights reserved

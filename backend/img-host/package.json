@@ -4,7 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "db:init": "./scripts/init-db.sh",
+    "db:migrate": "wrangler d1 execute imagehost --file=./migrations/0001_initial_schema.sql",
+    "db:migrate:local": "wrangler d1 execute imagehost --local --file=./migrations/0001_initial_schema.sql",
+    "db:query": "wrangler d1 execute imagehost --command",
+    "db:query:local": "wrangler d1 execute imagehost --local --command",
+    "db:tables": "wrangler d1 execute imagehost --command=\"SELECT name FROM sqlite_master WHERE type='table';\"",
+    "db:tables:local": "wrangler d1 execute imagehost --local --command=\"SELECT name FROM sqlite_master WHERE type='table';\""
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240117.0",

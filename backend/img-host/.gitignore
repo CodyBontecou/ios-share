@@ -1,3 +1,9 @@
 node_modules/
 .wrangler/
 .dev.vars
+
+# Local D1 database
+.mf/
+*.db
+*.db-shm
+*.db-wal
