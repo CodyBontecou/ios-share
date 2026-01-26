@@ -18,20 +18,49 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Backend URL", text: $backendUrl)
-                        .textContentType(.URL)
-                        .keyboardType(.URL)
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled()
+                    // Backend URL - read-only in SaaS mode, editable in self-hosted mode
+                    if Config.hostingMode == .saas {
+                        HStack {
+                            Label("Backend URL", systemImage: "lock.fill")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                        Text(backendUrl)
+                            .foregroundStyle(.secondary)
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                    } else {
+                        TextField("Backend URL", text: $backendUrl)
+                            .textContentType(.URL)
+                            .keyboardType(.URL)
+                            .autocapitalization(.none)
+                            .autocorrectionDisabled()
+                    }
 
                     SecureField("Upload Token", text: $uploadToken)
                         .textContentType(.password)
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
                 } header: {
-                    Text("Server Configuration")
+                    HStack {
+                        Text("Server Configuration")
+                        Spacer()
+                        if Config.hostingMode == .saas {
+                            Label("SaaS Mode", systemImage: "cloud.fill")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        } else {
+                            Label("Self-Hosted", systemImage: "server.rack")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        }
+                    }
                 } footer: {
-                    Text("Enter your image hosting backend URL (e.g., https://img.example.com) and your upload token.")
+                    if Config.hostingMode == .saas {
+                        Text("You're using the managed backend service. The backend URL is pre-configured and cannot be changed.")
+                    } else {
+                        Text("Enter your image hosting backend URL (e.g., https://img.example.com) and your upload token.")
+                    }
                 }
 
                 Section {
@@ -41,10 +70,10 @@ struct SettingsView: View {
                                 ProgressView()
                                     .padding(.trailing, 8)
                             }
-                            Text("Save Settings")
+                            Text(Config.hostingMode == .saas ? "Save Token" : "Save Settings")
                         }
                     }
-                    .disabled(isSaving || backendUrl.isEmpty || uploadToken.isEmpty)
+                    .disabled(isSaving || uploadToken.isEmpty || (Config.hostingMode == .selfHosted && backendUrl.isEmpty))
 
                     Button(action: testConnection) {
                         HStack {
@@ -112,27 +141,31 @@ struct SettingsView: View {
     private func saveSettings() {
         isSaving = true
 
-        // Validate URL format
-        var normalizedUrl = backendUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-        if normalizedUrl.hasSuffix("/") {
-            normalizedUrl = String(normalizedUrl.dropLast())
-        }
-
-        guard let url = URL(string: normalizedUrl),
-              url.scheme == "https" || url.scheme == "http" else {
-            showError(title: "Invalid URL", message: "Please enter a valid URL starting with https:// or http://")
-            isSaving = false
-            return
-        }
-
         do {
-            // Save to UserDefaults
-            Config.sharedDefaults?.set(normalizedUrl, forKey: Config.backendUrlKey)
+            // In self-hosted mode, validate and save backend URL
+            if Config.hostingMode == .selfHosted {
+                // Validate URL format
+                var normalizedUrl = backendUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+                if normalizedUrl.hasSuffix("/") {
+                    normalizedUrl = String(normalizedUrl.dropLast())
+                }
+
+                guard let url = URL(string: normalizedUrl),
+                      url.scheme == "https" || url.scheme == "http" else {
+                    showError(title: "Invalid URL", message: "Please enter a valid URL starting with https:// or http://")
+                    isSaving = false
+                    return
+                }
+
+                // Save to UserDefaults
+                Config.sharedDefaults?.set(normalizedUrl, forKey: Config.backendUrlKey)
+                backendUrl = normalizedUrl
+            }
+            // In SaaS mode, backend URL is pre-configured and not saved
 
             // Save token to Keychain
             try keychainService.saveUploadToken(uploadToken)
 
-            backendUrl = normalizedUrl
             isConfigured = UploadService.shared.isConfigured
 
             showError(title: "Settings Saved", message: "Your settings have been saved successfully.")

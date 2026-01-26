@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8915CA80904ADBA74F2AB9 /* ExportService.swift */; };
 		A1000001001 /* ImageHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000 /* ImageHostApp.swift */; };
 		A1000002001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002000 /* ContentView.swift */; };
 		A1000003001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000003000 /* SettingsView.swift */; };
@@ -56,6 +57,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0F8915CA80904ADBA74F2AB9 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
 		A1000001000 /* ImageHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHostApp.swift; sourceTree = "<group>"; };
 		A1000002000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A1000003000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -168,7 +170,8 @@
 				A1000014000 /* HistoryService.swift */,
 				A1000015000 /* ImageProcessor.swift */,
 				A1000016000 /* UploadService.swift */,
-			);
+			
+				0F8915CA80904ADBA74F2AB9 /* ExportService.swift */,);
 			path = Services;
 			sourceTree = "<group>";
 		};
@@ -300,7 +303,8 @@
 				A1000014001 /* HistoryService.swift in Sources */,
 				A1000015001 /* ImageProcessor.swift in Sources */,
 				A1000016001 /* UploadService.swift in Sources */,
-			);
+			
+				F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A1000150000 /* Sources */ = {
