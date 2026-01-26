@@ -4,7 +4,8 @@
 
 -- Add Apple user ID to users table for account linking
 -- This is the stable identifier from Apple (the "sub" claim in the identity token)
-ALTER TABLE users ADD COLUMN apple_user_id TEXT UNIQUE;
+-- Note: Cannot add UNIQUE constraint directly in SQLite ALTER TABLE, so we add column first
+ALTER TABLE users ADD COLUMN apple_user_id TEXT;
 
--- Create index for fast Apple user lookups
-CREATE INDEX idx_users_apple_user_id ON users(apple_user_id);
+-- Create unique index for fast Apple user lookups and ensure uniqueness
+CREATE UNIQUE INDEX idx_users_apple_user_id ON users(apple_user_id);
