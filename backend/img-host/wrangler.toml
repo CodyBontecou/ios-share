@@ -9,4 +9,4 @@ bucket_name = "images"
 [[d1_databases]]
 binding = "DB"
 database_name = "imagehost"
-database_id = "preview" # Will be replaced with actual database ID after creation
+database_id = "e8297db4-525b-4280-9bca-ac87f41861c8"
