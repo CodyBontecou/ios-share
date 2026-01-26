@@ -13,6 +13,7 @@ export interface User {
   email_verification_token_expires?: number | null;
   password_reset_token?: string | null;
   password_reset_token_expires?: number | null;
+  apple_user_id?: string | null;
 }
 
 export interface RefreshToken {
@@ -140,6 +141,55 @@ export class Database {
       .bind(id)
       .first<User>();
     return result || null;
+  }
+
+  async getUserByAppleId(appleUserId: string): Promise<User | null> {
+    const result = await this.db
+      .prepare('SELECT * FROM users WHERE apple_user_id = ?')
+      .bind(appleUserId)
+      .first<User>();
+    return result || null;
+  }
+
+  async linkAppleIdToUser(userId: string, appleUserId: string): Promise<void> {
+    await this.db
+      .prepare('UPDATE users SET apple_user_id = ? WHERE id = ?')
+      .bind(appleUserId, userId)
+      .run();
+  }
+
+  async createAppleUser(
+    email: string,
+    appleUserId: string,
+    tier: 'free' | 'pro' | 'enterprise' = 'free'
+  ): Promise<User> {
+    const id = crypto.randomUUID();
+    const createdAt = Date.now();
+    const storageLimitBytes = tier === 'free' ? 104857600 : tier === 'pro' ? 10737418240 : 107374182400;
+    const apiToken = crypto.randomUUID();
+
+    // Use special marker for Apple-only accounts (no password)
+    const passwordHash = 'APPLE_SIGN_IN_ONLY';
+
+    await this.db
+      .prepare(
+        `INSERT INTO users (id, email, password_hash, created_at, subscription_tier, api_token, storage_limit_bytes, email_verified, apple_user_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`
+      )
+      .bind(id, email, passwordHash, createdAt, tier, apiToken, storageLimitBytes, appleUserId)
+      .run();
+
+    return {
+      id,
+      email,
+      password_hash: passwordHash,
+      created_at: createdAt,
+      subscription_tier: tier,
+      api_token: apiToken,
+      storage_limit_bytes: storageLimitBytes,
+      email_verified: 1,
+      apple_user_id: appleUserId,
+    };
   }
 
   async updateUserTier(userId: string, tier: 'free' | 'pro' | 'enterprise'): Promise<void> {

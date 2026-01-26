@@ -1,4 +1,12 @@
 import Foundation
+import AuthenticationServices
+
+struct AppleSignInResult {
+    let identityToken: String
+    let userIdentifier: String
+    let email: String?
+    let fullName: PersonNameComponents?
+}
 
 final class AuthService {
     static let shared = AuthService()
@@ -73,6 +81,55 @@ final class AuthService {
         default:
             let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
             throw AuthError.serverError(errorResponse?.error ?? "Login failed")
+        }
+    }
+
+    func signInWithApple(result: AppleSignInResult) async throws -> AuthResponse {
+        let url = URL(string: "\(baseURL)/auth/apple")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        var body: [String: Any] = [
+            "identity_token": result.identityToken,
+            "user_identifier": result.userIdentifier
+        ]
+
+        if let email = result.email {
+            body["email"] = email
+        }
+
+        if let fullName = result.fullName {
+            var nameDict: [String: String] = [:]
+            if let givenName = fullName.givenName {
+                nameDict["given_name"] = givenName
+            }
+            if let familyName = fullName.familyName {
+                nameDict["family_name"] = familyName
+            }
+            if !nameDict.isEmpty {
+                body["full_name"] = nameDict
+            }
+        }
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AuthError.networkError
+        }
+
+        switch httpResponse.statusCode {
+        case 200:
+            return try JSONDecoder().decode(AuthResponse.self, from: data)
+        case 401:
+            throw AuthError.invalidCredentials
+        case 429:
+            throw AuthError.tooManyRequests
+        default:
+            let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
+            throw AuthError.serverError(errorResponse?.error ?? "Apple Sign-In failed")
         }
     }
 

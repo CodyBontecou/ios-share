@@ -1,6 +1,7 @@
 // Authentication endpoint handlers
 import { Database } from './database';
 import { Auth } from './auth';
+import { AppleAuth } from './apple-auth';
 import { Analytics } from './analytics';
 import { RateLimiter } from './rate-limiter';
 
@@ -10,6 +11,7 @@ interface Env {
   EMAIL_FROM?: string;
   EMAIL_API_KEY?: string;
   BASE_URL?: string;
+  APPLE_CLIENT_ID?: string;
 }
 
 function json(data: unknown, status = 200): Response {
@@ -524,5 +526,135 @@ export async function handleResendVerification(request: Request, env: Env): Prom
   } catch (error) {
     console.error('Resend verification error:', error);
     return json({ error: 'Invalid request body' }, 400);
+  }
+}
+
+/**
+ * Sign in with Apple
+ * POST /auth/apple
+ *
+ * Request body:
+ * {
+ *   identity_token: string,    // JWT from ASAuthorizationAppleIDCredential
+ *   user_identifier: string,   // User ID from ASAuthorizationAppleIDCredential
+ *   email?: string,           // Only provided on first sign-in
+ *   full_name?: {             // Only provided on first sign-in
+ *     given_name?: string,
+ *     family_name?: string
+ *   }
+ * }
+ */
+export async function handleAppleSignIn(request: Request, env: Env): Promise<Response> {
+  const db = new Database(env.DB);
+  const rateLimiter = new RateLimiter(env.DB);
+
+  try {
+    // Rate limiting
+    const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const rateLimitCheck = await rateLimiter.checkIpRateLimit(
+      clientIp,
+      '/auth/apple',
+      { windowMs: 900000, maxRequests: 10 } // 10 per 15 minutes
+    );
+
+    if (!rateLimitCheck.allowed) {
+      return json({
+        error: 'Too many sign-in attempts. Please try again later.',
+        retry_after: Math.ceil((rateLimitCheck.reset - Date.now()) / 1000)
+      }, 429);
+    }
+
+    const body = await request.json() as {
+      identity_token: string;
+      user_identifier: string;
+      email?: string;
+      full_name?: {
+        given_name?: string;
+        family_name?: string;
+      };
+    };
+
+    const { identity_token, user_identifier, email: providedEmail } = body;
+
+    if (!identity_token || !user_identifier) {
+      return json({ error: 'identity_token and user_identifier are required' }, 400);
+    }
+
+    // Verify the identity token with Apple
+    const clientId = env.APPLE_CLIENT_ID || 'com.imagehost.app';
+    const tokenPayload = await AppleAuth.verifyIdentityToken(identity_token, clientId);
+
+    if (!tokenPayload) {
+      return json({ error: 'Invalid Apple identity token' }, 401);
+    }
+
+    // Verify the user identifier matches the token's subject
+    if (tokenPayload.sub !== user_identifier) {
+      return json({ error: 'User identifier mismatch' }, 401);
+    }
+
+    const appleUserId = tokenPayload.sub;
+    const email = tokenPayload.email || providedEmail;
+
+    if (!email) {
+      return json({ error: 'Email is required for sign-in' }, 400);
+    }
+
+    // Try to find existing user by Apple ID
+    let user = await db.getUserByAppleId(appleUserId);
+
+    if (!user) {
+      // Check if user exists with this email (account linking)
+      user = await db.getUserByEmail(email);
+
+      if (user) {
+        // Link Apple ID to existing account
+        await db.linkAppleIdToUser(user.id, appleUserId);
+
+        // Mark email as verified (Apple verifies emails)
+        if (user.email_verified !== 1) {
+          await db.markEmailAsVerified(user.id);
+          user.email_verified = 1;
+        }
+      } else {
+        // Create new user with Apple credentials
+        user = await db.createAppleUser(email, appleUserId, 'free');
+
+        // Create free subscription for new user
+        await db.createSubscription(user.id, 'free', 'active');
+      }
+    }
+
+    // Create JWT tokens (same as regular login)
+    const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+
+    const accessToken = await Auth.createJWT(
+      {
+        sub: user.id,
+        email: user.email,
+        tier: user.subscription_tier,
+        type: 'access'
+      },
+      3600, // 1 hour
+      jwtSecret
+    );
+
+    const refreshToken = Auth.generateSecureToken();
+    await db.createRefreshToken(user.id, refreshToken, 30 * 24 * 60 * 60 * 1000); // 30 days
+
+    return json({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      api_token: user.api_token,
+      expires_in: 3600,
+      token_type: 'Bearer',
+      user_id: user.id,
+      email: user.email,
+      subscription_tier: user.subscription_tier,
+      email_verified: true // Always true for Apple Sign-In
+    });
+  } catch (error) {
+    console.error('Apple Sign-In error:', error);
+    return json({ error: 'Authentication failed' }, 500);
   }
 }

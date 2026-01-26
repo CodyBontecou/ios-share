@@ -11,7 +11,8 @@ import {
   handleForgotPassword,
   handleResetPassword,
   handleVerifyEmail,
-  handleResendVerification
+  handleResendVerification,
+  handleAppleSignIn
 } from './auth-handlers';
 import type { ExportJobResponse } from './types';
 
@@ -836,6 +837,11 @@ export default {
       // POST /auth/resend-verification - Resend verification email
       if (method === 'POST' && path === '/auth/resend-verification') {
         return await handleResendVerification(request, env);
+      }
+
+      // POST /auth/apple - Sign in with Apple
+      if (method === 'POST' && path === '/auth/apple') {
+        return await handleAppleSignIn(request, env);
       }
 
       // GET /user

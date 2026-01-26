@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 struct LoginView: View {
     @EnvironmentObject var authState: AuthState
@@ -6,6 +7,7 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var isLoading = false
+    @State private var isAppleSignInLoading = false
     @State private var errorMessage: String?
     @State private var showRegister = false
     @State private var showForgotPassword = false
@@ -30,6 +32,38 @@ struct LoginView: View {
                     }
                     .padding(.top, 40)
                     .padding(.bottom, 20)
+
+                    // Sign in with Apple Button
+                    SignInWithAppleButton(.signIn) { request in
+                        request.requestedScopes = [.email, .fullName]
+                    } onCompletion: { result in
+                        handleAppleSignInResult(result)
+                    }
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 50)
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .disabled(isAppleSignInLoading || isLoading)
+                    .overlay {
+                        if isAppleSignInLoading {
+                            ProgressView()
+                                .tint(.white)
+                        }
+                    }
+
+                    // Divider
+                    HStack {
+                        Rectangle()
+                            .fill(Color(.systemGray4))
+                            .frame(height: 1)
+                        Text("or")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Rectangle()
+                            .fill(Color(.systemGray4))
+                            .frame(height: 1)
+                    }
+                    .padding(.horizontal)
 
                     // Form
                     VStack(spacing: 16) {
@@ -75,7 +109,7 @@ struct LoginView: View {
                         .foregroundStyle(.white)
                         .cornerRadius(10)
                     }
-                    .disabled(!isFormValid || isLoading)
+                    .disabled(!isFormValid || isLoading || isAppleSignInLoading)
                     .padding(.horizontal)
 
                     // Forgot password
@@ -139,6 +173,64 @@ struct LoginView: View {
 
             await MainActor.run {
                 isLoading = false
+            }
+        }
+    }
+
+    private func handleAppleSignInResult(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+                errorMessage = "Invalid Apple ID credential."
+                return
+            }
+
+            guard let identityTokenData = appleIDCredential.identityToken,
+                  let identityToken = String(data: identityTokenData, encoding: .utf8) else {
+                errorMessage = "Could not retrieve identity token."
+                return
+            }
+
+            let appleResult = AppleSignInResult(
+                identityToken: identityToken,
+                userIdentifier: appleIDCredential.user,
+                email: appleIDCredential.email,
+                fullName: appleIDCredential.fullName
+            )
+
+            signInWithApple(result: appleResult)
+
+        case .failure(let error):
+            if let authError = error as? ASAuthorizationError,
+               authError.code == .canceled {
+                return
+            }
+            errorMessage = "Apple Sign-In failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func signInWithApple(result: AppleSignInResult) {
+        isAppleSignInLoading = true
+        errorMessage = nil
+
+        Task {
+            do {
+                let response = try await AuthService.shared.signInWithApple(result: result)
+                await MainActor.run {
+                    authState.setAuthenticated(response: response)
+                }
+            } catch let error as AuthError {
+                await MainActor.run {
+                    errorMessage = error.errorDescription
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Apple Sign-In failed. Please try again."
+                }
+            }
+
+            await MainActor.run {
+                isAppleSignInLoading = false
             }
         }
     }
