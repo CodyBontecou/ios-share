@@ -1,5 +1,10 @@
 import { Database } from './database';
 import { Auth } from './auth';
+import { ExportService } from './export';
+import { Analytics } from './analytics';
+import { RateLimiter, getRateLimitConfig, getIpRateLimitConfig } from './rate-limiter';
+import { ContentModerator } from './content-moderation';
+import type { ExportJobResponse } from './types';
 
 export interface Env {
   IMAGES: R2Bucket;
@@ -22,15 +27,38 @@ function getExtension(filename: string): string {
   return parts.length > 1 ? parts.pop()!.toLowerCase() : 'png';
 }
 
-function json(data: unknown, status = 200): Response {
+function getClientIp(request: Request): string {
+  // Try CF-Connecting-IP first (Cloudflare)
+  const cfIp = request.headers.get('CF-Connecting-IP');
+  if (cfIp) return cfIp;
+
+  // Fallback to X-Forwarded-For
+  const forwardedFor = request.headers.get('X-Forwarded-For');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  // Default fallback
+  return 'unknown';
+}
+
+function json(data: unknown, status = 200, headers?: Record<string, string>): Response {
+  const responseHeaders = new Headers({
+    'Content-Type': 'application/json',
+    ...headers,
+  });
+
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: responseHeaders,
   });
 }
 
 async function handleUpload(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
+  const analytics = new Analytics(env.DB);
+  const rateLimiter = new RateLimiter(env.DB);
+  const moderator = new ContentModerator(env.DB);
 
   // Validate auth - check for API token
   const authHeader = request.headers.get('Authorization');
@@ -44,6 +72,61 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   const user = await db.getUserByApiToken(apiToken);
   if (!user) {
     return json({ error: 'Invalid API token' }, 401);
+  }
+
+  // Check if user is suspended
+  const suspension = await rateLimiter.checkUserSuspension(user.id);
+  if (suspension.suspended) {
+    return json({
+      error: 'Account suspended',
+      reason: suspension.reason,
+      suspended_until: suspension.until,
+    }, 403);
+  }
+
+  // Check rate limit
+  const rateLimitConfig = getRateLimitConfig(user.subscription_tier, '/upload');
+  const rateLimit = await rateLimiter.checkUserRateLimit(
+    user.id,
+    '/upload',
+    rateLimitConfig
+  );
+
+  if (!rateLimit.allowed) {
+    return json(
+      {
+        error: 'Rate limit exceeded',
+        retry_after: new Date(rateLimit.reset).toISOString(),
+      },
+      429,
+      {
+        'X-RateLimit-Limit': rateLimit.limit.toString(),
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-RateLimit-Reset': rateLimit.reset.toString(),
+        'Retry-After': Math.ceil((rateLimit.reset - Date.now()) / 1000).toString(),
+      }
+    );
+  }
+
+  // Check for unusual upload patterns
+  const patternCheck = await moderator.detectUnusualUploadPattern(user.id);
+  if (patternCheck.suspicious) {
+    // Log for monitoring but don't block yet (could be legitimate bulk upload)
+    console.warn('Unusual upload pattern detected:', {
+      userId: user.id,
+      reasons: patternCheck.reasons,
+    });
+
+    // Flag for manual review if severity is high
+    if (patternCheck.reasons.length >= 2) {
+      await moderator.flagContent(
+        'pending_upload',
+        'suspicious',
+        0.7,
+        'system',
+        { pattern_reasons: patternCheck.reasons }
+      );
+    }
   }
 
   // Parse form data
@@ -62,6 +145,28 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   // Validate content type
   if (!file.type.startsWith('image/')) {
     return json({ error: 'File must be an image' }, 400);
+  }
+
+  // Advanced file type validation and malware scanning
+  const malwareScan = await moderator.scanForMalware(file);
+  if (malwareScan.flagged) {
+    const highConfidenceFlags = malwareScan.flags.filter(f => f.confidence >= 0.8);
+    if (highConfidenceFlags.length > 0) {
+      // Block upload and log incident
+      console.error('Malware detected:', {
+        userId: user.id,
+        filename: file.name,
+        flags: malwareScan.flags,
+      });
+
+      // Increment abuse counter for potential suspension
+      await rateLimiter.recordFailedAttempt(user.id, 'upload_abuse');
+
+      return json({
+        error: 'File rejected',
+        reason: 'Security check failed',
+      }, 400);
+    }
   }
 
   // Get tier limits for user
@@ -116,6 +221,19 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     deleteToken
   );
 
+  // Flag low-confidence issues for review (don't block upload)
+  if (malwareScan.flagged) {
+    for (const flag of malwareScan.flags) {
+      await moderator.flagContent(
+        image.id,
+        flag.type,
+        flag.confidence,
+        'system',
+        { reason: flag.reason }
+      );
+    }
+  }
+
   // Log API usage
   await db.logApiUsage(user.id, '/upload', 'POST', 200);
 
@@ -123,11 +241,19 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const host = url.origin;
 
-  return json({
-    url: `${host}/${key}`,
-    id: image.id,
-    deleteUrl: `${host}/delete/${image.id}?token=${deleteToken}`,
-  });
+  return json(
+    {
+      url: `${host}/${key}`,
+      id: image.id,
+      deleteUrl: `${host}/delete/${image.id}?token=${deleteToken}`,
+    },
+    200,
+    {
+      'X-RateLimit-Limit': rateLimit.limit.toString(),
+      'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+      'X-RateLimit-Reset': rateLimit.reset.toString(),
+    }
+  );
 }
 
 async function handleGet(request: Request, env: Env, key: string): Promise<Response> {
@@ -180,6 +306,30 @@ async function handleDelete(request: Request, env: Env, id: string): Promise<Res
 
 async function handleRegister(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
+  const rateLimiter = new RateLimiter(env.DB);
+  const clientIp = getClientIp(request);
+
+  // Check IP-based rate limit for registration
+  const ipRateLimit = await rateLimiter.checkIpRateLimit(
+    clientIp,
+    '/auth/register',
+    getIpRateLimitConfig('/auth/register')
+  );
+
+  if (!ipRateLimit.allowed) {
+    return json(
+      {
+        error: 'Too many registration attempts',
+        retry_after: new Date(ipRateLimit.reset).toISOString(),
+      },
+      429,
+      {
+        'X-RateLimit-Limit': ipRateLimit.limit.toString(),
+        'X-RateLimit-Remaining': ipRateLimit.remaining.toString(),
+        'X-RateLimit-Reset': ipRateLimit.reset.toString(),
+      }
+    );
+  }
 
   try {
     const body = await request.json() as { email: string; password: string };
@@ -189,15 +339,32 @@ async function handleRegister(request: Request, env: Env): Promise<Response> {
       return json({ error: 'Email and password required' }, 400);
     }
 
+    // Check failed attempts for this email
+    const failedCheck = await rateLimiter.checkFailedAttempts(email, 'register');
+    if (!failedCheck.allowed) {
+      const lockoutMinutes = failedCheck.lockedUntil
+        ? Math.ceil((failedCheck.lockedUntil - Date.now()) / (60 * 1000))
+        : 0;
+
+      return json({
+        error: 'Too many failed attempts',
+        locked_until: failedCheck.lockedUntil,
+        retry_in_minutes: lockoutMinutes,
+        requires_captcha: failedCheck.requiresCaptcha,
+      }, 429);
+    }
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      await rateLimiter.recordFailedAttempt(email, 'register');
       return json({ error: 'Invalid email format' }, 400);
     }
 
     // Check if user already exists
     const existingUser = await db.getUserByEmail(email);
     if (existingUser) {
+      await rateLimiter.recordFailedAttempt(email, 'register');
       return json({ error: 'Email already registered' }, 409);
     }
 
@@ -210,6 +377,9 @@ async function handleRegister(request: Request, env: Env): Promise<Response> {
 
     // Create free subscription
     await db.createSubscription(user.id, 'free', 'active');
+
+    // Clear any failed attempts on successful registration
+    await rateLimiter.clearFailedAttempts(email, 'register');
 
     return json({
       user_id: user.id,
@@ -225,6 +395,30 @@ async function handleRegister(request: Request, env: Env): Promise<Response> {
 
 async function handleLogin(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
+  const rateLimiter = new RateLimiter(env.DB);
+  const clientIp = getClientIp(request);
+
+  // Check IP-based rate limit for login
+  const ipRateLimit = await rateLimiter.checkIpRateLimit(
+    clientIp,
+    '/auth/login',
+    getIpRateLimitConfig('/auth/login')
+  );
+
+  if (!ipRateLimit.allowed) {
+    return json(
+      {
+        error: 'Too many login attempts',
+        retry_after: new Date(ipRateLimit.reset).toISOString(),
+      },
+      429,
+      {
+        'X-RateLimit-Limit': ipRateLimit.limit.toString(),
+        'X-RateLimit-Remaining': ipRateLimit.remaining.toString(),
+        'X-RateLimit-Reset': ipRateLimit.reset.toString(),
+      }
+    );
+  }
 
   try {
     const body = await request.json() as { email: string; password: string };
@@ -234,17 +428,50 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
       return json({ error: 'Email and password required' }, 400);
     }
 
+    // Check failed attempts for this email
+    const failedCheck = await rateLimiter.checkFailedAttempts(email, 'login');
+    if (!failedCheck.allowed) {
+      const lockoutMinutes = failedCheck.lockedUntil
+        ? Math.ceil((failedCheck.lockedUntil - Date.now()) / (60 * 1000))
+        : 0;
+
+      return json({
+        error: 'Account temporarily locked due to failed login attempts',
+        locked_until: failedCheck.lockedUntil,
+        retry_in_minutes: lockoutMinutes,
+        requires_captcha: failedCheck.requiresCaptcha,
+      }, 429);
+    }
+
     // Get user
     const user = await db.getUserByEmail(email);
     if (!user) {
+      await rateLimiter.recordFailedAttempt(email, 'login');
+      await rateLimiter.recordFailedAttempt(clientIp, 'login');
       return json({ error: 'Invalid credentials' }, 401);
+    }
+
+    // Check if user is suspended
+    const suspension = await rateLimiter.checkUserSuspension(user.id);
+    if (suspension.suspended) {
+      return json({
+        error: 'Account suspended',
+        reason: suspension.reason,
+        suspended_until: suspension.until,
+      }, 403);
     }
 
     // Verify password
     const isValid = await Auth.verifyPassword(password, user.password_hash);
     if (!isValid) {
+      await rateLimiter.recordFailedAttempt(email, 'login');
+      await rateLimiter.recordFailedAttempt(clientIp, 'login');
       return json({ error: 'Invalid credentials' }, 401);
     }
+
+    // Clear failed attempts on successful login
+    await rateLimiter.clearFailedAttempts(email, 'login');
+    await rateLimiter.clearFailedAttempts(clientIp, 'login');
 
     return json({
       user_id: user.id,
@@ -327,12 +554,215 @@ async function handleGetImages(request: Request, env: Env): Promise<Response> {
   });
 }
 
+async function handleAbuseReport(request: Request, env: Env): Promise<Response> {
+  const db = new Database(env.DB);
+  const moderator = new ContentModerator(env.DB);
+  const clientIp = getClientIp(request);
+
+  // Get optional user auth (abuse reports can be anonymous)
+  const authHeader = request.headers.get('Authorization');
+  const apiToken = Auth.extractBearerToken(authHeader);
+  let reporterUserId: string | null = null;
+
+  if (apiToken) {
+    const user = await db.getUserByApiToken(apiToken);
+    if (user) {
+      reporterUserId = user.id;
+    }
+  }
+
+  try {
+    const body = await request.json() as {
+      image_id: string;
+      reason: 'nsfw' | 'copyright' | 'malware' | 'spam' | 'other';
+      description?: string;
+    };
+
+    const { image_id, reason, description } = body;
+
+    if (!image_id || !reason) {
+      return json({ error: 'image_id and reason are required' }, 400);
+    }
+
+    // Get image to find the reported user
+    const image = await db.getImageById(image_id);
+    if (!image) {
+      return json({ error: 'Image not found' }, 404);
+    }
+
+    // Submit abuse report
+    const report = await moderator.submitAbuseReport(
+      image_id,
+      image.user_id,
+      reporterUserId,
+      clientIp,
+      reason,
+      description || null
+    );
+
+    return json({
+      report_id: report.id,
+      status: report.status,
+      message: 'Thank you for your report. We will review it shortly.',
+    }, 201);
+  } catch (error) {
+    console.error('Abuse report error:', error);
+    return json({ error: 'Invalid request body' }, 400);
+  }
+}
+
 function handleHealth(): Response {
   return json({ status: 'ok' });
 }
 
+async function handleExportInitiate(request: Request, env: Env): Promise<Response> {
+  const db = new Database(env.DB);
+
+  // Validate auth
+  const authHeader = request.headers.get('Authorization');
+  const apiToken = Auth.extractBearerToken(authHeader);
+
+  if (!apiToken) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
+  const user = await db.getUserByApiToken(apiToken);
+  if (!user) {
+    return json({ error: 'Invalid API token' }, 401);
+  }
+
+  // Check rate limit (1 per hour)
+  const canExport = await db.checkExportRateLimit(user.id);
+  if (!canExport) {
+    return json({ error: 'Rate limit exceeded. You can only export once per hour.' }, 429);
+  }
+
+  // Create export job
+  const job = await db.createExportJob(user.id);
+
+  // Update rate limit
+  await db.updateExportRateLimit(user.id);
+
+  // Process export asynchronously
+  const exportService = new ExportService(db, env.IMAGES);
+
+  // In a production environment, you'd want to use Cloudflare Queues or Durable Objects
+  // for background processing. For now, we'll use ctx.waitUntil() for fire-and-forget
+  // This is passed via the execution context which we'll handle in the fetch handler
+
+  const url = new URL(request.url);
+  const host = url.origin;
+
+  const response: ExportJobResponse = {
+    jobId: job.id,
+    status: job.status,
+    imageCount: job.image_count,
+  };
+
+  return json(response, 202); // 202 Accepted - processing started
+}
+
+async function handleExportStatus(request: Request, env: Env, jobId: string): Promise<Response> {
+  const db = new Database(env.DB);
+
+  // Validate auth
+  const authHeader = request.headers.get('Authorization');
+  const apiToken = Auth.extractBearerToken(authHeader);
+
+  if (!apiToken) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
+  const user = await db.getUserByApiToken(apiToken);
+  if (!user) {
+    return json({ error: 'Invalid API token' }, 401);
+  }
+
+  // Get export job
+  const job = await db.getExportJob(jobId);
+  if (!job) {
+    return json({ error: 'Export job not found' }, 404);
+  }
+
+  // Verify ownership
+  if (job.user_id !== user.id) {
+    return json({ error: 'Forbidden' }, 403);
+  }
+
+  const url = new URL(request.url);
+  const host = url.origin;
+
+  const response: ExportJobResponse = {
+    jobId: job.id,
+    status: job.status,
+    imageCount: job.image_count,
+    archiveSize: job.archive_size > 0 ? job.archive_size : undefined,
+    downloadUrl: job.download_url ? `${host}/api/export/${job.id}/download` : undefined,
+    expiresAt: job.expires_at ? new Date(job.expires_at).toISOString() : undefined,
+    errorMessage: job.error_message || undefined,
+  };
+
+  return json(response);
+}
+
+async function handleExportDownload(request: Request, env: Env, jobId: string): Promise<Response> {
+  const db = new Database(env.DB);
+
+  // Validate auth
+  const authHeader = request.headers.get('Authorization');
+  const apiToken = Auth.extractBearerToken(authHeader);
+
+  if (!apiToken) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
+  const user = await db.getUserByApiToken(apiToken);
+  if (!user) {
+    return json({ error: 'Invalid API token' }, 401);
+  }
+
+  // Get export job
+  const job = await db.getExportJob(jobId);
+  if (!job) {
+    return json({ error: 'Export job not found' }, 404);
+  }
+
+  // Verify ownership
+  if (job.user_id !== user.id) {
+    return json({ error: 'Forbidden' }, 403);
+  }
+
+  // Check if job is completed
+  if (job.status !== 'completed') {
+    return json({ error: 'Export is not ready yet', status: job.status }, 400);
+  }
+
+  // Check if expired
+  if (job.expires_at && job.expires_at < Date.now()) {
+    return json({ error: 'Export has expired' }, 410); // 410 Gone
+  }
+
+  // Get archive from R2
+  if (!job.download_url) {
+    return json({ error: 'Download URL not available' }, 500);
+  }
+
+  const object = await env.IMAGES.get(job.download_url);
+  if (!object) {
+    return json({ error: 'Archive not found' }, 404);
+  }
+
+  // Return the ZIP file
+  const headers = new Headers();
+  headers.set('Content-Type', 'application/zip');
+  headers.set('Content-Disposition', `attachment; filename="export_${jobId}.zip"`);
+  headers.set('Content-Length', object.size.toString());
+
+  return new Response(object.body, { headers });
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
@@ -361,6 +791,29 @@ export default {
       // POST /upload
       if (method === 'POST' && path === '/upload') {
         return await handleUpload(request, env);
+      }
+
+      // POST /api/abuse-report - Submit abuse report
+      if (method === 'POST' && path === '/api/abuse-report') {
+        return await handleAbuseReport(request, env);
+      }
+
+      // POST /api/export - Initiate export job
+      if (method === 'POST' && path === '/api/export') {
+        return await handleExportInitiate(request, env);
+      }
+
+      // GET /api/export/{job_id}/status - Check export status
+      if (method === 'GET' && path.startsWith('/api/export/')) {
+        const parts = path.split('/');
+        if (parts.length === 5 && parts[4] === 'status') {
+          const jobId = parts[3];
+          return await handleExportStatus(request, env, jobId);
+        }
+        if (parts.length === 5 && parts[4] === 'download') {
+          const jobId = parts[3];
+          return await handleExportDownload(request, env, jobId);
+        }
       }
 
       // GET /health

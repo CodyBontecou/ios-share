@@ -65,3 +65,42 @@ export interface TierFeatures {
   api_access: boolean;
   priority_support?: boolean;
 }
+
+export type ExportJobStatus = 'processing' | 'completed' | 'failed';
+
+export interface ExportJobResponse {
+  jobId: string;
+  status: ExportJobStatus;
+  imageCount: number;
+  archiveSize?: number;
+  downloadUrl?: string;
+  expiresAt?: string;
+  errorMessage?: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
+  user_id: string;
+  email: string;
+  subscription_tier: SubscriptionTier;
+}

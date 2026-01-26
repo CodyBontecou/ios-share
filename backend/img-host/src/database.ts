@@ -8,6 +8,28 @@ export interface User {
   subscription_tier: 'free' | 'pro' | 'enterprise';
   api_token: string;
   storage_limit_bytes: number;
+  email_verified: number;
+  email_verification_token?: string | null;
+  email_verification_token_expires?: number | null;
+  password_reset_token?: string | null;
+  password_reset_token_expires?: number | null;
+}
+
+export interface RefreshToken {
+  id: string;
+  user_id: string;
+  token: string;
+  expires_at: number;
+  created_at: number;
+  revoked: number;
+}
+
+export interface RateLimit {
+  id: string;
+  identifier: string;
+  endpoint: string;
+  request_count: number;
+  window_start: number;
 }
 
 export interface Image {
@@ -49,6 +71,19 @@ export interface TierLimits {
   features: string; // JSON string
 }
 
+export interface ExportJob {
+  id: string;
+  user_id: string;
+  status: 'processing' | 'completed' | 'failed';
+  image_count: number;
+  archive_size: number;
+  download_url: string | null;
+  expires_at: number | null;
+  error_message: string | null;
+  created_at: number;
+  completed_at: number | null;
+}
+
 export class Database {
   constructor(private db: D1Database) {}
 
@@ -79,6 +114,7 @@ export class Database {
       subscription_tier: tier,
       api_token: apiToken,
       storage_limit_bytes: storageLimitBytes,
+      email_verified: 0,
     };
   }
 
@@ -289,6 +325,264 @@ export class Database {
     await this.db
       .prepare('DELETE FROM api_usage WHERE timestamp < ?')
       .bind(cutoffTimestamp)
+      .run();
+  }
+
+  // Email verification operations
+  async setEmailVerificationToken(userId: string, token: string, expiresInMs: number): Promise<void> {
+    const expiresAt = Date.now() + expiresInMs;
+    await this.db
+      .prepare('UPDATE users SET email_verification_token = ?, email_verification_token_expires = ? WHERE id = ?')
+      .bind(token, expiresAt, userId)
+      .run();
+  }
+
+  async getUserByVerificationToken(token: string): Promise<User | null> {
+    const now = Date.now();
+    const result = await this.db
+      .prepare('SELECT * FROM users WHERE email_verification_token = ? AND email_verification_token_expires > ?')
+      .bind(token, now)
+      .first<User>();
+    return result || null;
+  }
+
+  async markEmailAsVerified(userId: string): Promise<void> {
+    await this.db
+      .prepare('UPDATE users SET email_verified = 1, email_verification_token = NULL, email_verification_token_expires = NULL WHERE id = ?')
+      .bind(userId)
+      .run();
+  }
+
+  // Password reset operations
+  async setPasswordResetToken(userId: string, token: string, expiresInMs: number): Promise<void> {
+    const expiresAt = Date.now() + expiresInMs;
+    await this.db
+      .prepare('UPDATE users SET password_reset_token = ?, password_reset_token_expires = ? WHERE id = ?')
+      .bind(token, expiresAt, userId)
+      .run();
+  }
+
+  async getUserByPasswordResetToken(token: string): Promise<User | null> {
+    const now = Date.now();
+    const result = await this.db
+      .prepare('SELECT * FROM users WHERE password_reset_token = ? AND password_reset_token_expires > ?')
+      .bind(token, now)
+      .first<User>();
+    return result || null;
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.db
+      .prepare('UPDATE users SET password_hash = ?, password_reset_token = NULL, password_reset_token_expires = NULL WHERE id = ?')
+      .bind(passwordHash, userId)
+      .run();
+  }
+
+  // Refresh token operations
+  async createRefreshToken(userId: string, token: string, expiresInMs: number): Promise<RefreshToken> {
+    const id = crypto.randomUUID();
+    const createdAt = Date.now();
+    const expiresAt = createdAt + expiresInMs;
+
+    await this.db
+      .prepare(
+        'INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, revoked) VALUES (?, ?, ?, ?, ?, 0)'
+      )
+      .bind(id, userId, token, expiresAt, createdAt)
+      .run();
+
+    return {
+      id,
+      user_id: userId,
+      token,
+      expires_at: expiresAt,
+      created_at: createdAt,
+      revoked: 0,
+    };
+  }
+
+  async getRefreshToken(token: string): Promise<RefreshToken | null> {
+    const result = await this.db
+      .prepare('SELECT * FROM refresh_tokens WHERE token = ? AND revoked = 0 AND expires_at > ?')
+      .bind(token, Date.now())
+      .first<RefreshToken>();
+    return result || null;
+  }
+
+  async revokeRefreshToken(token: string): Promise<void> {
+    await this.db
+      .prepare('UPDATE refresh_tokens SET revoked = 1 WHERE token = ?')
+      .bind(token)
+      .run();
+  }
+
+  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
+    await this.db
+      .prepare('UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ?')
+      .bind(userId)
+      .run();
+  }
+
+  async cleanupExpiredRefreshTokens(): Promise<void> {
+    const now = Date.now();
+    await this.db
+      .prepare('DELETE FROM refresh_tokens WHERE expires_at < ?')
+      .bind(now)
+      .run();
+  }
+
+  // Rate limiting operations
+  async checkRateLimit(
+    identifier: string,
+    endpoint: string,
+    maxRequests: number,
+    windowMs: number
+  ): Promise<{ allowed: boolean; remainingRequests: number; resetTime: number }> {
+    const now = Date.now();
+    const windowStart = Math.floor(now / windowMs) * windowMs;
+
+    // Try to get or create rate limit record
+    const existing = await this.db
+      .prepare('SELECT * FROM rate_limits WHERE identifier = ? AND endpoint = ? AND window_start = ?')
+      .bind(identifier, endpoint, windowStart)
+      .first<RateLimit>();
+
+    if (!existing) {
+      // Create new rate limit record
+      const id = crypto.randomUUID();
+      await this.db
+        .prepare(
+          'INSERT INTO rate_limits (id, identifier, endpoint, request_count, window_start) VALUES (?, ?, ?, 1, ?)'
+        )
+        .bind(id, identifier, endpoint, windowStart)
+        .run();
+
+      return {
+        allowed: true,
+        remainingRequests: maxRequests - 1,
+        resetTime: windowStart + windowMs,
+      };
+    }
+
+    if (existing.request_count >= maxRequests) {
+      return {
+        allowed: false,
+        remainingRequests: 0,
+        resetTime: windowStart + windowMs,
+      };
+    }
+
+    // Increment request count
+    await this.db
+      .prepare('UPDATE rate_limits SET request_count = request_count + 1 WHERE id = ?')
+      .bind(existing.id)
+      .run();
+
+    return {
+      allowed: true,
+      remainingRequests: maxRequests - existing.request_count - 1,
+      resetTime: windowStart + windowMs,
+    };
+  }
+
+  async cleanupOldRateLimits(windowMs: number): Promise<void> {
+    const cutoffTime = Date.now() - windowMs;
+    await this.db
+      .prepare('DELETE FROM rate_limits WHERE window_start < ?')
+      .bind(cutoffTime)
+      .run();
+  }
+
+  // Export job operations
+  async createExportJob(userId: string): Promise<ExportJob> {
+    const id = `export_${crypto.randomUUID().slice(0, 8)}`;
+    const createdAt = Date.now();
+
+    await this.db
+      .prepare(
+        `INSERT INTO export_jobs (id, user_id, status, image_count, archive_size, created_at)
+         VALUES (?, ?, 'processing', 0, 0, ?)`
+      )
+      .bind(id, userId, createdAt)
+      .run();
+
+    return {
+      id,
+      user_id: userId,
+      status: 'processing',
+      image_count: 0,
+      archive_size: 0,
+      download_url: null,
+      expires_at: null,
+      error_message: null,
+      created_at: createdAt,
+      completed_at: null,
+    };
+  }
+
+  async getExportJob(jobId: string): Promise<ExportJob | null> {
+    const result = await this.db
+      .prepare('SELECT * FROM export_jobs WHERE id = ?')
+      .bind(jobId)
+      .first<ExportJob>();
+    return result || null;
+  }
+
+  async updateExportJob(
+    jobId: string,
+    status: 'processing' | 'completed' | 'failed',
+    imageCount: number,
+    archiveSize: number,
+    downloadUrl?: string,
+    expiresAt?: number,
+    errorMessage?: string
+  ): Promise<void> {
+    const completedAt = status !== 'processing' ? Date.now() : null;
+
+    await this.db
+      .prepare(
+        `UPDATE export_jobs
+         SET status = ?, image_count = ?, archive_size = ?, download_url = ?,
+             expires_at = ?, completed_at = ?, error_message = ?
+         WHERE id = ?`
+      )
+      .bind(status, imageCount, archiveSize, downloadUrl || null, expiresAt || null, completedAt, errorMessage || null, jobId)
+      .run();
+  }
+
+  async checkExportRateLimit(userId: string): Promise<boolean> {
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+    const result = await this.db
+      .prepare('SELECT last_export_at FROM export_rate_limits WHERE user_id = ?')
+      .bind(userId)
+      .first<{ last_export_at: number }>();
+
+    if (!result) {
+      return true; // No previous export, allowed
+    }
+
+    return result.last_export_at < oneHourAgo;
+  }
+
+  async updateExportRateLimit(userId: string): Promise<void> {
+    const now = Date.now();
+
+    await this.db
+      .prepare(
+        `INSERT INTO export_rate_limits (user_id, last_export_at)
+         VALUES (?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET last_export_at = ?`
+      )
+      .bind(userId, now, now)
+      .run();
+  }
+
+  async cleanupExpiredExports(): Promise<void> {
+    const now = Date.now();
+    await this.db
+      .prepare('DELETE FROM export_jobs WHERE expires_at IS NOT NULL AND expires_at < ?')
+      .bind(now)
       .run();
   }
 }
