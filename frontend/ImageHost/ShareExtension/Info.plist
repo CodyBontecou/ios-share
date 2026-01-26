@@ -35,5 +35,7 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
 	</dict>
+	<key>BackendURL</key>
+	<string>$(BACKEND_URL)</string>
 </dict>
 </plist>

@@ -98,7 +98,13 @@ struct SettingsView: View {
     }
 
     private func loadSettings() {
-        backendUrl = Config.sharedDefaults?.string(forKey: Config.backendUrlKey) ?? ""
+        // Load user-configured URL if in self-hosted mode, otherwise show SaaS URL
+        if Config.hostingMode == .selfHosted {
+            backendUrl = Config.sharedDefaults?.string(forKey: Config.backendUrlKey) ?? ""
+        } else {
+            // In SaaS mode, show the build-configured URL
+            backendUrl = Config.saasBackendURL
+        }
         uploadToken = (try? keychainService.loadUploadToken()) ?? ""
         isConfigured = UploadService.shared.isConfigured
     }

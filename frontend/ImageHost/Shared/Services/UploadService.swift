@@ -21,8 +21,9 @@ final class UploadService: NSObject {
     // MARK: - Configuration
 
     var isConfigured: Bool {
-        guard let backendUrl = Config.sharedDefaults?.string(forKey: Config.backendUrlKey),
-              !backendUrl.isEmpty,
+        // Check if we have a valid backend URL (from build config or user settings)
+        let backendUrl = Config.effectiveBackendURL
+        guard !backendUrl.isEmpty,
               let token = try? keychainService.loadUploadToken(),
               !token.isEmpty else {
             return false
@@ -31,7 +32,8 @@ final class UploadService: NSObject {
     }
 
     func getBackendURL() -> String? {
-        Config.sharedDefaults?.string(forKey: Config.backendUrlKey)
+        let url = Config.effectiveBackendURL
+        return url.isEmpty ? nil : url
     }
 
     // MARK: - Upload
@@ -49,8 +51,8 @@ final class UploadService: NSObject {
         self.progressHandler = progressHandler
 
         // Get configuration
-        guard let backendUrl = Config.sharedDefaults?.string(forKey: Config.backendUrlKey),
-              !backendUrl.isEmpty else {
+        let backendUrl = Config.effectiveBackendURL
+        guard !backendUrl.isEmpty else {
             throw ImageHostError.notConfigured
         }
 

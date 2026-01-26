@@ -1,0 +1,6 @@
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+// Backend URL for Debug builds
+// In Debug mode, default to SaaS backend but allow runtime override
+BACKEND_URL = https:/$()/img.yourdomain.com
