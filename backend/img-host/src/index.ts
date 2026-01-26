@@ -4,12 +4,25 @@ import { ExportService } from './export';
 import { Analytics } from './analytics';
 import { RateLimiter, getRateLimitConfig, getIpRateLimitConfig } from './rate-limiter';
 import { ContentModerator } from './content-moderation';
+import {
+  handleRegisterV2,
+  handleLoginV2,
+  handleRefreshToken,
+  handleForgotPassword,
+  handleResetPassword,
+  handleVerifyEmail,
+  handleResendVerification
+} from './auth-handlers';
 import type { ExportJobResponse } from './types';
 
 export interface Env {
   IMAGES: R2Bucket;
   DB: D1Database;
   UPLOAD_TOKEN: string; // Legacy - kept for backward compatibility
+  JWT_SECRET: string;
+  EMAIL_FROM?: string;
+  EMAIL_API_KEY?: string;
+  BASE_URL?: string;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -768,14 +781,39 @@ export default {
     const method = request.method;
 
     try {
-      // POST /auth/register
+      // POST /auth/register - Enhanced with JWT and email verification
       if (method === 'POST' && path === '/auth/register') {
-        return await handleRegister(request, env);
+        return await handleRegisterV2(request, env);
       }
 
-      // POST /auth/login
+      // POST /auth/login - Enhanced with JWT tokens
       if (method === 'POST' && path === '/auth/login') {
-        return await handleLogin(request, env);
+        return await handleLoginV2(request, env);
+      }
+
+      // POST /auth/refresh - Refresh access token
+      if (method === 'POST' && path === '/auth/refresh') {
+        return await handleRefreshToken(request, env);
+      }
+
+      // POST /auth/forgot-password - Request password reset
+      if (method === 'POST' && path === '/auth/forgot-password') {
+        return await handleForgotPassword(request, env);
+      }
+
+      // POST /auth/reset-password - Reset password with token
+      if (method === 'POST' && path === '/auth/reset-password') {
+        return await handleResetPassword(request, env);
+      }
+
+      // POST /auth/verify-email - Verify email address
+      if (method === 'POST' && path === '/auth/verify-email' || (method === 'GET' && path === '/auth/verify-email')) {
+        return await handleVerifyEmail(request, env);
+      }
+
+      // POST /auth/resend-verification - Resend verification email
+      if (method === 'POST' && path === '/auth/resend-verification') {
+        return await handleResendVerification(request, env);
       }
 
       // GET /user
