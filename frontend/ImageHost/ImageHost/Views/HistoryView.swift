@@ -6,12 +6,30 @@ struct HistoryView: View {
     @State private var errorMessage: String?
     @State private var deletingIds: Set<String> = []
 
+    // Export state
+    @State private var showingExportSheet = false
+    @State private var exportState: ExportState = .idle
+    @State private var currentJobId: String?
+    @State private var exportProgress: Double = 0.0
+    @State private var exportError: String?
+    @State private var exportedFileURL: URL?
+    @State private var showingShareSheet = false
+
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter
     }()
+
+    enum ExportState {
+        case idle
+        case starting
+        case exporting(progress: Double)
+        case downloading(progress: Double)
+        case complete
+        case error(String)
+    }
 
     var body: some View {
         NavigationStack {
@@ -59,6 +77,37 @@ struct HistoryView: View {
                 }
             }
             .navigationTitle("History")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingExportSheet = true
+                    } label: {
+                        Label("Export All Images", systemImage: "square.and.arrow.down")
+                    }
+                    .disabled(records.isEmpty || isLoading)
+                }
+            }
+            .sheet(isPresented: $showingExportSheet) {
+                ExportSheetView(
+                    exportState: $exportState,
+                    exportProgress: $exportProgress,
+                    exportError: $exportError,
+                    exportedFileURL: exportedFileURL,
+                    onStartExport: { startExport() },
+                    onCancelExport: { cancelExport() },
+                    onShare: { url in
+                        exportedFileURL = url
+                        showingShareSheet = true
+                    },
+                    onDismiss: { resetExportState() }
+                )
+                .presentationDetents([.medium])
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                if let url = exportedFileURL {
+                    ShareSheet(activityItems: [url])
+                }
+            }
             .onAppear {
                 loadHistory()
             }
@@ -103,6 +152,78 @@ struct HistoryView: View {
                 }
             }
         }
+    }
+
+    private func startExport() {
+        Task {
+            do {
+                exportState = .starting
+                exportError = nil
+
+                // Start the export job
+                let jobId = try await ExportService.shared.startExport()
+                currentJobId = jobId
+
+                // Poll for status updates
+                let finalStatus = try await ExportService.shared.pollUntilComplete(jobId: jobId) { status in
+                    switch status {
+                    case .pending:
+                        exportState = .exporting(progress: 0.0)
+                    case .processing(let progress):
+                        exportState = .exporting(progress: progress)
+                    case .completed(let downloadUrl):
+                        // Will be handled after polling completes
+                        break
+                    case .failed(let error):
+                        exportState = .error(error)
+                    }
+                }
+
+                // Download the archive if completed
+                if case .completed = finalStatus {
+                    exportState = .downloading(progress: 0.0)
+
+                    let fileURL = try await ExportService.shared.downloadArchive(jobId: jobId) { progress in
+                        Task { @MainActor in
+                            exportState = .downloading(progress: progress)
+                        }
+                    }
+
+                    await MainActor.run {
+                        exportedFileURL = fileURL
+                        exportState = .complete
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    exportState = .error(error.localizedDescription)
+                    exportError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func cancelExport() {
+        guard let jobId = currentJobId else { return }
+
+        Task {
+            do {
+                try await ExportService.shared.cancelExport(jobId: jobId)
+                await MainActor.run {
+                    resetExportState()
+                }
+            } catch {
+                print("Failed to cancel export: \(error)")
+            }
+        }
+    }
+
+    private func resetExportState() {
+        exportState = .idle
+        currentJobId = nil
+        exportProgress = 0.0
+        exportError = nil
+        exportedFileURL = nil
     }
 }
 
@@ -158,6 +279,182 @@ struct HistoryRow: View {
         }
         return "\(host)\(path)"
     }
+}
+
+struct ExportSheetView: View {
+    @Binding var exportState: HistoryView.ExportState
+    @Binding var exportProgress: Double
+    @Binding var exportError: String?
+    let exportedFileURL: URL?
+    let onStartExport: () -> Void
+    let onCancelExport: () -> Void
+    let onShare: (URL) -> Void
+    let onDismiss: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                switch exportState {
+                case .idle:
+                    VStack(spacing: 16) {
+                        Image(systemName: "square.and.arrow.down.on.square")
+                            .font(.system(size: 60))
+                            .foregroundStyle(.blue)
+
+                        Text("Export All Images")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+
+                        Text("This will create a ZIP archive of all your uploaded images. The process may take a few moments depending on the number of images.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+
+                        Button {
+                            onStartExport()
+                        } label: {
+                            Text("Start Export")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                    }
+
+                case .starting:
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+
+                        Text("Starting export...")
+                            .font(.headline)
+                    }
+
+                case .exporting(let progress):
+                    VStack(spacing: 16) {
+                        ProgressView(value: progress)
+                            .progressViewStyle(.linear)
+                            .padding(.horizontal)
+
+                        Text("Exporting images: \(Int(progress * 100))%")
+                            .font(.headline)
+
+                        Button("Cancel", role: .cancel) {
+                            onCancelExport()
+                            dismiss()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                case .downloading(let progress):
+                    VStack(spacing: 16) {
+                        ProgressView(value: progress)
+                            .progressViewStyle(.linear)
+                            .padding(.horizontal)
+
+                        Text("Downloading archive: \(Int(progress * 100))%")
+                            .font(.headline)
+
+                        Button("Cancel", role: .cancel) {
+                            onCancelExport()
+                            dismiss()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                case .complete:
+                    VStack(spacing: 16) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundStyle(.green)
+
+                        Text("Export Complete!")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+
+                        Text("Your images have been exported successfully.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+
+                        if let url = exportedFileURL {
+                            Button {
+                                onShare(url)
+                            } label: {
+                                Label("Share Archive", systemImage: "square.and.arrow.up")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .padding(.horizontal)
+                        }
+
+                        Button("Done") {
+                            onDismiss()
+                            dismiss()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                case .error(let message):
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 60))
+                            .foregroundStyle(.red)
+
+                        Text("Export Failed")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+
+                        Text(message)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+
+                        Button("Try Again") {
+                            onStartExport()
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button("Cancel") {
+                            onDismiss()
+                            dismiss()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Export Images")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if case .idle = exportState {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {
