@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAGEHOST — BRUTAL IMAGE HOSTING</title>
+    <meta name="description" content="Cloud image hosting for iOS. Upload. Share. Done. No fluff. Just links.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brutal-bg: #000000;
+            --brutal-surface: #141414;
+            --brutal-surface-elevated: #1F1F1F;
+            --brutal-border: #333333;
+            --brutal-text-primary: #FFFFFF;
+            --brutal-text-secondary: #999999;
+            --brutal-text-tertiary: #666666;
+            --brutal-error: #FF453A;
+            --brutal-success: #30D158;
+            --brutal-warning: #FFD60A;
+
+            --font-mono: 'JetBrains Mono', monospace;
+            --tracking-wide: 0.15em;
+            --tracking-wider: 0.25em;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--brutal-bg);
+            color: var(--brutal-text-primary);
+            font-family: var(--font-mono);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Selection */
+        ::selection {
+            background: var(--brutal-text-primary);
+            color: var(--brutal-bg);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--brutal-bg);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--brutal-border);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--brutal-text-tertiary);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--brutal-bg);
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-mark {
+            width: 32px;
+            height: 32px;
+            background: var(--brutal-text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--brutal-bg);
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--brutal-text-secondary);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--brutal-text-primary);
+        }
+
+        .nav-cta {
+            background: var(--brutal-text-primary);
+            color: var(--brutal-bg);
+            padding: 10px 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-cta:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 2px 2px 0 var(--brutal-text-primary);
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 120px 0 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--brutal-border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--brutal-border) 1px, transparent 1px);
+            background-size: 60px 60px;
+            opacity: 0.3;
+            mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-label {
+            font-size: 11px;
+            letter-spacing: var(--tracking-wider);
+            text-transform: uppercase;
+            color: var(--brutal-text-secondary);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero-label::before {
+            content: '';
+            width: 40px;
+            height: 1px;
+            background: var(--brutal-border);
+        }
+
+        .hero-title {
+            font-size: clamp(48px, 12vw, 140px);
+            font-weight: 800;
+            line-height: 0.9;
+            letter-spacing: -0.02em;
+            margin-bottom: 40px;
+        }
+
+        .hero-title .line {
+            display: block;
+            overflow: hidden;
+        }
+
+        .hero-title .line span {
+            display: block;
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transform: translateY(100%);
+        }
+
+        .hero-title .line:nth-child(2) span {
+            animation-delay: 0.1s;
+        }
+
+        .hero-title .line:nth-child(3) span {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes slideUp {
+            to { transform: translateY(0); }
+        }
+
+        .hero-subtitle {
+            font-size: 14px;
+            color: var(--brutal-text-secondary);
+            max-width: 500px;
+            margin-bottom: 48px;
+            letter-spacing: 0.02em;
+            line-height: 1.8;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--brutal-text-primary);
+            color: var(--brutal-bg);
+            padding: 16px 32px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 4px 4px 0 var(--brutal-text-primary);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: transparent;
+            color: var(--brutal-text-primary);
+            padding: 16px 32px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            text-decoration: none;
+            border: 1px solid var(--brutal-border);
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--brutal-text-primary);
+            background: var(--brutal-surface);
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 48px;
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid var(--brutal-border);
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            color: var(--brutal-text-tertiary);
+        }
+
+        /* Features */
+        .features {
+            padding: 120px 0;
+            border-top: 1px solid var(--brutal-border);
+        }
+
+        .section-header {
+            margin-bottom: 80px;
+        }
+
+        .section-label {
+            font-size: 10px;
+            letter-spacing: var(--tracking-wider);
+            text-transform: uppercase;
+            color: var(--brutal-text-tertiary);
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: clamp(32px, 6vw, 56px);
+            font-weight: 700;
+            line-height: 1.1;
+            max-width: 600px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1px;
+            background: var(--brutal-border);
+            border: 1px solid var(--brutal-border);
+        }
+
+        .feature-card {
+            background: var(--brutal-bg);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: background 0.3s;
+        }
+
+        .feature-card:hover {
+            background: var(--brutal-surface);
+        }
+
+        .feature-number {
+            font-size: 11px;
+            color: var(--brutal-text-tertiary);
+            letter-spacing: var(--tracking-wide);
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .feature-desc {
+            font-size: 13px;
+            color: var(--brutal-text-secondary);
+            line-height: 1.7;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border: 1px solid var(--brutal-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 120px 0;
+            border-top: 1px solid var(--brutal-border);
+            background: var(--brutal-surface);
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 80px;
+        }
+
+        .step {
+            position: relative;
+        }
+
+        .step-number {
+            font-size: 80px;
+            font-weight: 800;
+            color: var(--brutal-surface-elevated);
+            line-height: 1;
+            margin-bottom: 24px;
+            -webkit-text-stroke: 1px var(--brutal-border);
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .step-desc {
+            font-size: 13px;
+            color: var(--brutal-text-secondary);
+            line-height: 1.7;
+        }
+
+        .step-arrow {
+            position: absolute;
+            top: 50px;
+            right: -20px;
+            color: var(--brutal-border);
+            font-size: 24px;
+        }
+
+        /* App Preview */
+        .preview {
+            padding: 120px 0;
+            border-top: 1px solid var(--brutal-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .preview-content {
+            max-width: 480px;
+        }
+
+        .preview-features {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .preview-feature {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .preview-feature-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--brutal-text-primary);
+            color: var(--brutal-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .preview-feature-text {
+            font-size: 13px;
+            color: var(--brutal-text-secondary);
+            line-height: 1.6;
+        }
+
+        .preview-feature-text strong {
+            color: var(--brutal-text-primary);
+            display: block;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            font-size: 11px;
+        }
+
+        .phone-mockup {
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .phone {
+            width: 280px;
+            height: 580px;
+            background: var(--brutal-surface);
+            border: 2px solid var(--brutal-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 28px;
+            background: var(--brutal-bg);
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+        }
+
+        .phone-screen {
+            padding: 48px 16px 16px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .phone-header {
+            font-size: 10px;
+            letter-spacing: var(--tracking-wider);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            color: var(--brutal-text-secondary);
+        }
+
+        .phone-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+
+        .phone-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            flex: 1;
+        }
+
+        .phone-grid-item {
+            background: var(--brutal-surface-elevated);
+            aspect-ratio: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .phone-grid-item::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%);
+        }
+
+        /* Pricing */
+        .pricing {
+            padding: 120px 0;
+            border-top: 1px solid var(--brutal-border);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--brutal-border);
+            border: 1px solid var(--brutal-border);
+            margin-top: 80px;
+        }
+
+        .pricing-card {
+            background: var(--brutal-bg);
+            padding: 48px 32px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pricing-card.featured {
+            background: var(--brutal-surface);
+            position: relative;
+        }
+
+        .pricing-card.featured::before {
+            content: 'POPULAR';
+            position: absolute;
+            top: 0;
+            right: 32px;
+            background: var(--brutal-text-primary);
+            color: var(--brutal-bg);
+            padding: 8px 16px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: var(--tracking-wider);
+        }
+
+        .pricing-tier {
+            font-size: 10px;
+            letter-spacing: var(--tracking-wider);
+            text-transform: uppercase;
+            color: var(--brutal-text-tertiary);
+            margin-bottom: 8px;
+        }
+
+        .pricing-name {
+            font-size: 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .pricing-price {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .pricing-price span {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--brutal-text-tertiary);
+        }
+
+        .pricing-desc {
+            font-size: 12px;
+            color: var(--brutal-text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 40px;
+            flex: 1;
+        }
+
+        .pricing-features li {
+            font-size: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--brutal-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pricing-features li::before {
+            content: '+';
+            color: var(--brutal-text-tertiary);
+            font-weight: 700;
+        }
+
+        .pricing-cta {
+            margin-top: auto;
+        }
+
+        .pricing-cta .btn-primary,
+        .pricing-cta .btn-secondary {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 160px 0;
+            border-top: 1px solid var(--brutal-border);
+            text-align: center;
+            position: relative;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .cta-title {
+            font-size: clamp(40px, 8vw, 80px);
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 32px;
+        }
+
+        .cta-subtitle {
+            font-size: 14px;
+            color: var(--brutal-text-secondary);
+            max-width: 400px;
+            margin: 0 auto 48px;
+            line-height: 1.8;
+        }
+
+        /* Footer */
+        footer {
+            padding: 48px 0;
+            border-top: 1px solid var(--brutal-border);
+        }
+
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--brutal-text-tertiary);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--brutal-text-primary);
+        }
+
+        .footer-copy {
+            font-size: 11px;
+            color: var(--brutal-text-tertiary);
+            letter-spacing: var(--tracking-wide);
+        }
+
+        /* Mobile */
+        @media (max-width: 900px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-stats {
+                flex-wrap: wrap;
+                gap: 32px;
+            }
+
+            .steps {
+                grid-template-columns: 1fr;
+            }
+
+            .step-arrow {
+                display: none;
+            }
+
+            .preview-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .preview-content {
+                max-width: none;
+            }
+
+            .preview-features {
+                text-align: left;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-inner {
+                flex-direction: column;
+                gap: 24px;
+                text-align: center;
+            }
+        }
+
+        /* Animations */
+        @media (prefers-reduced-motion: no-preference) {
+            .feature-card,
+            .step,
+            .pricing-card {
+                opacity: 0;
+                transform: translateY(20px);
+                animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+
+            @keyframes fadeInUp {
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .feature-card:nth-child(1) { animation-delay: 0.1s; }
+            .feature-card:nth-child(2) { animation-delay: 0.2s; }
+            .feature-card:nth-child(3) { animation-delay: 0.3s; }
+            .feature-card:nth-child(4) { animation-delay: 0.4s; }
+            .feature-card:nth-child(5) { animation-delay: 0.5s; }
+            .feature-card:nth-child(6) { animation-delay: 0.6s; }
+
+            .step:nth-child(1) { animation-delay: 0.1s; }
+            .step:nth-child(2) { animation-delay: 0.2s; }
+            .step:nth-child(3) { animation-delay: 0.3s; }
+
+            .pricing-card:nth-child(1) { animation-delay: 0.1s; }
+            .pricing-card:nth-child(2) { animation-delay: 0.2s; }
+            .pricing-card:nth-child(3) { animation-delay: 0.3s; }
+        }
+
+        /* Glitch effect for title */
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+        }
+
+        .glitch:hover::before {
+            animation: glitch-1 0.3s linear;
+            color: var(--brutal-error);
+            opacity: 0.8;
+        }
+
+        .glitch:hover::after {
+            animation: glitch-2 0.3s linear;
+            color: var(--brutal-success);
+            opacity: 0.8;
+        }
+
+        @keyframes glitch-1 {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+        }
+
+        @keyframes glitch-2 {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(2px, -2px); }
+            40% { transform: translate(2px, 2px); }
+            60% { transform: translate(-2px, -2px); }
+            80% { transform: translate(-2px, 2px); }
+        }
+
+        /* Cursor blink */
+        .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1em;
+            background: var(--brutal-text-primary);
+            margin-left: 4px;
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-inner">
+            <div class="logo">
+                <div class="logo-mark">IH</div>
+                <span>ImageHost</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+            </ul>
+            <a href="#download" class="nav-cta">Get The App</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-grid"></div>
+        <div class="container hero-content">
+            <div class="hero-label">Cloud Image Hosting for iOS</div>
+            <h1 class="hero-title">
+                <span class="line"><span class="glitch" data-text="UPLOAD.">UPLOAD.</span></span>
+                <span class="line"><span class="glitch" data-text="SHARE.">SHARE.</span></span>
+                <span class="line"><span class="glitch" data-text="DONE.">DONE.</span></span>
+            </h1>
+            <p class="hero-subtitle">
+                No fluff. No friction. Just brutal efficiency. Share images from anywhere on iOS and get instant, direct links.<span class="cursor"></span>
+            </p>
+            <div class="hero-actions">
+                <a href="#download" class="btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                    </svg>
+                    Download for iOS
+                </a>
+                <a href="#features" class="btn-secondary">Learn More</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-value">100GB</div>
+                    <div class="stat-label">Max Storage</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&lt;1s</div>
+                    <div class="stat-label">Upload Speed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Tracking Pixels</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">01 / Features</div>
+                <h2 class="section-title">Everything you need. Nothing you don't.</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#8599;</div>
+                    <div class="feature-number">001</div>
+                    <h3 class="feature-title">Share Extension</h3>
+                    <p class="feature-desc">Upload directly from your Photos app or any app with iOS Share Sheet. One tap. Done.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9783;</div>
+                    <div class="feature-number">002</div>
+                    <h3 class="feature-title">Photo Gallery</h3>
+                    <p class="feature-desc">All your uploads organized by date. Pinch to zoom. Swipe to delete. No learning curve.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#8688;</div>
+                    <div class="feature-number">003</div>
+                    <h3 class="feature-title">Direct Links</h3>
+                    <p class="feature-desc">Get clean, direct URLs. Markdown, HTML, BBCode, or raw. Your choice.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9032;</div>
+                    <div class="feature-number">004</div>
+                    <h3 class="feature-title">Bulk Export</h3>
+                    <p class="feature-desc">Download all your images as a ZIP. Your data, always accessible.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#8962;</div>
+                    <div class="feature-number">005</div>
+                    <h3 class="feature-title">Self-Hostable</h3>
+                    <p class="feature-desc">Run your own backend on Cloudflare. Full control. Zero lock-in.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9055;</div>
+                    <div class="feature-number">006</div>
+                    <h3 class="feature-title">Secure by Default</h3>
+                    <p class="feature-desc">JWT authentication. Per-image delete tokens. No tracking. No ads. Ever.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">02 / Process</div>
+                <h2 class="section-title">Three steps. Zero friction.</h2>
+            </div>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">01</div>
+                    <h3 class="step-title">Select Image</h3>
+                    <p class="step-desc">Open any image on your iPhone. Tap the share button.</p>
+                    <span class="step-arrow">&rarr;</span>
+                </div>
+                <div class="step">
+                    <div class="step-number">02</div>
+                    <h3 class="step-title">Tap ImageHost</h3>
+                    <p class="step-desc">Find ImageHost in your share sheet. One tap to upload.</p>
+                    <span class="step-arrow">&rarr;</span>
+                </div>
+                <div class="step">
+                    <div class="step-number">03</div>
+                    <h3 class="step-title">Get Your Link</h3>
+                    <p class="step-desc">Link copied to clipboard. Paste anywhere. Share everywhere.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Preview -->
+    <section class="preview">
+        <div class="container">
+            <div class="preview-container">
+                <div class="preview-content">
+                    <div class="section-header">
+                        <div class="section-label">03 / Interface</div>
+                        <h2 class="section-title">Brutally beautiful.</h2>
+                    </div>
+                    <div class="preview-features">
+                        <div class="preview-feature">
+                            <div class="preview-feature-icon">+</div>
+                            <div class="preview-feature-text">
+                                <strong>High Contrast UI</strong>
+                                Pure black. Pure white. Nothing in between. Designed for focus.
+                            </div>
+                        </div>
+                        <div class="preview-feature">
+                            <div class="preview-feature-icon">+</div>
+                            <div class="preview-feature-text">
+                                <strong>Monospace Typography</strong>
+                                Technical. Precise. Every character counts.
+                            </div>
+                        </div>
+                        <div class="preview-feature">
+                            <div class="preview-feature-icon">+</div>
+                            <div class="preview-feature-text">
+                                <strong>Zero Decoration</strong>
+                                No gradients. No shadows. No rounded corners. Just function.
+                            </div>
+                        </div>
+                        <div class="preview-feature">
+                            <div class="preview-feature-icon">+</div>
+                            <div class="preview-feature-text">
+                                <strong>Obsidian-Inspired</strong>
+                                Built for people who appreciate raw, utilitarian design.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone">
+                        <div class="phone-notch"></div>
+                        <div class="phone-screen">
+                            <div class="phone-header">Gallery</div>
+                            <div class="phone-title">PHOTOS</div>
+                            <div class="phone-grid">
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                                <div class="phone-grid-item"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">04 / Pricing</div>
+                <h2 class="section-title">Simple. Transparent. Fair.</h2>
+            </div>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-tier">Tier 01</div>
+                    <div class="pricing-name">Free</div>
+                    <div class="pricing-price">$0<span>/forever</span></div>
+                    <p class="pricing-desc">Perfect for trying out ImageHost. No credit card required.</p>
+                    <ul class="pricing-features">
+                        <li>100MB storage</li>
+                        <li>10MB max file size</li>
+                        <li>100 image limit</li>
+                        <li>Direct links</li>
+                        <li>Share extension</li>
+                    </ul>
+                    <div class="pricing-cta">
+                        <a href="#download" class="btn-secondary">Get Started</a>
+                    </div>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="pricing-tier">Tier 02</div>
+                    <div class="pricing-name">Pro</div>
+                    <div class="pricing-price">$5<span>/month</span></div>
+                    <p class="pricing-desc">For power users who need more space and features.</p>
+                    <ul class="pricing-features">
+                        <li>10GB storage</li>
+                        <li>50MB max file size</li>
+                        <li>Unlimited images</li>
+                        <li>Usage analytics</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <div class="pricing-cta">
+                        <a href="#download" class="btn-primary">Upgrade to Pro</a>
+                    </div>
+                </div>
+                <div class="pricing-card">
+                    <div class="pricing-tier">Tier 03</div>
+                    <div class="pricing-name">Enterprise</div>
+                    <div class="pricing-price">$25<span>/month</span></div>
+                    <p class="pricing-desc">For teams and businesses with serious hosting needs.</p>
+                    <ul class="pricing-features">
+                        <li>100GB storage</li>
+                        <li>100MB max file size</li>
+                        <li>Unlimited everything</li>
+                        <li>Custom domains</li>
+                        <li>API access</li>
+                    </ul>
+                    <div class="pricing-cta">
+                        <a href="#download" class="btn-secondary">Contact Sales</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section" id="download">
+        <div class="container">
+            <h2 class="cta-title">START<br>HOSTING.</h2>
+            <p class="cta-subtitle">Download ImageHost for iOS and experience image sharing the way it should be.</p>
+            <a href="https://apps.apple.com/app/imagehost" class="btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+                Download on the App Store
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-inner">
+                <ul class="footer-links">
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Terms</a></li>
+                    <li><a href="#">Support</a></li>
+                    <li><a href="https://github.com">GitHub</a></li>
+                </ul>
+                <div class="footer-copy">&copy; 2026 ImageHost. Built with brutality.</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Intersection Observer for animations -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationPlayState = 'running';
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.feature-card, .step, .pricing-card').forEach(el => {
+                el.style.animationPlayState = 'paused';
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
