@@ -33,7 +33,7 @@ export class ContentModerator {
    */
   async validateFileType(
     file: File,
-    allowedTypes: string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    allowedTypes: string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif']
   ): Promise<{ valid: boolean; detectedType: string | null; reason?: string }> {
     // Check MIME type first
     if (!allowedTypes.includes(file.type)) {
@@ -130,6 +130,24 @@ export class ContentModerator {
       return 'image/webp';
     }
 
+    // HEIC/HEIF: ftyp box with heic, mif1, or msf1 brand
+    // HEIC files use ISOBMFF container: [size(4)][ftyp(4)][brand(4+)]
+    if (
+      bytes[4] === 0x66 && // 'f'
+      bytes[5] === 0x74 && // 't'
+      bytes[6] === 0x79 && // 'y'
+      bytes[7] === 0x70    // 'p'
+    ) {
+      // Check for HEIC/HEIF brands starting at byte 8
+      const brandBytes = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
+      if (brandBytes === 'heic' || brandBytes === 'heix' || brandBytes === 'mif1' || brandBytes === 'msf1') {
+        return 'image/heic';
+      }
+      if (brandBytes === 'heif' || brandBytes === 'heim' || brandBytes === 'heis') {
+        return 'image/heif';
+      }
+    }
+
     // Executable detection (simple check for common malware)
     // Windows PE: MZ
     if (bytes[0] === 0x4d && bytes[1] === 0x5a) {
@@ -160,6 +178,14 @@ export class ContentModerator {
 
     // Handle variants (e.g., image/jpg vs image/jpeg)
     if (mimeType === 'image/jpg' && detectedType === 'image/jpeg') {
+      return true;
+    }
+
+    // Handle HEIC/HEIF variants (iOS may send either)
+    if (
+      (mimeType === 'image/heic' || mimeType === 'image/heif') &&
+      (detectedType === 'image/heic' || detectedType === 'image/heif')
+    ) {
       return true;
     }
 

@@ -541,6 +541,7 @@ async function handleGetUser(request: Request, env: Env): Promise<Response> {
     user_id: user.id,
     email: user.email,
     subscription_tier: user.subscription_tier,
+    email_verified: user.email_verified === 1,
     storage_limit_bytes: user.storage_limit_bytes,
     storage_used_bytes: usage.total_bytes_used,
     image_count: usage.image_count,
