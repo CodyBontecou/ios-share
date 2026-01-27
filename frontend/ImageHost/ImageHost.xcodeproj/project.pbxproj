@@ -10,6 +10,8 @@
 		14EBDD7432ABCF77C17602EE /* GoogleColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77EF9A77B62440BA76E7919A /* GoogleColors.swift */; };
 		22BE19555A3C3B23E913A532 /* GoogleSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A09518DA218CA8C573BCEEF /* GoogleSpacing.swift */; };
 		46C6716F291ACC3B60FD7C97 /* GoogleTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FBA8EDF575959E863DA8C8 /* GoogleTypography.swift */; };
+		D1000001001 /* LinkFormatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1000001000 /* LinkFormatService.swift */; };
+		D1000002001 /* LinkFormatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1000001000 /* LinkFormatService.swift */; };
 		A1000001001 /* ImageHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000 /* ImageHostApp.swift */; };
 		A1000002001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002000 /* ContentView.swift */; };
 		A1000003001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000003000 /* SettingsView.swift */; };
@@ -118,6 +120,7 @@
 		A3FBA8EDF575959E863DA8C8 /* GoogleTypography.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleTypography.swift; sourceTree = "<group>"; };
 		B1000001000 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		C1000001000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D1000001000 /* LinkFormatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkFormatService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -251,6 +254,7 @@
 				A1000016000 /* UploadService.swift */,
 				A1000017000 /* AuthService.swift */,
 				0F8915CA80904ADBA74F2AB9 /* ExportService.swift */,
+				D1000001000 /* LinkFormatService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -401,6 +405,7 @@
 				BF090D7998F3920533D43774 /* BrutalComponents.swift in Sources */,
 				D65665EB6905B182E0F76EBC /* PhotoGridView.swift in Sources */,
 				B1000001001 /* OnboardingView.swift in Sources */,
+				D1000001001 /* LinkFormatService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -421,6 +426,7 @@
 				A1000038001 /* AuthResponse.swift in Sources */,
 				A1000039001 /* User.swift in Sources */,
 				A100003A001 /* AuthState.swift in Sources */,
+				D1000002001 /* LinkFormatService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -332,9 +332,13 @@ struct ShareView: View {
                     }
                 }
 
-                // Copy URL to clipboard immediately
+                // Copy formatted URL to clipboard immediately
                 await MainActor.run {
-                    UIPasteboard.general.string = record.url
+                    let formattedLink = LinkFormatService.shared.format(
+                        url: record.url,
+                        filename: record.originalFilename
+                    )
+                    UIPasteboard.general.string = formattedLink
                 }
 
                 // Play haptic feedback

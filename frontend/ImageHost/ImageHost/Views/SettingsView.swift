@@ -11,6 +11,9 @@ struct SettingsView: View {
     @State private var alertMessage = ""
     @State private var showClearConfirmation = false
     @State private var showLogoutConfirmation = false
+    @State private var selectedLinkFormat: LinkFormat = LinkFormatService.shared.currentFormat
+    @State private var customLinkTemplate: String = LinkFormatService.shared.customTemplate
+    @State private var showCustomFormatSheet = false
 
     var body: some View {
         ZStack {
@@ -112,6 +115,86 @@ struct SettingsView: View {
                         }
                         .padding(.bottom, 24)
                     }
+
+                    // Link Format Section
+                    VStack(spacing: 0) {
+                        BrutalSectionHeader(title: "Link Format")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 12)
+
+                        BrutalCard(showBorder: true) {
+                            VStack(spacing: 0) {
+                                ForEach(Array(LinkFormat.allCases.enumerated()), id: \.element.id) { index, format in
+                                    if index > 0 {
+                                        Rectangle()
+                                            .fill(Color.brutalBorder)
+                                            .frame(height: 1)
+                                    }
+
+                                    Button {
+                                        selectedLinkFormat = format
+                                        LinkFormatService.shared.currentFormat = format
+                                        if format == .custom {
+                                            showCustomFormatSheet = true
+                                        }
+                                    } label: {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(format.displayName)
+                                                    .brutalTypography(.body)
+
+                                                Text(format == .custom ? customLinkTemplate : format.previewExample)
+                                                    .brutalTypography(.monoSmall, color: .brutalTextTertiary)
+                                                    .lineLimit(1)
+                                            }
+
+                                            Spacer()
+
+                                            if selectedLinkFormat == format {
+                                                Text("*")
+                                                    .brutalTypography(.titleLarge, color: .brutalSuccess)
+                                            }
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 24)
+
+                        // Edit custom format button
+                        if selectedLinkFormat == .custom {
+                            Button {
+                                showCustomFormatSheet = true
+                            } label: {
+                                HStack {
+                                    Text("EDIT CUSTOM FORMAT")
+                                        .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                                        .tracking(1)
+                                    Image(systemName: "pencil")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Color.brutalTextSecondary)
+                                }
+                            }
+                            .padding(.top, 12)
+                        }
+
+                        // Template variables hint
+                        HStack(spacing: 8) {
+                            Text("Variables:")
+                                .brutalTypography(.monoSmall, color: .brutalTextTertiary)
+                            Text("{url}")
+                                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                            Text("{filename}")
+                                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                        }
+                        .padding(.top, 12)
+                    }
+                    .padding(.bottom, 24)
 
                     // Actions Section
                     VStack(spacing: 0) {
@@ -240,6 +323,14 @@ struct SettingsView: View {
         } message: {
             Text("Are you sure you want to sign out?")
         }
+        .sheet(isPresented: $showCustomFormatSheet) {
+            CustomLinkFormatSheet(
+                template: $customLinkTemplate,
+                onSave: {
+                    LinkFormatService.shared.customTemplate = customLinkTemplate
+                }
+            )
+        }
         .preferredColorScheme(.dark)
     }
 
@@ -294,6 +385,126 @@ struct SettingsView: View {
         alertTitle = title
         alertMessage = message
         showAlert = true
+    }
+}
+
+// MARK: - Custom Link Format Sheet
+
+struct CustomLinkFormatSheet: View {
+    @Binding var template: String
+    let onSave: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var editingTemplate: String = ""
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.brutalBackground.ignoresSafeArea()
+
+                VStack(spacing: 24) {
+                    // Header
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("CUSTOM\nFORMAT")
+                            .font(.system(size: 40, weight: .black))
+                            .foregroundStyle(.white)
+                            .lineSpacing(-4)
+
+                        Text("Define your own link template")
+                            .brutalTypography(.body, color: .brutalTextSecondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+
+                    // Template input
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("TEMPLATE")
+                            .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                            .tracking(2)
+
+                        TextField("Enter template...", text: $editingTemplate, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .brutalTypography(.mono)
+                            .padding(16)
+                            .background(Color.brutalSurface)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.brutalBorder, lineWidth: 1)
+                            )
+                            .lineLimit(3...6)
+                    }
+                    .padding(.horizontal, 24)
+
+                    // Variables reference
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("AVAILABLE VARIABLES")
+                            .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                            .tracking(2)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("{url}")
+                                    .brutalTypography(.mono, color: .brutalSuccess)
+                                Text("- The image URL")
+                                    .brutalTypography(.bodySmall, color: .brutalTextTertiary)
+                            }
+                            HStack {
+                                Text("{filename}")
+                                    .brutalTypography(.mono, color: .brutalSuccess)
+                                Text("- Original filename")
+                                    .brutalTypography(.bodySmall, color: .brutalTextTertiary)
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.brutalSurface)
+                    }
+                    .padding(.horizontal, 24)
+
+                    // Preview
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("PREVIEW")
+                            .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                            .tracking(2)
+
+                        Text(LinkFormatService.shared.preview(format: .custom, customTemplate: editingTemplate))
+                            .brutalTypography(.monoSmall, color: .brutalTextPrimary)
+                            .lineLimit(3)
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.brutalSurfaceElevated)
+                    }
+                    .padding(.horizontal, 24)
+
+                    Spacer()
+
+                    // Save button
+                    BrutalPrimaryButton(title: "Save Format") {
+                        template = editingTemplate
+                        onSave()
+                        dismiss()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.brutalBackground, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("CANCEL")
+                            .brutalTypography(.mono)
+                    }
+                }
+            }
+            .onAppear {
+                editingTemplate = template
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 }
 

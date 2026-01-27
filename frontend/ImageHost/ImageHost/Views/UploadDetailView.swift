@@ -10,7 +10,7 @@ struct UploadDetailView: View {
     @State private var isDeleting = false
 
     private enum CopiedField {
-        case url, deleteUrl
+        case url, deleteUrl, formatted
     }
 
     private let dateFormatter: DateFormatter = {
@@ -50,12 +50,16 @@ struct UploadDetailView: View {
                     BrutalActionBar(
                         onShare: { shareImage() },
                         onCopy: {
-                            copyToClipboard(record.url)
-                            copiedField = .url
+                            let formattedLink = LinkFormatService.shared.format(
+                                url: record.url,
+                                filename: record.originalFilename
+                            )
+                            copyToClipboard(formattedLink)
+                            copiedField = .formatted
                         },
                         onOpen: { openInBrowser() },
                         onDelete: { showDeleteConfirmation = true },
-                        isCopied: copiedField == .url,
+                        isCopied: copiedField == .formatted,
                         isDeleting: isDeleting
                     )
 

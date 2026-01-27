@@ -17,6 +17,10 @@ struct Config {
     static let thumbnailSize: CGFloat = 200
     static let jpegQuality: CGFloat = 0.85
 
+    // Link Format Settings
+    static let linkFormatKey = "linkFormat"
+    static let customLinkFormatKey = "customLinkFormat"
+
     // Shared UserDefaults
     static var sharedDefaults: UserDefaults? {
         UserDefaults(suiteName: appGroup)
