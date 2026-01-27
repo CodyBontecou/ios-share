@@ -74,7 +74,6 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   const rateLimiter = new RateLimiter(env.DB);
   const moderator = new ContentModerator(env.DB);
 
-  // Validate auth - check for JWT or API token
   const authHeader = request.headers.get('Authorization');
   const token = Auth.extractBearerToken(authHeader);
 
@@ -82,24 +81,16 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  let user;
-
-  // Try JWT verification first
   const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
   const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
 
-  if (jwtPayload && jwtPayload.type === 'access') {
-    // JWT is valid - get user by ID from payload
-    user = await db.getUserById(jwtPayload.sub);
-    if (!user) {
-      return json({ error: 'User not found' }, 401);
-    }
-  } else {
-    // Fall back to API token lookup (backward compatibility)
-    user = await db.getUserByApiToken(token);
-    if (!user) {
-      return json({ error: 'Invalid token' }, 401);
-    }
+  if (!jwtPayload || jwtPayload.type !== 'access') {
+    return json({ error: 'Invalid token' }, 401);
+  }
+
+  const user = await db.getUserById(jwtPayload.sub);
+  if (!user) {
+    return json({ error: 'User not found' }, 401);
   }
 
   // Check if email is verified
@@ -524,17 +515,23 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
 async function handleGetUser(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
 
-  // Validate auth
   const authHeader = request.headers.get('Authorization');
-  const apiToken = Auth.extractBearerToken(authHeader);
+  const token = Auth.extractBearerToken(authHeader);
 
-  if (!apiToken) {
+  if (!token) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  const user = await db.getUserByApiToken(apiToken);
+  const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+  const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
+
+  if (!jwtPayload || jwtPayload.type !== 'access') {
+    return json({ error: 'Invalid token' }, 401);
+  }
+
+  const user = await db.getUserById(jwtPayload.sub);
   if (!user) {
-    return json({ error: 'Invalid API token' }, 401);
+    return json({ error: 'User not found' }, 401);
   }
 
   // Get storage usage
@@ -553,17 +550,23 @@ async function handleGetUser(request: Request, env: Env): Promise<Response> {
 async function handleGetImages(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
 
-  // Validate auth
   const authHeader = request.headers.get('Authorization');
-  const apiToken = Auth.extractBearerToken(authHeader);
+  const token = Auth.extractBearerToken(authHeader);
 
-  if (!apiToken) {
+  if (!token) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  const user = await db.getUserByApiToken(apiToken);
+  const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+  const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
+
+  if (!jwtPayload || jwtPayload.type !== 'access') {
+    return json({ error: 'Invalid token' }, 401);
+  }
+
+  const user = await db.getUserById(jwtPayload.sub);
   if (!user) {
-    return json({ error: 'Invalid API token' }, 401);
+    return json({ error: 'User not found' }, 401);
   }
 
   // Parse query params
@@ -597,13 +600,17 @@ async function handleAbuseReport(request: Request, env: Env): Promise<Response> 
 
   // Get optional user auth (abuse reports can be anonymous)
   const authHeader = request.headers.get('Authorization');
-  const apiToken = Auth.extractBearerToken(authHeader);
+  const token = Auth.extractBearerToken(authHeader);
   let reporterUserId: string | null = null;
 
-  if (apiToken) {
-    const user = await db.getUserByApiToken(apiToken);
-    if (user) {
-      reporterUserId = user.id;
+  if (token) {
+    const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+    const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
+    if (jwtPayload && jwtPayload.type === 'access') {
+      const user = await db.getUserById(jwtPayload.sub);
+      if (user) {
+        reporterUserId = user.id;
+      }
     }
   }
 
@@ -654,17 +661,23 @@ function handleHealth(): Response {
 async function handleExportInitiate(request: Request, env: Env): Promise<Response> {
   const db = new Database(env.DB);
 
-  // Validate auth
   const authHeader = request.headers.get('Authorization');
-  const apiToken = Auth.extractBearerToken(authHeader);
+  const token = Auth.extractBearerToken(authHeader);
 
-  if (!apiToken) {
+  if (!token) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  const user = await db.getUserByApiToken(apiToken);
+  const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+  const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
+
+  if (!jwtPayload || jwtPayload.type !== 'access') {
+    return json({ error: 'Invalid token' }, 401);
+  }
+
+  const user = await db.getUserById(jwtPayload.sub);
   if (!user) {
-    return json({ error: 'Invalid API token' }, 401);
+    return json({ error: 'User not found' }, 401);
   }
 
   // Check rate limit (1 per hour)
@@ -701,17 +714,23 @@ async function handleExportInitiate(request: Request, env: Env): Promise<Respons
 async function handleExportStatus(request: Request, env: Env, jobId: string): Promise<Response> {
   const db = new Database(env.DB);
 
-  // Validate auth
   const authHeader = request.headers.get('Authorization');
-  const apiToken = Auth.extractBearerToken(authHeader);
+  const token = Auth.extractBearerToken(authHeader);
 
-  if (!apiToken) {
+  if (!token) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  const user = await db.getUserByApiToken(apiToken);
+  const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+  const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
+
+  if (!jwtPayload || jwtPayload.type !== 'access') {
+    return json({ error: 'Invalid token' }, 401);
+  }
+
+  const user = await db.getUserById(jwtPayload.sub);
   if (!user) {
-    return json({ error: 'Invalid API token' }, 401);
+    return json({ error: 'User not found' }, 401);
   }
 
   // Get export job
@@ -744,17 +763,23 @@ async function handleExportStatus(request: Request, env: Env, jobId: string): Pr
 async function handleExportDownload(request: Request, env: Env, jobId: string): Promise<Response> {
   const db = new Database(env.DB);
 
-  // Validate auth
   const authHeader = request.headers.get('Authorization');
-  const apiToken = Auth.extractBearerToken(authHeader);
+  const token = Auth.extractBearerToken(authHeader);
 
-  if (!apiToken) {
+  if (!token) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  const user = await db.getUserByApiToken(apiToken);
+  const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+  const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
+
+  if (!jwtPayload || jwtPayload.type !== 'access') {
+    return json({ error: 'Invalid token' }, 401);
+  }
+
+  const user = await db.getUserById(jwtPayload.sub);
   if (!user) {
-    return json({ error: 'Invalid API token' }, 401);
+    return json({ error: 'User not found' }, 401);
   }
 
   // Get export job
