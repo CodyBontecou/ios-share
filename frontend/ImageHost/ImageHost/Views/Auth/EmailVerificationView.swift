@@ -10,105 +10,127 @@ struct EmailVerificationView: View {
     @State private var successMessage: String?
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: GoogleSpacing.lg) {
-                // Header
-                VStack(spacing: GoogleSpacing.sm) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.googleBlue, .googleYellow],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 80, height: 80)
+        ZStack {
+            Color.brutalBackground.ignoresSafeArea()
 
-                        Image(systemName: "envelope.badge.fill")
-                            .font(.system(size: 36, weight: .medium))
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Hero text
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("VERIFY\nEMAIL")
+                            .font(.system(size: 56, weight: .black))
                             .foregroundStyle(.white)
+                            .lineSpacing(-8)
+
+                        HStack {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 24, height: 1)
+
+                            Text("CHECK YOUR INBOX")
+                                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                                .tracking(2)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 48)
+                    .padding(.bottom, 32)
 
-                    Text("Verify Your Email")
-                        .googleTypography(.headlineMedium)
-
+                    // Email info
                     if let email = authState.currentUser?.email {
-                        Text("We sent a verification code to")
-                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        BrutalCard(backgroundColor: .brutalSurface) {
+                            VStack(spacing: 12) {
+                                Text("CODE SENT TO:")
+                                    .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                                    .tracking(2)
 
-                        Text(email)
-                            .googleTypography(.bodyLarge)
+                                Text(email)
+                                    .brutalTypography(.bodyLarge)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 24)
                     }
-                }
-                .padding(.top, GoogleSpacing.xxl)
-                .padding(.bottom, GoogleSpacing.sm)
 
-                // Info box
-                GoogleCard(backgroundColor: Color.googleBlue.opacity(0.1)) {
-                    HStack(spacing: GoogleSpacing.sm) {
-                        Image(systemName: "info.circle.fill")
-                            .font(.system(size: GoogleIconSize.md))
-                            .foregroundStyle(Color.googleBlue)
+                    // Info box
+                    HStack(spacing: 12) {
+                        Text("!")
+                            .brutalTypography(.mono, color: .brutalWarning)
 
                         Text("You need to verify your email before you can upload images.")
-                            .googleTypography(.bodySmall, color: .googleTextSecondary)
+                            .brutalTypography(.bodySmall, color: .brutalTextSecondary)
                     }
-                }
-                .padding(.horizontal, GoogleSpacing.sm)
+                    .padding(16)
+                    .background(Color.brutalSurface)
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.brutalBorder, lineWidth: 1)
+                    )
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
 
-                // Form
-                VStack(spacing: GoogleSpacing.sm) {
-                    GoogleTextField(
+                    // Form
+                    BrutalTextField(
                         label: "Verification Code",
                         text: $verificationCode,
                         autocapitalization: .never
                     )
-                }
-                .padding(.horizontal, GoogleSpacing.sm)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
 
-                // Messages
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .googleTypography(.bodySmall, color: .googleError)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, GoogleSpacing.sm)
-                }
-
-                if let successMessage = successMessage {
-                    Text(successMessage)
-                        .googleTypography(.bodySmall, color: .googleGreen)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, GoogleSpacing.sm)
-                }
-
-                // Verify button
-                GooglePrimaryButton(
-                    title: "Verify Email",
-                    action: verifyEmail,
-                    isLoading: isLoading,
-                    isDisabled: verificationCode.isEmpty
-                )
-                .padding(.horizontal, GoogleSpacing.sm)
-
-                // Resend code
-                HStack(spacing: GoogleSpacing.xxs) {
-                    if isResending {
-                        ProgressView()
-                            .scaleEffect(0.8)
+                    // Messages
+                    if let errorMessage = errorMessage {
+                        Text(errorMessage.uppercased())
+                            .brutalTypography(.monoSmall, color: .brutalError)
+                            .tracking(1)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 16)
                     }
-                    GoogleTextButton(title: "Resend Code", action: resendCode)
+
+                    if let successMessage = successMessage {
+                        Text(successMessage.uppercased())
+                            .brutalTypography(.monoSmall, color: .brutalSuccess)
+                            .tracking(1)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 16)
+                    }
+
+                    // Verify button
+                    BrutalPrimaryButton(
+                        title: "Verify Email",
+                        action: verifyEmail,
+                        isLoading: isLoading,
+                        isDisabled: verificationCode.isEmpty
+                    )
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+
+                    // Resend code
+                    HStack(spacing: 8) {
+                        if isResending {
+                            ProgressView()
+                                .tint(.white)
+                                .scaleEffect(0.8)
+                        }
+                        BrutalTextButton(title: "Resend Code", action: resendCode)
+                    }
+                    .disabled(isResending)
+
+                    Spacer(minLength: 48)
+
+                    // Logout option
+                    BrutalTextButton(title: "Sign Out", color: .brutalError) {
+                        logout()
+                    }
+                    .padding(.bottom, 32)
                 }
-                .disabled(isResending)
-
-                Spacer(minLength: GoogleSpacing.xxl)
-
-                // Logout option
-                GoogleTextButton(title: "Sign Out", action: logout, color: .googleRed)
-                    .padding(.bottom, GoogleSpacing.lg)
             }
         }
-        .background(Color.googleSurface)
+        .preferredColorScheme(.dark)
     }
 
     private func verifyEmail() {

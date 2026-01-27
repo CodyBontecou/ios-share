@@ -30,59 +30,36 @@ struct HistoryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.googleSurface.ignoresSafeArea()
+                Color.brutalBackground.ignoresSafeArea()
 
                 Group {
                     if isLoading {
-                        VStack(spacing: GoogleSpacing.sm) {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                            Text("Loading photos...")
-                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
-                        }
+                        BrutalLoading(text: "Loading")
                     } else if let error = errorMessage {
-                        VStack(spacing: GoogleSpacing.lg) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.googleRed.opacity(0.1))
-                                    .frame(width: 80, height: 80)
-
-                                Image(systemName: "exclamationmark.triangle")
-                                    .font(.system(size: 36))
-                                    .foregroundStyle(Color.googleRed)
-                            }
-
-                            Text("Something went wrong")
-                                .googleTypography(.titleMedium)
-
-                            Text(error)
-                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, GoogleSpacing.xl)
-
-                            GooglePrimaryButton(title: "Retry", action: loadHistory)
-                                .frame(width: 120)
-                        }
+                        BrutalEmptyState(
+                            title: "Something went wrong",
+                            subtitle: error,
+                            action: loadHistory,
+                            actionTitle: "Retry"
+                        )
                     } else if records.isEmpty {
-                        VStack(spacing: GoogleSpacing.lg) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.googleBlue.opacity(0.1))
-                                    .frame(width: 100, height: 100)
-
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: 44))
-                                    .foregroundStyle(Color.googleBlue)
-                            }
-
-                            Text("No photos yet")
-                                .googleTypography(.titleLarge)
-
-                            Text("Share an image from Photos to get started.\nYour uploads will appear here.")
-                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        VStack(spacing: 24) {
+                            Text("NO\nPHOTOS\nYET")
+                                .font(.system(size: 48, weight: .black))
+                                .foregroundStyle(.white)
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, GoogleSpacing.xl)
+
+                            VStack(spacing: 8) {
+                                Text("Share an image from Photos to get started.")
+                                    .brutalTypography(.bodyMedium, color: .brutalTextSecondary)
+                                    .multilineTextAlignment(.center)
+
+                                Text("Your uploads will appear here.")
+                                    .brutalTypography(.bodyMedium, color: .brutalTextTertiary)
+                                    .multilineTextAlignment(.center)
+                            }
                         }
+                        .padding(32)
                     } else {
                         PhotoGridView(
                             records: records,
@@ -99,20 +76,24 @@ struct HistoryView: View {
                     }
                 }
             }
-            .navigationTitle("Photos")
-            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         showSettings = true
                     } label: {
                         if let user = authState.currentUser {
-                            AvatarView(email: user.email, size: 32)
+                            BrutalAvatar(text: user.email, size: 28)
                         } else {
-                            Image(systemName: "person.circle")
-                                .font(.system(size: 24))
+                            Text("☰")
+                                .brutalTypography(.titleMedium)
                         }
                     }
+                }
+
+                ToolbarItem(placement: .principal) {
+                    Text("PHOTOS")
+                        .brutalTypography(.mono)
+                        .tracking(2)
                 }
 
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -124,11 +105,14 @@ struct HistoryView: View {
                         }
                         .disabled(records.isEmpty)
                     } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.system(size: 20))
+                        Text("•••")
+                            .brutalTypography(.titleMedium)
                     }
                 }
             }
+            .toolbarBackground(Color.brutalBackground, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(item: $selectedRecord) { record in
                 UploadDetailView(record: record, onDelete: {
                     deleteRecord(record)
@@ -140,7 +124,7 @@ struct HistoryView: View {
                 }
             }
             .sheet(isPresented: $showingExportSheet) {
-                ExportSheetView(
+                BrutalExportSheetView(
                     exportState: $exportState,
                     exportProgress: $exportProgress,
                     exportError: $exportError,
@@ -163,6 +147,7 @@ struct HistoryView: View {
             .onAppear {
                 loadHistory()
             }
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -279,9 +264,9 @@ struct HistoryView: View {
     }
 }
 
-// MARK: - Export Sheet View
+// MARK: - Brutal Export Sheet View
 
-struct ExportSheetView: View {
+struct BrutalExportSheetView: View {
     @Binding var exportState: HistoryView.ExportState
     @Binding var exportProgress: Double
     @Binding var exportError: String?
@@ -294,131 +279,107 @@ struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: GoogleSpacing.lg) {
+        ZStack {
+            Color.brutalBackground.ignoresSafeArea()
+
+            VStack(spacing: 24) {
                 switch exportState {
                 case .idle:
-                    VStack(spacing: GoogleSpacing.sm) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.googleBlue.opacity(0.1))
-                                .frame(width: 80, height: 80)
+                    VStack(spacing: 24) {
+                        Text("EXPORT")
+                            .font(.system(size: 40, weight: .black))
+                            .foregroundStyle(.white)
 
-                            Image(systemName: "square.and.arrow.down.on.square")
-                                .font(.system(size: 36))
-                                .foregroundStyle(Color.googleBlue)
-                        }
-
-                        Text("Export All Images")
-                            .googleTypography(.titleLarge)
-
-                        Text("This will create a ZIP archive of all your uploaded images.")
-                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        Text("Create a ZIP archive of all your uploaded images.")
+                            .brutalTypography(.bodyMedium, color: .brutalTextSecondary)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, GoogleSpacing.lg)
+                            .padding(.horizontal, 24)
 
-                        GooglePrimaryButton(
+                        BrutalPrimaryButton(
                             title: "Start Export",
                             action: onStartExport
                         )
-                        .padding(.horizontal, GoogleSpacing.lg)
-                        .padding(.top, GoogleSpacing.sm)
+                        .padding(.horizontal, 24)
                     }
 
                 case .starting:
-                    VStack(spacing: GoogleSpacing.sm) {
-                        ProgressView()
-                            .scaleEffect(1.5)
-
-                        Text("Starting export...")
-                            .googleTypography(.titleMedium)
-                    }
+                    BrutalLoading(text: "Starting")
 
                 case .exporting(let progress):
-                    VStack(spacing: GoogleSpacing.sm) {
-                        CircularProgressView(progress: progress)
+                    VStack(spacing: 24) {
+                        Text("\(Int(progress * 100))%")
+                            .font(.system(size: 56, weight: .black, design: .monospaced))
+                            .foregroundStyle(.white)
 
-                        Text("Exporting images...")
-                            .googleTypography(.titleMedium)
+                        BrutalProgressBar(progress: progress)
+                            .padding(.horizontal, 48)
 
-                        Text("\(Int(progress * 100))% complete")
-                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        Text("EXPORTING IMAGES")
+                            .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                            .tracking(2)
 
-                        GoogleSecondaryButton(title: "Cancel", action: {
+                        BrutalSecondaryButton(title: "Cancel") {
                             onCancelExport()
                             dismiss()
-                        })
-                        .frame(width: 120)
+                        }
+                        .frame(width: 140)
                     }
 
                 case .downloading(let progress):
-                    VStack(spacing: GoogleSpacing.sm) {
-                        CircularProgressView(progress: progress)
+                    VStack(spacing: 24) {
+                        Text("\(Int(progress * 100))%")
+                            .font(.system(size: 56, weight: .black, design: .monospaced))
+                            .foregroundStyle(.white)
 
-                        Text("Downloading archive...")
-                            .googleTypography(.titleMedium)
+                        BrutalProgressBar(progress: progress)
+                            .padding(.horizontal, 48)
 
-                        Text("\(Int(progress * 100))% complete")
-                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        Text("DOWNLOADING ARCHIVE")
+                            .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                            .tracking(2)
                     }
 
                 case .complete:
-                    VStack(spacing: GoogleSpacing.sm) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.googleGreen.opacity(0.1))
-                                .frame(width: 80, height: 80)
+                    VStack(spacing: 24) {
+                        Text("✓")
+                            .font(.system(size: 64, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.brutalSuccess)
 
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 36, weight: .medium))
-                                .foregroundStyle(Color.googleGreen)
-                        }
-
-                        Text("Export Complete!")
-                            .googleTypography(.titleLarge)
-
-                        Text("Your images have been exported successfully.")
-                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        Text("EXPORT COMPLETE")
+                            .brutalTypography(.titleMedium)
 
                         if let url = exportedFileURL {
-                            GooglePrimaryButton(
+                            BrutalPrimaryButton(
                                 title: "Share Archive",
-                                action: { onShare(url) },
-                                icon: "square.and.arrow.up"
+                                action: { onShare(url) }
                             )
-                            .padding(.horizontal, GoogleSpacing.lg)
+                            .padding(.horizontal, 24)
                         }
 
-                        GoogleTextButton(title: "Done") {
+                        BrutalTextButton(title: "Done") {
                             onDismiss()
                             dismiss()
                         }
                     }
 
                 case .error(let message):
-                    VStack(spacing: GoogleSpacing.sm) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.googleRed.opacity(0.1))
-                                .frame(width: 80, height: 80)
+                    VStack(spacing: 24) {
+                        Text("✕")
+                            .font(.system(size: 64, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.brutalError)
 
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.system(size: 36))
-                                .foregroundStyle(Color.googleRed)
-                        }
-
-                        Text("Export Failed")
-                            .googleTypography(.titleLarge)
+                        Text("EXPORT FAILED")
+                            .brutalTypography(.titleMedium)
 
                         Text(message)
-                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                            .brutalTypography(.bodySmall, color: .brutalTextSecondary)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, GoogleSpacing.lg)
+                            .padding(.horizontal, 24)
 
-                        GooglePrimaryButton(title: "Try Again", action: onStartExport)
-                            .frame(width: 140)
+                        BrutalPrimaryButton(title: "Try Again", action: onStartExport)
+                            .frame(width: 160)
 
-                        GoogleTextButton(title: "Cancel") {
+                        BrutalTextButton(title: "Cancel") {
                             onDismiss()
                             dismiss()
                         }
@@ -427,45 +388,9 @@ struct ExportSheetView: View {
 
                 Spacer()
             }
-            .padding(.top, GoogleSpacing.lg)
-            .background(Color.googleSurface)
-            .navigationTitle("Export Images")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if case .idle = exportState {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                    }
-                }
-            }
+            .padding(.top, 48)
         }
-    }
-}
-
-// MARK: - Circular Progress View
-
-struct CircularProgressView: View {
-    let progress: Double
-    var size: CGFloat = 80
-    var lineWidth: CGFloat = 8
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.googleOutline.opacity(0.3), lineWidth: lineWidth)
-
-            Circle()
-                .trim(from: 0, to: CGFloat(progress))
-                .stroke(Color.googleBlue, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .animation(.easeInOut(duration: 0.3), value: progress)
-
-            Text("\(Int(progress * 100))%")
-                .googleTypography(.labelLarge)
-        }
-        .frame(width: size, height: size)
+        .preferredColorScheme(.dark)
     }
 }
 

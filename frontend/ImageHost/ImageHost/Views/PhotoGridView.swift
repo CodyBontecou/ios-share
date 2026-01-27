@@ -13,7 +13,7 @@ struct PhotoGridView: View {
     @GestureState private var magnification: CGFloat = 1.0
 
     private var columns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: GoogleGridSpacing.itemSpacing), count: gridColumns)
+        Array(repeating: GridItem(.flexible(), spacing: 2), count: gridColumns)
     }
 
     private var groupedRecords: [(String, [UploadRecord])] {
@@ -28,9 +28,9 @@ struct PhotoGridView: View {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                 ForEach(groupedRecords, id: \.0) { dateKey, sectionRecords in
                     Section {
-                        LazyVGrid(columns: columns, spacing: GoogleGridSpacing.itemSpacing) {
+                        LazyVGrid(columns: columns, spacing: 2) {
                             ForEach(sectionRecords) { record in
-                                PhotoGridItem(
+                                BrutalPhotoGridItem(
                                     record: record,
                                     isSelected: selectedIds.contains(record.id),
                                     isSelectionMode: isSelectionMode,
@@ -43,9 +43,8 @@ struct PhotoGridView: View {
                                 )
                             }
                         }
-                        .padding(.horizontal, GoogleGridSpacing.gridInsets)
                     } header: {
-                        DateSectionHeader(dateKey: dateKey)
+                        BrutalDateSectionHeader(dateKey: dateKey)
                     }
                 }
             }
@@ -62,15 +61,18 @@ struct PhotoGridView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if isSelectionMode {
-                    Button("Cancel") {
+                    Button {
                         exitSelectionMode()
+                    } label: {
+                        Text("CANCEL")
+                            .brutalTypography(.monoSmall)
                     }
                 }
             }
         }
         .safeAreaInset(edge: .bottom) {
             if isSelectionMode && !selectedIds.isEmpty {
-                SelectionActionBar(
+                BrutalSelectionActionBar(
                     selectedCount: selectedIds.count,
                     onDelete: { showDeleteConfirmation = true },
                     onCancel: { exitSelectionMode() }
@@ -155,9 +157,9 @@ struct PhotoGridView: View {
     }
 }
 
-// MARK: - Photo Grid Item
+// MARK: - Brutal Photo Grid Item
 
-struct PhotoGridItem: View {
+struct BrutalPhotoGridItem: View {
     let record: UploadRecord
     let isSelected: Bool
     let isSelectionMode: Bool
@@ -177,20 +179,35 @@ struct PhotoGridItem: View {
                         .clipped()
                 } else {
                     Rectangle()
-                        .fill(Color.googleSurfaceSecondary)
+                        .fill(Color.brutalSurface)
                         .overlay {
-                            Image(systemName: "photo")
-                                .font(.system(size: 24))
-                                .foregroundStyle(Color.googleTextTertiary)
+                            Text("□")
+                                .brutalTypography(.titleLarge, color: .brutalTextTertiary)
                         }
                 }
 
                 // Selection overlay
                 if isSelectionMode {
-                    Color.black.opacity(isSelected ? 0.3 : 0)
+                    Color.black.opacity(isSelected ? 0.4 : 0)
 
-                    SelectionCheckmark(isSelected: isSelected)
-                        .padding(GoogleSpacing.xxs)
+                    // Selection indicator
+                    ZStack {
+                        if isSelected {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 24, height: 24)
+
+                            Text("✓")
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.black)
+                        } else {
+                            Rectangle()
+                                .stroke(Color.white, lineWidth: 2)
+                                .frame(width: 24, height: 24)
+                                .background(Color.black.opacity(0.3))
+                        }
+                    }
+                    .padding(8)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.width)
@@ -206,49 +223,53 @@ struct PhotoGridItem: View {
     }
 }
 
-// MARK: - Date Section Header
+// MARK: - Brutal Date Section Header
 
-struct DateSectionHeader: View {
+struct BrutalDateSectionHeader: View {
     let dateKey: String
 
     var body: some View {
         HStack {
-            Text(dateKey)
-                .googleTypography(.titleSmall)
+            Text(dateKey.uppercased())
+                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                .tracking(2)
             Spacer()
         }
-        .padding(.horizontal, GoogleSpacing.sm)
-        .padding(.vertical, GoogleSpacing.xs)
-        .background(Color.googleSurface.opacity(0.95))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.brutalBackground.opacity(0.95))
     }
 }
 
-// MARK: - Selection Action Bar
+// MARK: - Brutal Selection Action Bar
 
-struct SelectionActionBar: View {
+struct BrutalSelectionActionBar: View {
     let selectedCount: Int
     let onDelete: () -> Void
     let onCancel: () -> Void
 
     var body: some View {
-        HStack(spacing: GoogleSpacing.lg) {
-            Text("\(selectedCount) selected")
-                .googleTypography(.labelLarge)
+        HStack(spacing: 24) {
+            Text("\(selectedCount) SELECTED")
+                .brutalTypography(.mono)
+                .tracking(1)
 
             Spacer()
 
             Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.system(size: GoogleIconSize.md))
-                    .foregroundStyle(Color.googleRed)
+                Text("DELETE")
+                    .brutalTypography(.mono, color: .brutalError)
+                    .tracking(1)
             }
         }
-        .padding(.horizontal, GoogleSpacing.lg)
-        .padding(.vertical, GoogleSpacing.sm)
-        .background(
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .background(Color.brutalSurface)
+        .overlay(
             Rectangle()
-                .fill(Color.googleSurfaceSecondary)
-                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: -4)
+                .stroke(Color.brutalBorder, lineWidth: 1)
+                .padding(.bottom, -1)
+            , alignment: .top
         )
     }
 }

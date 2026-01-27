@@ -10,109 +10,108 @@ struct ForgotPasswordView: View {
     @State private var showResetPassword = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: GoogleSpacing.lg) {
-                // Header
-                VStack(spacing: GoogleSpacing.sm) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.googleYellow, .googleRed],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 80, height: 80)
+        ZStack {
+            Color.brutalBackground.ignoresSafeArea()
 
-                        Image(systemName: "key.fill")
-                            .font(.system(size: 36, weight: .medium))
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Hero text
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("RESET\nPASS-\nWORD")
+                            .font(.system(size: 56, weight: .black))
                             .foregroundStyle(.white)
-                    }
+                            .lineSpacing(-8)
 
-                    Text("Reset Password")
-                        .googleTypography(.headlineMedium)
+                        HStack {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 24, height: 1)
 
-                    Text(isEmailSent
-                         ? "Check your email for a reset code"
-                         : "Enter your email to receive a password reset code")
-                        .googleTypography(.bodyMedium, color: .googleTextSecondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, GoogleSpacing.lg)
-                .padding(.bottom, GoogleSpacing.sm)
-
-                if isEmailSent {
-                    // Success state
-                    GoogleCard(backgroundColor: Color.googleGreen.opacity(0.1)) {
-                        VStack(spacing: GoogleSpacing.sm) {
-                            Image(systemName: "envelope.badge.fill")
-                                .font(.system(size: 48))
-                                .foregroundStyle(Color.googleGreen)
-
-                            Text("We've sent a password reset code to:")
-                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
-
-                            Text(email)
-                                .googleTypography(.bodyLarge)
-
-                            Text("Check your spam folder if you don't see it.")
-                                .googleTypography(.labelSmall, color: .googleTextTertiary)
+                            Text(isEmailSent ? "CHECK YOUR EMAIL" : "ENTER YOUR EMAIL")
+                                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                                .tracking(2)
                         }
                     }
-                    .padding(.horizontal, GoogleSpacing.sm)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 40)
 
-                    // Enter reset code button
-                    GooglePrimaryButton(
-                        title: "Enter Reset Code",
-                        action: { showResetPassword = true }
-                    )
-                    .padding(.horizontal, GoogleSpacing.sm)
+                    if isEmailSent {
+                        // Success state
+                        VStack(spacing: 24) {
+                            BrutalCard(backgroundColor: .brutalSurface) {
+                                VStack(spacing: 16) {
+                                    Text("✓")
+                                        .font(.system(size: 48, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(Color.brutalSuccess)
 
-                    // Send again button
-                    GoogleTextButton(title: "Send Again") {
-                        isEmailSent = false
+                                    Text("RESET CODE SENT TO:")
+                                        .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                                        .tracking(2)
+
+                                    Text(email)
+                                        .brutalTypography(.bodyLarge)
+
+                                    Text("Check your spam folder if you don't see it.")
+                                        .brutalTypography(.bodySmall, color: .brutalTextTertiary)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .padding(.horizontal, 24)
+
+                            BrutalPrimaryButton(
+                                title: "Enter Reset Code",
+                                action: { showResetPassword = true }
+                            )
+                            .padding(.horizontal, 24)
+
+                            BrutalTextButton(title: "Send Again") {
+                                isEmailSent = false
+                            }
+                        }
+                    } else {
+                        // Form
+                        VStack(spacing: 24) {
+                            BrutalTextField(
+                                label: "Email",
+                                text: $email,
+                                keyboardType: .emailAddress,
+                                textContentType: .emailAddress,
+                                autocapitalization: .never
+                            )
+                            .padding(.horizontal, 24)
+
+                            // Error message
+                            if let errorMessage = errorMessage {
+                                Text(errorMessage.uppercased())
+                                    .brutalTypography(.monoSmall, color: .brutalError)
+                                    .tracking(1)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 24)
+                            }
+
+                            BrutalPrimaryButton(
+                                title: "Send Reset Code",
+                                action: sendResetEmail,
+                                isLoading: isLoading,
+                                isDisabled: !isFormValid
+                            )
+                            .padding(.horizontal, 24)
+                        }
                     }
-                } else {
-                    // Form
-                    VStack(spacing: GoogleSpacing.sm) {
-                        GoogleTextField(
-                            label: "Email",
-                            text: $email,
-                            keyboardType: .emailAddress,
-                            textContentType: .emailAddress,
-                            autocapitalization: .never
-                        )
-                    }
-                    .padding(.horizontal, GoogleSpacing.sm)
 
-                    // Error message
-                    if let errorMessage = errorMessage {
-                        Text(errorMessage)
-                            .googleTypography(.bodySmall, color: .googleError)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, GoogleSpacing.sm)
-                    }
-
-                    // Send button
-                    GooglePrimaryButton(
-                        title: "Send Reset Code",
-                        action: sendResetEmail,
-                        isLoading: isLoading,
-                        isDisabled: !isFormValid
-                    )
-                    .padding(.horizontal, GoogleSpacing.sm)
+                    Spacer()
                 }
-
-                Spacer()
             }
         }
-        .background(Color.googleSurface)
-        .navigationTitle("Forgot Password")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.brutalBackground, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .navigationDestination(isPresented: $showResetPassword) {
             ResetPasswordView()
         }
+        .preferredColorScheme(.dark)
     }
 
     private var isFormValid: Bool {

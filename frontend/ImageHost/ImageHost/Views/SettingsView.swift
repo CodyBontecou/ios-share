@@ -13,114 +13,195 @@ struct SettingsView: View {
     @State private var showLogoutConfirmation = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: GoogleSpacing.lg) {
-                // Profile Header Card
-                if let user = authState.currentUser {
-                    ProfileHeaderCard(user: user, isLoading: isLoadingUser)
-                        .padding(.horizontal, GoogleSpacing.sm)
-                        .padding(.top, GoogleSpacing.sm)
-                }
+        ZStack {
+            Color.brutalBackground.ignoresSafeArea()
 
-                // Storage Section
-                if let user = authState.currentUser {
-                    StorageCard(user: user)
-                        .padding(.horizontal, GoogleSpacing.sm)
-                }
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("SET-\nTINGS")
+                            .font(.system(size: 56, weight: .black))
+                            .foregroundStyle(.white)
+                            .lineSpacing(-8)
 
-                // Actions Section
-                GoogleCard(padding: 0) {
-                    VStack(spacing: 0) {
-                        SettingsRow(
-                            icon: "arrow.clockwise",
-                            title: "Refresh Account",
-                            subtitle: "Update storage and plan info",
-                            iconColor: .googleBlue,
-                            showChevron: false
-                        ) {
-                            refreshUserInfo()
-                        }
-                        .padding(.horizontal, GoogleSpacing.sm)
-                        .overlay(alignment: .trailing) {
-                            if isLoadingUser {
-                                ProgressView()
-                                    .padding(.trailing, GoogleSpacing.sm)
-                            }
-                        }
-                        .disabled(isLoadingUser)
-
-                        Divider().padding(.leading, GoogleSpacing.xxxl + GoogleSpacing.sm)
-
-                        SettingsRow(
-                            icon: "wifi",
-                            title: "Test Connection",
-                            subtitle: "Verify server connectivity",
-                            iconColor: .googleGreen,
-                            showChevron: false
-                        ) {
-                            testConnection()
-                        }
-                        .padding(.horizontal, GoogleSpacing.sm)
-                        .overlay(alignment: .trailing) {
-                            if isTesting {
-                                ProgressView()
-                                    .padding(.trailing, GoogleSpacing.sm)
-                            }
-                        }
-                        .disabled(isTesting)
-
-                        Divider().padding(.leading, GoogleSpacing.xxxl + GoogleSpacing.sm)
-
-                        SettingsRow(
-                            icon: "trash",
-                            title: "Clear Upload History",
-                            subtitle: "Remove local history only",
-                            iconColor: .googleRed,
-                            showChevron: false
-                        ) {
-                            showClearConfirmation = true
-                        }
-                        .padding(.horizontal, GoogleSpacing.sm)
-                    }
-                }
-                .padding(.horizontal, GoogleSpacing.sm)
-
-                // Server Info
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.googleGreen)
-                    Text("Connected to \(Config.backendURL)")
-                        .googleTypography(.labelSmall, color: .googleTextTertiary)
-                }
-                .padding(.top, GoogleSpacing.xxs)
-
-                // Logout Section
-                GoogleCard(padding: 0) {
-                    Button {
-                        showLogoutConfirmation = true
-                    } label: {
                         HStack {
-                            Spacer()
-                            Text("Sign Out")
-                                .googleTypography(.labelLarge, color: .googleRed)
-                            Spacer()
-                        }
-                        .padding(.vertical, GoogleSpacing.sm)
-                    }
-                }
-                .padding(.horizontal, GoogleSpacing.sm)
-                .padding(.top, GoogleSpacing.sm)
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 24, height: 1)
 
-                Spacer(minLength: GoogleSpacing.xxl)
+                            Text("ACCOUNT & PREFERENCES")
+                                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                                .tracking(2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 32)
+
+                    // Profile Section
+                    if let user = authState.currentUser {
+                        VStack(spacing: 0) {
+                            BrutalSectionHeader(title: "Account")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 12)
+
+                            BrutalCard {
+                                HStack(spacing: 16) {
+                                    BrutalAvatar(text: user.email, size: 48)
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(user.email)
+                                            .brutalTypography(.bodyLarge)
+                                            .lineLimit(1)
+
+                                        HStack(spacing: 8) {
+                                            BrutalBadge(
+                                                text: user.subscriptionTier,
+                                                style: user.subscriptionTier.lowercased() == "free" ? .default : .success
+                                            )
+
+                                            if user.emailVerified {
+                                                Text("✓ VERIFIED")
+                                                    .brutalTypography(.monoSmall, color: .brutalSuccess)
+                                                    .tracking(1)
+                                            }
+                                        }
+                                    }
+
+                                    Spacer()
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                        }
+                        .padding(.bottom, 24)
+                    }
+
+                    // Storage Section
+                    if let user = authState.currentUser {
+                        VStack(spacing: 0) {
+                            BrutalSectionHeader(title: "Storage")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 12)
+
+                            BrutalCard {
+                                VStack(spacing: 16) {
+                                    HStack {
+                                        Text(user.storageUsedFormatted)
+                                            .brutalTypography(.titleLarge)
+
+                                        Text("/")
+                                            .brutalTypography(.titleLarge, color: .brutalTextTertiary)
+
+                                        Text(user.storageLimitFormatted)
+                                            .brutalTypography(.titleLarge, color: .brutalTextSecondary)
+
+                                        Spacer()
+
+                                        Text("\(user.storagePercentUsed)%")
+                                            .brutalTypography(.mono, color: user.storagePercentUsed > 90 ? .brutalError : .brutalTextSecondary)
+                                    }
+
+                                    BrutalProgressBar(progress: Double(user.storagePercentUsed) / 100.0)
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                        }
+                        .padding(.bottom, 24)
+                    }
+
+                    // Actions Section
+                    VStack(spacing: 0) {
+                        BrutalSectionHeader(title: "Actions")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 12)
+
+                        BrutalCard(showBorder: true) {
+                            VStack(spacing: 0) {
+                                BrutalRow(
+                                    title: "Refresh Account",
+                                    subtitle: "Update storage and plan info",
+                                    showChevron: true
+                                ) {
+                                    refreshUserInfo()
+                                }
+                                .overlay(alignment: .trailing) {
+                                    if isLoadingUser {
+                                        ProgressView()
+                                            .tint(.white)
+                                    }
+                                }
+                                .disabled(isLoadingUser)
+
+                                Rectangle()
+                                    .fill(Color.brutalBorder)
+                                    .frame(height: 1)
+
+                                BrutalRow(
+                                    title: "Test Connection",
+                                    subtitle: "Verify server connectivity",
+                                    showChevron: true
+                                ) {
+                                    testConnection()
+                                }
+                                .overlay(alignment: .trailing) {
+                                    if isTesting {
+                                        ProgressView()
+                                            .tint(.white)
+                                    }
+                                }
+                                .disabled(isTesting)
+
+                                Rectangle()
+                                    .fill(Color.brutalBorder)
+                                    .frame(height: 1)
+
+                                BrutalRow(
+                                    title: "Clear Upload History",
+                                    subtitle: "Remove local history only",
+                                    destructive: true
+                                ) {
+                                    showClearConfirmation = true
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                    }
+                    .padding(.bottom, 24)
+
+                    // Server Info
+                    HStack(spacing: 8) {
+                        Text("●")
+                            .brutalTypography(.monoSmall, color: .brutalSuccess)
+
+                        Text(Config.backendURL)
+                            .brutalTypography(.monoSmall, color: .brutalTextTertiary)
+                    }
+                    .padding(.bottom, 24)
+
+                    // Sign Out
+                    BrutalSecondaryButton(title: "Sign Out") {
+                        showLogoutConfirmation = true
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 48)
+                }
             }
         }
-        .background(Color.googleSurface)
-        .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.brutalBackground, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button("Done") {
+                Button {
                     dismiss()
+                } label: {
+                    Text("DONE")
+                        .brutalTypography(.mono)
                 }
             }
         }
@@ -159,6 +240,7 @@ struct SettingsView: View {
         } message: {
             Text("Are you sure you want to sign out?")
         }
+        .preferredColorScheme(.dark)
     }
 
     private func refreshUserInfo() {
@@ -212,143 +294,6 @@ struct SettingsView: View {
         alertTitle = title
         alertMessage = message
         showAlert = true
-    }
-}
-
-// MARK: - Profile Header Card
-
-struct ProfileHeaderCard: View {
-    let user: User
-    let isLoading: Bool
-
-    var body: some View {
-        GoogleCard {
-            HStack(spacing: GoogleSpacing.sm) {
-                AvatarView(email: user.email, size: 56, backgroundColor: .googleBlue)
-
-                VStack(alignment: .leading, spacing: GoogleSpacing.xxxs) {
-                    Text(user.email)
-                        .googleTypography(.titleMedium)
-                        .lineLimit(1)
-
-                    HStack(spacing: GoogleSpacing.xxs) {
-                        PlanBadge(tier: user.subscriptionTier)
-
-                        if user.emailVerified {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 14))
-                                .foregroundStyle(Color.googleGreen)
-                        }
-                    }
-                }
-
-                Spacer()
-            }
-        }
-    }
-}
-
-// MARK: - Plan Badge
-
-struct PlanBadge: View {
-    let tier: String
-
-    private var badgeColor: Color {
-        switch tier.lowercased() {
-        case "premium", "pro":
-            return .googleYellow
-        case "enterprise":
-            return .googleBlue
-        default:
-            return .googleTextTertiary
-        }
-    }
-
-    var body: some View {
-        Text(tier.capitalized)
-            .googleTypography(.labelSmall, color: badgeColor)
-            .padding(.horizontal, GoogleSpacing.xxs)
-            .padding(.vertical, 2)
-            .background(
-                RoundedRectangle(cornerRadius: GoogleCornerRadius.xs)
-                    .fill(badgeColor.opacity(0.15))
-            )
-    }
-}
-
-// MARK: - Storage Card
-
-struct StorageCard: View {
-    let user: User
-
-    var body: some View {
-        GoogleCard {
-            VStack(spacing: GoogleSpacing.sm) {
-                HStack {
-                    Text("Storage")
-                        .googleTypography(.titleSmall)
-                    Spacer()
-                }
-
-                HStack(alignment: .center, spacing: GoogleSpacing.lg) {
-                    CircularStorageView(
-                        usedBytes: user.storageUsedBytes,
-                        limitBytes: user.storageLimitBytes,
-                        size: 100,
-                        lineWidth: 10
-                    )
-
-                    VStack(alignment: .leading, spacing: GoogleSpacing.xxs) {
-                        StorageDetailRow(
-                            color: user.storagePercentUsed > 90 ? .googleRed : .googleBlue,
-                            label: "Used",
-                            value: user.storageUsedFormatted
-                        )
-                        StorageDetailRow(
-                            color: .googleOutline,
-                            label: "Available",
-                            value: formatAvailable(user)
-                        )
-                        StorageDetailRow(
-                            color: .googleTextTertiary,
-                            label: "Total",
-                            value: user.storageLimitFormatted
-                        )
-                    }
-
-                    Spacer()
-                }
-            }
-        }
-    }
-
-    private func formatAvailable(_ user: User) -> String {
-        let available = user.storageLimitBytes - user.storageUsedBytes
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useGB, .useMB, .useKB]
-        formatter.countStyle = .binary
-        return formatter.string(fromByteCount: Int64(max(0, available)))
-    }
-}
-
-// MARK: - Storage Detail Row
-
-struct StorageDetailRow: View {
-    let color: Color
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack(spacing: GoogleSpacing.xxs) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .googleTypography(.labelSmall, color: .googleTextSecondary)
-            Spacer()
-            Text(value)
-                .googleTypography(.labelMedium)
-        }
     }
 }
 

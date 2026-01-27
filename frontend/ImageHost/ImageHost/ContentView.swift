@@ -2,25 +2,30 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var authState: AuthState
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var selectedTab = 0
 
     var body: some View {
         Group {
-            if authState.isLoading {
-                // Loading state with Google branding
+            if !hasCompletedOnboarding {
+                // First time user - show onboarding
+                OnboardingView()
+            } else if authState.isLoading {
+                // Loading state with brutal design
                 ZStack {
-                    Color.googleSurface.ignoresSafeArea()
+                    Color.brutalBackground.ignoresSafeArea()
 
-                    VStack(spacing: GoogleSpacing.lg) {
-                        AppLogo(size: 80)
+                    VStack(spacing: 24) {
+                        Image("AppIconImage")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                        ProgressView()
-                            .scaleEffect(1.2)
-
-                        Text("Loading...")
-                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        BrutalLoading()
                     }
                 }
+                .preferredColorScheme(.dark)
             } else if !authState.isAuthenticated {
                 // Not logged in - show login
                 LoginView()
@@ -36,13 +41,16 @@ struct ContentView: View {
                         }
                         .tag(0)
 
-                    SettingsView()
-                        .tabItem {
-                            Label("Settings", systemImage: "gearshape")
-                        }
-                        .tag(1)
+                    NavigationStack {
+                        SettingsView()
+                    }
+                    .tabItem {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                    .tag(1)
                 }
-                .tint(.googleBlue)
+                .tint(.white)
+                .preferredColorScheme(.dark)
             }
         }
     }

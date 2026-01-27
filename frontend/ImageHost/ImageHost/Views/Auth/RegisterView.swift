@@ -11,109 +11,114 @@ struct RegisterView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: GoogleSpacing.lg) {
-                // Header
-                VStack(spacing: GoogleSpacing.sm) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.googleBlue, .googleGreen],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 80, height: 80)
+        ZStack {
+            Color.brutalBackground.ignoresSafeArea()
 
-                        Image(systemName: "person.badge.plus")
-                            .font(.system(size: 36, weight: .medium))
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Hero text
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("CREATE\nACCOUNT")
+                            .font(.system(size: 56, weight: .black))
                             .foregroundStyle(.white)
-                    }
+                            .lineSpacing(-8)
 
-                    Text("Create Account")
-                        .googleTypography(.headlineMedium)
+                        HStack {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 24, height: 1)
 
-                    Text("Sign up to start uploading images")
-                        .googleTypography(.bodyMedium, color: .googleTextSecondary)
-                }
-                .padding(.top, GoogleSpacing.lg)
-                .padding(.bottom, GoogleSpacing.sm)
-
-                // Form
-                VStack(spacing: GoogleSpacing.sm) {
-                    GoogleTextField(
-                        label: "Email",
-                        text: $email,
-                        keyboardType: .emailAddress,
-                        textContentType: .emailAddress,
-                        autocapitalization: .never
-                    )
-
-                    GoogleTextField(
-                        label: "Password",
-                        text: $password,
-                        isSecure: true,
-                        textContentType: .newPassword
-                    )
-
-                    GoogleTextField(
-                        label: "Confirm Password",
-                        text: $confirmPassword,
-                        isSecure: true,
-                        textContentType: .newPassword
-                    )
-
-                    // Password requirements
-                    GoogleCard(backgroundColor: Color.googleSurfaceSecondary, padding: GoogleSpacing.sm) {
-                        VStack(alignment: .leading, spacing: GoogleSpacing.xxs) {
-                            PasswordRequirement(
-                                text: "At least 8 characters",
-                                isMet: password.count >= 8
-                            )
-                            PasswordRequirement(
-                                text: "Passwords match",
-                                isMet: !password.isEmpty && password == confirmPassword
-                            )
+                            Text("START UPLOADING IMAGES")
+                                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                                .tracking(2)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }
-                .padding(.horizontal, GoogleSpacing.sm)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 40)
 
-                // Error message
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .googleTypography(.bodySmall, color: .googleError)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, GoogleSpacing.sm)
-                }
+                    // Form
+                    VStack(spacing: 16) {
+                        BrutalTextField(
+                            label: "Email",
+                            text: $email,
+                            keyboardType: .emailAddress,
+                            textContentType: .emailAddress,
+                            autocapitalization: .never
+                        )
 
-                // Register button
-                GooglePrimaryButton(
-                    title: "Create Account",
-                    action: register,
-                    isLoading: isLoading,
-                    isDisabled: !isFormValid
-                )
-                .padding(.horizontal, GoogleSpacing.sm)
+                        BrutalTextField(
+                            label: "Password",
+                            text: $password,
+                            isSecure: true,
+                            textContentType: .newPassword
+                        )
 
-                Spacer(minLength: GoogleSpacing.xxl)
+                        BrutalTextField(
+                            label: "Confirm Password",
+                            text: $confirmPassword,
+                            isSecure: true,
+                            textContentType: .newPassword
+                        )
 
-                // Back to login
-                HStack(spacing: GoogleSpacing.xxxs) {
-                    Text("Already have an account?")
-                        .googleTypography(.bodySmall, color: .googleTextSecondary)
-                    GoogleTextButton(title: "Sign In") {
-                        dismiss()
+                        // Password requirements
+                        BrutalCard(backgroundColor: .brutalSurface) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                BrutalRequirement(
+                                    text: "At least 8 characters",
+                                    isMet: password.count >= 8
+                                )
+                                BrutalRequirement(
+                                    text: "Passwords match",
+                                    isMet: !password.isEmpty && password == confirmPassword
+                                )
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
+                    .padding(.horizontal, 24)
+
+                    // Error message
+                    if let errorMessage = errorMessage {
+                        Text(errorMessage.uppercased())
+                            .brutalTypography(.monoSmall, color: .brutalError)
+                            .tracking(1)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                            .padding(.top, 16)
+                    }
+
+                    // Register button
+                    BrutalPrimaryButton(
+                        title: "Create Account",
+                        action: register,
+                        isLoading: isLoading,
+                        isDisabled: !isFormValid
+                    )
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+
+                    Spacer(minLength: 48)
+
+                    // Back to login
+                    HStack(spacing: 8) {
+                        Text("HAVE AN ACCOUNT?")
+                            .brutalTypography(.monoSmall, color: .brutalTextTertiary)
+                            .tracking(1)
+
+                        BrutalTextButton(title: "Sign In", color: .white) {
+                            dismiss()
+                        }
+                    }
+                    .padding(.bottom, 32)
                 }
-                .padding(.bottom, GoogleSpacing.lg)
             }
         }
-        .background(Color.googleSurface)
-        .navigationTitle("Register")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.brutalBackground, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .preferredColorScheme(.dark)
     }
 
     private var isFormValid: Bool {
@@ -155,17 +160,18 @@ struct RegisterView: View {
     }
 }
 
-struct PasswordRequirement: View {
+struct BrutalRequirement: View {
     let text: String
     let isMet: Bool
 
     var body: some View {
-        HStack(spacing: GoogleSpacing.xxs) {
-            Image(systemName: isMet ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(isMet ? Color.googleGreen : Color.googleTextTertiary)
-                .font(.system(size: 14))
-            Text(text)
-                .googleTypography(.bodySmall, color: isMet ? .googleTextPrimary : .googleTextSecondary)
+        HStack(spacing: 8) {
+            Text(isMet ? "✓" : "○")
+                .brutalTypography(.mono, color: isMet ? .brutalSuccess : .brutalTextTertiary)
+
+            Text(text.uppercased())
+                .brutalTypography(.monoSmall, color: isMet ? .white : .brutalTextSecondary)
+                .tracking(1)
         }
     }
 }

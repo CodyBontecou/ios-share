@@ -22,7 +22,7 @@ struct UploadDetailView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.brutalBackground.ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -36,22 +36,18 @@ struct UploadDetailView: View {
                                 .frame(maxWidth: .infinity)
                         } else {
                             Rectangle()
-                                .fill(Color.googleSurfaceSecondary)
+                                .fill(Color.brutalSurface)
                                 .aspectRatio(4/3, contentMode: .fit)
                                 .overlay {
-                                    VStack(spacing: GoogleSpacing.sm) {
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 48))
-                                        Text("No preview available")
-                                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
-                                    }
-                                    .foregroundStyle(Color.googleTextTertiary)
+                                    Text("□")
+                                        .font(.system(size: 48, weight: .bold))
+                                        .foregroundStyle(Color.brutalTextTertiary)
                                 }
                         }
                     }
 
                     // Action bar
-                    ActionBar(
+                    BrutalActionBar(
                         onShare: { shareImage() },
                         onCopy: {
                             copyToClipboard(record.url)
@@ -65,8 +61,8 @@ struct UploadDetailView: View {
 
                     // Details section
                     VStack(spacing: 0) {
-                        DetailSection(title: "Image URL") {
-                            CopyableRow(
+                        BrutalDetailSection(title: "Image URL") {
+                            BrutalCopyableRow(
                                 text: record.url,
                                 isCopied: copiedField == .url,
                                 onCopy: {
@@ -76,10 +72,12 @@ struct UploadDetailView: View {
                             )
                         }
 
-                        Divider().background(Color.googleOutline)
+                        Rectangle()
+                            .fill(Color.brutalBorder)
+                            .frame(height: 1)
 
-                        DetailSection(title: "Delete URL") {
-                            CopyableRow(
+                        BrutalDetailSection(title: "Delete URL") {
+                            BrutalCopyableRow(
                                 text: record.deleteUrl,
                                 isCopied: copiedField == .deleteUrl,
                                 onCopy: {
@@ -89,29 +87,35 @@ struct UploadDetailView: View {
                             )
                         }
 
-                        Divider().background(Color.googleOutline)
+                        Rectangle()
+                            .fill(Color.brutalBorder)
+                            .frame(height: 1)
 
-                        DetailSection(title: "Details") {
+                        BrutalDetailSection(title: "Details") {
                             VStack(spacing: 0) {
-                                InfoRow(label: "Uploaded", value: dateFormatter.string(from: record.createdAt))
+                                BrutalInfoRow(label: "Uploaded", value: dateFormatter.string(from: record.createdAt))
 
                                 if let filename = record.originalFilename {
-                                    Divider().background(Color.googleOutline.opacity(0.5))
-                                    InfoRow(label: "Original File", value: filename)
+                                    Rectangle()
+                                        .fill(Color.brutalBorder.opacity(0.5))
+                                        .frame(height: 1)
+                                    BrutalInfoRow(label: "Original File", value: filename)
                                 }
 
-                                Divider().background(Color.googleOutline.opacity(0.5))
-                                InfoRow(label: "ID", value: record.id)
+                                Rectangle()
+                                    .fill(Color.brutalBorder.opacity(0.5))
+                                    .frame(height: 1)
+                                BrutalInfoRow(label: "ID", value: record.id)
                             }
                         }
                     }
-                    .background(Color.googleSurface)
+                    .background(Color.brutalSurface)
                 }
             }
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbarBackground(Color.brutalBackground, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .confirmationDialog(
             "Delete Image",
@@ -132,6 +136,7 @@ struct UploadDetailView: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 
     private func copyToClipboard(_ text: String) {
@@ -175,9 +180,9 @@ struct UploadDetailView: View {
     }
 }
 
-// MARK: - Action Bar
+// MARK: - Brutal Action Bar
 
-struct ActionBar: View {
+struct BrutalActionBar: View {
     let onShare: () -> Void
     let onCopy: () -> Void
     let onOpen: () -> Void
@@ -187,53 +192,50 @@ struct ActionBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            ActionButton(icon: "square.and.arrow.up", label: "Share", action: onShare)
-            ActionButton(
-                icon: isCopied ? "checkmark" : "doc.on.doc",
-                label: isCopied ? "Copied" : "Copy",
-                iconColor: isCopied ? .googleGreen : .white,
+            BrutalActionButton(label: "SHARE", action: onShare)
+            BrutalActionButton(
+                label: isCopied ? "COPIED" : "COPY",
+                color: isCopied ? .brutalSuccess : .white,
                 action: onCopy
             )
-            ActionButton(icon: "safari", label: "Open", action: onOpen)
-            ActionButton(
-                icon: isDeleting ? "ellipsis" : "trash",
-                label: "Delete",
-                iconColor: .googleRed,
+            BrutalActionButton(label: "OPEN", action: onOpen)
+            BrutalActionButton(
+                label: isDeleting ? "..." : "DELETE",
+                color: .brutalError,
                 action: onDelete
             )
             .disabled(isDeleting)
         }
-        .padding(.vertical, GoogleSpacing.sm)
-        .background(Color.black)
+        .padding(.vertical, 16)
+        .background(Color.brutalBackground)
+        .overlay(
+            Rectangle()
+                .stroke(Color.brutalBorder, lineWidth: 1)
+        )
     }
 }
 
-// MARK: - Action Button
+// MARK: - Brutal Action Button
 
-struct ActionButton: View {
-    let icon: String
+struct BrutalActionButton: View {
     let label: String
-    var iconColor: Color = .white
+    var color: Color = .white
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: GoogleSpacing.xxxs) {
-                Image(systemName: icon)
-                    .font(.system(size: GoogleIconSize.md))
-                    .foregroundStyle(iconColor)
-                Text(label)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.8))
-            }
-            .frame(maxWidth: .infinity)
+            Text(label)
+                .brutalTypography(.monoSmall, color: color)
+                .tracking(1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
         }
     }
 }
 
-// MARK: - Detail Section
+// MARK: - Brutal Detail Section
 
-struct DetailSection<Content: View>: View {
+struct BrutalDetailSection<Content: View>: View {
     let title: String
     let content: Content
 
@@ -243,22 +245,23 @@ struct DetailSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: GoogleSpacing.xxs) {
-            Text(title)
-                .googleTypography(.labelMedium, color: .googleTextSecondary)
-                .padding(.horizontal, GoogleSpacing.sm)
-                .padding(.top, GoogleSpacing.sm)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                .tracking(2)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
 
             content
-                .padding(.horizontal, GoogleSpacing.sm)
-                .padding(.bottom, GoogleSpacing.sm)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
         }
     }
 }
 
-// MARK: - Copyable Row
+// MARK: - Brutal Copyable Row
 
-struct CopyableRow: View {
+struct BrutalCopyableRow: View {
     let text: String
     let isCopied: Bool
     let onCopy: () -> Void
@@ -266,43 +269,40 @@ struct CopyableRow: View {
     var body: some View {
         HStack {
             Text(text)
-                .googleTypography(.bodySmall, color: .googleTextPrimary)
+                .brutalTypography(.monoSmall, color: .brutalTextPrimary)
                 .lineLimit(2)
-                .font(.system(.caption, design: .monospaced))
 
             Spacer()
 
             Button(action: onCopy) {
-                Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc")
-                    .font(.system(size: GoogleIconSize.sm))
-                    .foregroundStyle(isCopied ? Color.googleGreen : Color.googleBlue)
+                Text(isCopied ? "✓" : "COPY")
+                    .brutalTypography(.monoSmall, color: isCopied ? .brutalSuccess : .brutalTextSecondary)
+                    .tracking(1)
             }
         }
-        .padding(GoogleSpacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: GoogleCornerRadius.sm)
-                .fill(Color.googleSurfaceSecondary)
-        )
+        .padding(12)
+        .background(Color.brutalSurfaceElevated)
     }
 }
 
-// MARK: - Info Row
+// MARK: - Brutal Info Row
 
-struct InfoRow: View {
+struct BrutalInfoRow: View {
     let label: String
     let value: String
 
     var body: some View {
         HStack {
-            Text(label)
-                .googleTypography(.bodyMedium, color: .googleTextSecondary)
+            Text(label.uppercased())
+                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                .tracking(1)
             Spacer()
             Text(value)
-                .googleTypography(.bodyMedium)
+                .brutalTypography(.bodySmall)
                 .lineLimit(1)
         }
-        .padding(.horizontal, GoogleSpacing.sm)
-        .padding(.vertical, GoogleSpacing.xs)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }
 
