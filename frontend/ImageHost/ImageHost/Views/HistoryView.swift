@@ -1,10 +1,13 @@
 import SwiftUI
 
 struct HistoryView: View {
+    @EnvironmentObject var authState: AuthState
     @State private var records: [UploadRecord] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var deletingIds: Set<String> = []
+    @State private var selectedRecord: UploadRecord?
+    @State private var showSettings = false
 
     // Export state
     @State private var showingExportSheet = false
@@ -14,13 +17,6 @@ struct HistoryView: View {
     @State private var exportError: String?
     @State private var exportedFileURL: URL?
     @State private var showingShareSheet = false
-
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
-    }()
 
     enum ExportState {
         case idle
@@ -33,58 +29,114 @@ struct HistoryView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if isLoading {
-                    ProgressView("Loading...")
-                } else if let error = errorMessage {
-                    ContentUnavailableView {
-                        Label("Error", systemImage: "exclamationmark.triangle")
-                    } description: {
-                        Text(error)
-                    } actions: {
-                        Button("Retry") {
+            ZStack {
+                Color.googleSurface.ignoresSafeArea()
+
+                Group {
+                    if isLoading {
+                        VStack(spacing: GoogleSpacing.sm) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            Text("Loading photos...")
+                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        }
+                    } else if let error = errorMessage {
+                        VStack(spacing: GoogleSpacing.lg) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.googleRed.opacity(0.1))
+                                    .frame(width: 80, height: 80)
+
+                                Image(systemName: "exclamationmark.triangle")
+                                    .font(.system(size: 36))
+                                    .foregroundStyle(Color.googleRed)
+                            }
+
+                            Text("Something went wrong")
+                                .googleTypography(.titleMedium)
+
+                            Text(error)
+                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, GoogleSpacing.xl)
+
+                            GooglePrimaryButton(title: "Retry", action: loadHistory)
+                                .frame(width: 120)
+                        }
+                    } else if records.isEmpty {
+                        VStack(spacing: GoogleSpacing.lg) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.googleBlue.opacity(0.1))
+                                    .frame(width: 100, height: 100)
+
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.system(size: 44))
+                                    .foregroundStyle(Color.googleBlue)
+                            }
+
+                            Text("No photos yet")
+                                .googleTypography(.titleLarge)
+
+                            Text("Share an image from Photos to get started.\nYour uploads will appear here.")
+                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, GoogleSpacing.xl)
+                        }
+                    } else {
+                        PhotoGridView(
+                            records: records,
+                            onSelect: { record in
+                                selectedRecord = record
+                            },
+                            onDelete: { record in
+                                deleteRecord(record)
+                            }
+                        )
+                        .refreshable {
                             loadHistory()
                         }
                     }
-                } else if records.isEmpty {
-                    ContentUnavailableView {
-                        Label("No Uploads", systemImage: "photo.on.rectangle.angled")
-                    } description: {
-                        Text("Your upload history will appear here.\n\nShare an image from Photos to get started.")
-                    }
-                } else {
-                    List {
-                        ForEach(records) { record in
-                            NavigationLink(destination: UploadDetailView(record: record, onDelete: {
-                                deleteRecord(record)
-                            })) {
-                                HistoryRow(record: record, dateFormatter: dateFormatter)
-                            }
-                            .disabled(deletingIds.contains(record.id))
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    deleteRecord(record)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                                .disabled(deletingIds.contains(record.id))
-                            }
+                }
+            }
+            .navigationTitle("Photos")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        if let user = authState.currentUser {
+                            AvatarView(email: user.email, size: 32)
+                        } else {
+                            Image(systemName: "person.circle")
+                                .font(.system(size: 24))
                         }
                     }
-                    .refreshable {
-                        loadHistory()
+                }
+
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            showingExportSheet = true
+                        } label: {
+                            Label("Export All Images", systemImage: "square.and.arrow.down.on.square")
+                        }
+                        .disabled(records.isEmpty)
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 20))
                     }
                 }
             }
-            .navigationTitle("History")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingExportSheet = true
-                    } label: {
-                        Label("Export All Images", systemImage: "square.and.arrow.down")
-                    }
-                    .disabled(records.isEmpty || isLoading)
+            .navigationDestination(item: $selectedRecord) { record in
+                UploadDetailView(record: record, onDelete: {
+                    deleteRecord(record)
+                })
+            }
+            .sheet(isPresented: $showSettings) {
+                NavigationStack {
+                    SettingsView()
                 }
             }
             .sheet(isPresented: $showingExportSheet) {
@@ -227,59 +279,7 @@ struct HistoryView: View {
     }
 }
 
-struct HistoryRow: View {
-    let record: UploadRecord
-    let dateFormatter: DateFormatter
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Thumbnail
-            if let thumbnailData = record.thumbnailData,
-               let uiImage = UIImage(data: thumbnailData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 50, height: 50)
-                    .overlay {
-                        Image(systemName: "photo")
-                            .foregroundStyle(.gray)
-                    }
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                // URL (truncated)
-                Text(truncatedURL(record.url))
-                    .font(.subheadline)
-                    .lineLimit(1)
-
-                // Date
-                Text(dateFormatter.string(from: record.createdAt))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.vertical, 4)
-    }
-
-    private func truncatedURL(_ url: String) -> String {
-        guard let urlComponents = URLComponents(string: url) else {
-            return url
-        }
-
-        let host = urlComponents.host ?? ""
-        let path = urlComponents.path
-
-        if path.count > 20 {
-            return "\(host)/...\(path.suffix(15))"
-        }
-        return "\(host)\(path)"
-    }
-}
+// MARK: - Export Sheet View
 
 struct ExportSheetView: View {
     @Binding var exportState: HistoryView.ExportState
@@ -295,143 +295,140 @@ struct ExportSheetView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
+            VStack(spacing: GoogleSpacing.lg) {
                 switch exportState {
                 case .idle:
-                    VStack(spacing: 16) {
-                        Image(systemName: "square.and.arrow.down.on.square")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.blue)
+                    VStack(spacing: GoogleSpacing.sm) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.googleBlue.opacity(0.1))
+                                .frame(width: 80, height: 80)
+
+                            Image(systemName: "square.and.arrow.down.on.square")
+                                .font(.system(size: 36))
+                                .foregroundStyle(Color.googleBlue)
+                        }
 
                         Text("Export All Images")
-                            .font(.title2)
-                            .fontWeight(.semibold)
+                            .googleTypography(.titleLarge)
 
-                        Text("This will create a ZIP archive of all your uploaded images. The process may take a few moments depending on the number of images.")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                        Text("This will create a ZIP archive of all your uploaded images.")
+                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                            .padding(.horizontal, GoogleSpacing.lg)
 
-                        Button {
-                            onStartExport()
-                        } label: {
-                            Text("Start Export")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .padding(.horizontal)
-                        .padding(.top, 8)
+                        GooglePrimaryButton(
+                            title: "Start Export",
+                            action: onStartExport
+                        )
+                        .padding(.horizontal, GoogleSpacing.lg)
+                        .padding(.top, GoogleSpacing.sm)
                     }
 
                 case .starting:
-                    VStack(spacing: 16) {
+                    VStack(spacing: GoogleSpacing.sm) {
                         ProgressView()
                             .scaleEffect(1.5)
 
                         Text("Starting export...")
-                            .font(.headline)
+                            .googleTypography(.titleMedium)
                     }
 
                 case .exporting(let progress):
-                    VStack(spacing: 16) {
-                        ProgressView(value: progress)
-                            .progressViewStyle(.linear)
-                            .padding(.horizontal)
+                    VStack(spacing: GoogleSpacing.sm) {
+                        CircularProgressView(progress: progress)
 
-                        Text("Exporting images: \(Int(progress * 100))%")
-                            .font(.headline)
+                        Text("Exporting images...")
+                            .googleTypography(.titleMedium)
 
-                        Button("Cancel", role: .cancel) {
+                        Text("\(Int(progress * 100))% complete")
+                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+
+                        GoogleSecondaryButton(title: "Cancel", action: {
                             onCancelExport()
                             dismiss()
-                        }
-                        .buttonStyle(.bordered)
+                        })
+                        .frame(width: 120)
                     }
 
                 case .downloading(let progress):
-                    VStack(spacing: 16) {
-                        ProgressView(value: progress)
-                            .progressViewStyle(.linear)
-                            .padding(.horizontal)
+                    VStack(spacing: GoogleSpacing.sm) {
+                        CircularProgressView(progress: progress)
 
-                        Text("Downloading archive: \(Int(progress * 100))%")
-                            .font(.headline)
+                        Text("Downloading archive...")
+                            .googleTypography(.titleMedium)
 
-                        Button("Cancel", role: .cancel) {
-                            onCancelExport()
-                            dismiss()
-                        }
-                        .buttonStyle(.bordered)
+                        Text("\(Int(progress * 100))% complete")
+                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
                     }
 
                 case .complete:
-                    VStack(spacing: 16) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.green)
+                    VStack(spacing: GoogleSpacing.sm) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.googleGreen.opacity(0.1))
+                                .frame(width: 80, height: 80)
 
-                        Text("Export Complete!")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-
-                        Text("Your images have been exported successfully.")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-
-                        if let url = exportedFileURL {
-                            Button {
-                                onShare(url)
-                            } label: {
-                                Label("Share Archive", systemImage: "square.and.arrow.up")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .padding(.horizontal)
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 36, weight: .medium))
+                                .foregroundStyle(Color.googleGreen)
                         }
 
-                        Button("Done") {
+                        Text("Export Complete!")
+                            .googleTypography(.titleLarge)
+
+                        Text("Your images have been exported successfully.")
+                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+
+                        if let url = exportedFileURL {
+                            GooglePrimaryButton(
+                                title: "Share Archive",
+                                action: { onShare(url) },
+                                icon: "square.and.arrow.up"
+                            )
+                            .padding(.horizontal, GoogleSpacing.lg)
+                        }
+
+                        GoogleTextButton(title: "Done") {
                             onDismiss()
                             dismiss()
                         }
-                        .buttonStyle(.bordered)
                     }
 
                 case .error(let message):
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.red)
+                    VStack(spacing: GoogleSpacing.sm) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.googleRed.opacity(0.1))
+                                .frame(width: 80, height: 80)
+
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 36))
+                                .foregroundStyle(Color.googleRed)
+                        }
 
                         Text("Export Failed")
-                            .font(.title2)
-                            .fontWeight(.semibold)
+                            .googleTypography(.titleLarge)
 
                         Text(message)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                            .padding(.horizontal, GoogleSpacing.lg)
 
-                        Button("Try Again") {
-                            onStartExport()
-                        }
-                        .buttonStyle(.borderedProminent)
+                        GooglePrimaryButton(title: "Try Again", action: onStartExport)
+                            .frame(width: 140)
 
-                        Button("Cancel") {
+                        GoogleTextButton(title: "Cancel") {
                             onDismiss()
                             dismiss()
                         }
-                        .buttonStyle(.bordered)
                     }
                 }
 
                 Spacer()
             }
-            .padding()
+            .padding(.top, GoogleSpacing.lg)
+            .background(Color.googleSurface)
             .navigationTitle("Export Images")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -447,6 +444,33 @@ struct ExportSheetView: View {
     }
 }
 
+// MARK: - Circular Progress View
+
+struct CircularProgressView: View {
+    let progress: Double
+    var size: CGFloat = 80
+    var lineWidth: CGFloat = 8
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.googleOutline.opacity(0.3), lineWidth: lineWidth)
+
+            Circle()
+                .trim(from: 0, to: CGFloat(progress))
+                .stroke(Color.googleBlue, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.easeInOut(duration: 0.3), value: progress)
+
+            Text("\(Int(progress * 100))%")
+                .googleTypography(.labelLarge)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+// MARK: - Share Sheet
+
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
 
@@ -459,4 +483,5 @@ struct ShareSheet: UIViewControllerRepresentable {
 
 #Preview {
     HistoryView()
+        .environmentObject(AuthState.shared)
 }

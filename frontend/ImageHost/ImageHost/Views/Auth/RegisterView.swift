@@ -12,106 +12,106 @@ struct RegisterView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: GoogleSpacing.lg) {
                 // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "person.badge.plus")
-                        .font(.system(size: 50))
-                        .foregroundStyle(.blue)
+                VStack(spacing: GoogleSpacing.sm) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.googleBlue, .googleGreen],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 80, height: 80)
+
+                        Image(systemName: "person.badge.plus")
+                            .font(.system(size: 36, weight: .medium))
+                            .foregroundStyle(.white)
+                    }
 
                     Text("Create Account")
-                        .font(.title)
-                        .fontWeight(.bold)
+                        .googleTypography(.headlineMedium)
 
                     Text("Sign up to start uploading images")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .googleTypography(.bodyMedium, color: .googleTextSecondary)
                 }
-                .padding(.top, 20)
-                .padding(.bottom, 10)
+                .padding(.top, GoogleSpacing.lg)
+                .padding(.bottom, GoogleSpacing.sm)
 
                 // Form
-                VStack(spacing: 16) {
-                    TextField("Email", text: $email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled()
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
+                VStack(spacing: GoogleSpacing.sm) {
+                    GoogleTextField(
+                        label: "Email",
+                        text: $email,
+                        keyboardType: .emailAddress,
+                        textContentType: .emailAddress,
+                        autocapitalization: .never
+                    )
 
-                    SecureField("Password", text: $password)
-                        .textContentType(.newPassword)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
+                    GoogleTextField(
+                        label: "Password",
+                        text: $password,
+                        isSecure: true,
+                        textContentType: .newPassword
+                    )
 
-                    SecureField("Confirm Password", text: $confirmPassword)
-                        .textContentType(.newPassword)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
+                    GoogleTextField(
+                        label: "Confirm Password",
+                        text: $confirmPassword,
+                        isSecure: true,
+                        textContentType: .newPassword
+                    )
 
                     // Password requirements
-                    VStack(alignment: .leading, spacing: 4) {
-                        PasswordRequirement(
-                            text: "At least 8 characters",
-                            isMet: password.count >= 8
-                        )
-                        PasswordRequirement(
-                            text: "Passwords match",
-                            isMet: !password.isEmpty && password == confirmPassword
-                        )
+                    GoogleCard(backgroundColor: Color.googleSurfaceSecondary, padding: GoogleSpacing.sm) {
+                        VStack(alignment: .leading, spacing: GoogleSpacing.xxs) {
+                            PasswordRequirement(
+                                text: "At least 8 characters",
+                                isMet: password.count >= 8
+                            )
+                            PasswordRequirement(
+                                text: "Passwords match",
+                                isMet: !password.isEmpty && password == confirmPassword
+                            )
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4)
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, GoogleSpacing.sm)
 
                 // Error message
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                        .googleTypography(.bodySmall, color: .googleError)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                        .padding(.horizontal, GoogleSpacing.sm)
                 }
 
                 // Register button
-                Button(action: register) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        }
-                        Text("Create Account")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? Color.blue : Color.gray)
-                    .foregroundStyle(.white)
-                    .cornerRadius(10)
-                }
-                .disabled(!isFormValid || isLoading)
-                .padding(.horizontal)
+                GooglePrimaryButton(
+                    title: "Create Account",
+                    action: register,
+                    isLoading: isLoading,
+                    isDisabled: !isFormValid
+                )
+                .padding(.horizontal, GoogleSpacing.sm)
 
-                Spacer()
+                Spacer(minLength: GoogleSpacing.xxl)
 
                 // Back to login
-                HStack {
+                HStack(spacing: GoogleSpacing.xxxs) {
                     Text("Already have an account?")
-                        .foregroundStyle(.secondary)
-                    Button("Log In") {
+                        .googleTypography(.bodySmall, color: .googleTextSecondary)
+                    GoogleTextButton(title: "Sign In") {
                         dismiss()
                     }
-                    .fontWeight(.semibold)
                 }
-                .font(.footnote)
-                .padding(.bottom, 20)
+                .padding(.bottom, GoogleSpacing.lg)
             }
         }
+        .background(Color.googleSurface)
         .navigationTitle("Register")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -160,13 +160,12 @@ struct PasswordRequirement: View {
     let isMet: Bool
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: GoogleSpacing.xxs) {
             Image(systemName: isMet ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(isMet ? .green : .secondary)
-                .font(.caption)
+                .foregroundStyle(isMet ? Color.googleGreen : Color.googleTextTertiary)
+                .font(.system(size: 14))
             Text(text)
-                .font(.caption)
-                .foregroundStyle(isMet ? .primary : .secondary)
+                .googleTypography(.bodySmall, color: isMet ? .googleTextPrimary : .googleTextSecondary)
         }
     }
 }

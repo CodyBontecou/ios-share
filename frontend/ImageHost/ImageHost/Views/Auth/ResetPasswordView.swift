@@ -12,109 +12,118 @@ struct ResetPasswordView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: GoogleSpacing.lg) {
                 // Header
-                VStack(spacing: 8) {
-                    Image(systemName: isResetSuccessful ? "checkmark.circle.fill" : "lock.rotation")
-                        .font(.system(size: 50))
-                        .foregroundStyle(isResetSuccessful ? .green : .blue)
+                VStack(spacing: GoogleSpacing.sm) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: isResetSuccessful ? [.googleGreen, .googleBlue] : [.googleBlue, .googleRed],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 80, height: 80)
+
+                        Image(systemName: isResetSuccessful ? "checkmark" : "lock.rotation")
+                            .font(.system(size: 36, weight: .medium))
+                            .foregroundStyle(.white)
+                    }
 
                     Text(isResetSuccessful ? "Password Reset!" : "Set New Password")
-                        .font(.title)
-                        .fontWeight(.bold)
+                        .googleTypography(.headlineMedium)
 
                     Text(isResetSuccessful
-                         ? "You can now log in with your new password"
+                         ? "You can now sign in with your new password"
                          : "Enter the reset code from your email and your new password")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .googleTypography(.bodyMedium, color: .googleTextSecondary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 20)
-                .padding(.bottom, 10)
+                .padding(.top, GoogleSpacing.lg)
+                .padding(.bottom, GoogleSpacing.sm)
 
                 if isResetSuccessful {
                     // Success state
-                    Button(action: { dismiss() }) {
-                        Text("Back to Login")
-                            .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundStyle(.white)
-                            .cornerRadius(10)
+                    GoogleCard(backgroundColor: Color.googleGreen.opacity(0.1)) {
+                        HStack(spacing: GoogleSpacing.sm) {
+                            Image(systemName: "checkmark.shield.fill")
+                                .font(.system(size: GoogleIconSize.lg))
+                                .foregroundStyle(Color.googleGreen)
+
+                            Text("Your password has been updated successfully.")
+                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                        }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, GoogleSpacing.sm)
+
+                    GooglePrimaryButton(
+                        title: "Back to Sign In",
+                        action: { dismiss() }
+                    )
+                    .padding(.horizontal, GoogleSpacing.sm)
                 } else {
                     // Form
-                    VStack(spacing: 16) {
-                        TextField("Reset Code", text: $resetCode)
-                            .autocapitalization(.none)
-                            .autocorrectionDisabled()
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                    VStack(spacing: GoogleSpacing.sm) {
+                        GoogleTextField(
+                            label: "Reset Code",
+                            text: $resetCode,
+                            autocapitalization: .never
+                        )
 
-                        SecureField("New Password", text: $newPassword)
-                            .textContentType(.newPassword)
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                        GoogleTextField(
+                            label: "New Password",
+                            text: $newPassword,
+                            isSecure: true,
+                            textContentType: .newPassword
+                        )
 
-                        SecureField("Confirm Password", text: $confirmPassword)
-                            .textContentType(.newPassword)
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                        GoogleTextField(
+                            label: "Confirm Password",
+                            text: $confirmPassword,
+                            isSecure: true,
+                            textContentType: .newPassword
+                        )
 
                         // Password requirements
-                        VStack(alignment: .leading, spacing: 4) {
-                            PasswordRequirement(
-                                text: "At least 8 characters",
-                                isMet: newPassword.count >= 8
-                            )
-                            PasswordRequirement(
-                                text: "Passwords match",
-                                isMet: !newPassword.isEmpty && newPassword == confirmPassword
-                            )
+                        GoogleCard(backgroundColor: Color.googleSurfaceSecondary, padding: GoogleSpacing.sm) {
+                            VStack(alignment: .leading, spacing: GoogleSpacing.xxs) {
+                                PasswordRequirement(
+                                    text: "At least 8 characters",
+                                    isMet: newPassword.count >= 8
+                                )
+                                PasswordRequirement(
+                                    text: "Passwords match",
+                                    isMet: !newPassword.isEmpty && newPassword == confirmPassword
+                                )
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 4)
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, GoogleSpacing.sm)
 
                     // Error message
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
+                            .googleTypography(.bodySmall, color: .googleError)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                            .padding(.horizontal, GoogleSpacing.sm)
                     }
 
                     // Reset button
-                    Button(action: resetPassword) {
-                        HStack {
-                            if isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            }
-                            Text("Reset Password")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(isFormValid ? Color.blue : Color.gray)
-                        .foregroundStyle(.white)
-                        .cornerRadius(10)
-                    }
-                    .disabled(!isFormValid || isLoading)
-                    .padding(.horizontal)
+                    GooglePrimaryButton(
+                        title: "Reset Password",
+                        action: resetPassword,
+                        isLoading: isLoading,
+                        isDisabled: !isFormValid
+                    )
+                    .padding(.horizontal, GoogleSpacing.sm)
                 }
 
                 Spacer()
             }
         }
+        .background(Color.googleSurface)
         .navigationTitle("Reset Password")
         .navigationBarTitleDisplayMode(.inline)
     }

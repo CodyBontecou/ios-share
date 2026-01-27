@@ -15,23 +15,19 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    // Logo/Title
-                    VStack(spacing: 8) {
-                        Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.blue)
+                VStack(spacing: GoogleSpacing.lg) {
+                    // App Logo
+                    VStack(spacing: GoogleSpacing.sm) {
+                        AppLogo(size: 100)
 
                         Text("ImageHost")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                            .googleTypography(.headlineLarge)
 
                         Text("Sign in to your account")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
                     }
-                    .padding(.top, 40)
-                    .padding(.bottom, 20)
+                    .padding(.top, GoogleSpacing.xxl)
+                    .padding(.bottom, GoogleSpacing.md)
 
                     // Sign in with Apple Button
                     SignInWithAppleButton(.signIn) { request in
@@ -41,98 +37,77 @@ struct LoginView: View {
                     }
                     .signInWithAppleButtonStyle(.black)
                     .frame(height: 50)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
+                    .clipShape(RoundedRectangle(cornerRadius: GoogleCornerRadius.full))
+                    .padding(.horizontal, GoogleSpacing.sm)
                     .disabled(isAppleSignInLoading || isLoading)
                     .overlay {
                         if isAppleSignInLoading {
+                            RoundedRectangle(cornerRadius: GoogleCornerRadius.full)
+                                .fill(Color.black.opacity(0.3))
                             ProgressView()
                                 .tint(.white)
                         }
                     }
 
                     // Divider
-                    HStack {
-                        Rectangle()
-                            .fill(Color(.systemGray4))
-                            .frame(height: 1)
-                        Text("or")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Rectangle()
-                            .fill(Color(.systemGray4))
-                            .frame(height: 1)
-                    }
-                    .padding(.horizontal)
+                    GoogleDivider(label: "or")
+                        .padding(.horizontal, GoogleSpacing.sm)
 
                     // Form
-                    VStack(spacing: 16) {
-                        TextField("Email", text: $email)
-                            .textContentType(.emailAddress)
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                            .autocorrectionDisabled()
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                    VStack(spacing: GoogleSpacing.sm) {
+                        GoogleTextField(
+                            label: "Email",
+                            text: $email,
+                            keyboardType: .emailAddress,
+                            textContentType: .emailAddress,
+                            autocapitalization: .never
+                        )
 
-                        SecureField("Password", text: $password)
-                            .textContentType(.password)
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                        GoogleTextField(
+                            label: "Password",
+                            text: $password,
+                            isSecure: true,
+                            textContentType: .password
+                        )
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, GoogleSpacing.sm)
 
                     // Error message
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
+                            .googleTypography(.bodySmall, color: .googleError)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                            .padding(.horizontal, GoogleSpacing.sm)
                     }
 
                     // Login button
-                    Button(action: login) {
-                        HStack {
-                            if isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            }
-                            Text("Log In")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(isFormValid ? Color.blue : Color.gray)
-                        .foregroundStyle(.white)
-                        .cornerRadius(10)
-                    }
-                    .disabled(!isFormValid || isLoading || isAppleSignInLoading)
-                    .padding(.horizontal)
+                    GooglePrimaryButton(
+                        title: "Sign In",
+                        action: login,
+                        isLoading: isLoading,
+                        isDisabled: !isFormValid
+                    )
+                    .padding(.horizontal, GoogleSpacing.sm)
 
                     // Forgot password
-                    Button("Forgot Password?") {
+                    GoogleTextButton(title: "Forgot Password?") {
                         showForgotPassword = true
                     }
-                    .font(.footnote)
 
-                    Spacer()
+                    Spacer(minLength: GoogleSpacing.xxl)
 
                     // Register link
-                    HStack {
+                    HStack(spacing: GoogleSpacing.xxxs) {
                         Text("Don't have an account?")
-                            .foregroundStyle(.secondary)
-                        Button("Create Account") {
+                            .googleTypography(.bodySmall, color: .googleTextSecondary)
+                        GoogleTextButton(title: "Create Account") {
                             showRegister = true
                         }
-                        .fontWeight(.semibold)
                     }
-                    .font(.footnote)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, GoogleSpacing.lg)
                 }
             }
+            .background(Color.googleSurface)
             .navigationDestination(isPresented: $showRegister) {
                 RegisterView()
             }

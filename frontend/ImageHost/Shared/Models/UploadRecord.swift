@@ -1,6 +1,6 @@
 import Foundation
 
-struct UploadRecord: Codable, Identifiable, Equatable {
+struct UploadRecord: Codable, Identifiable, Equatable, Hashable {
     let id: String
     let url: String
     let deleteUrl: String

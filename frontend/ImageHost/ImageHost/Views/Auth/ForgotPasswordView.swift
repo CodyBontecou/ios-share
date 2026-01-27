@@ -11,104 +11,103 @@ struct ForgotPasswordView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: GoogleSpacing.lg) {
                 // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "key.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(.blue)
+                VStack(spacing: GoogleSpacing.sm) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.googleYellow, .googleRed],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 80, height: 80)
+
+                        Image(systemName: "key.fill")
+                            .font(.system(size: 36, weight: .medium))
+                            .foregroundStyle(.white)
+                    }
 
                     Text("Reset Password")
-                        .font(.title)
-                        .fontWeight(.bold)
+                        .googleTypography(.headlineMedium)
 
                     Text(isEmailSent
-                         ? "Check your email for a reset link"
-                         : "Enter your email to receive a password reset link")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                         ? "Check your email for a reset code"
+                         : "Enter your email to receive a password reset code")
+                        .googleTypography(.bodyMedium, color: .googleTextSecondary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 20)
-                .padding(.bottom, 10)
+                .padding(.top, GoogleSpacing.lg)
+                .padding(.bottom, GoogleSpacing.sm)
 
                 if isEmailSent {
                     // Success state
-                    VStack(spacing: 16) {
-                        Image(systemName: "envelope.badge.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.green)
+                    GoogleCard(backgroundColor: Color.googleGreen.opacity(0.1)) {
+                        VStack(spacing: GoogleSpacing.sm) {
+                            Image(systemName: "envelope.badge.fill")
+                                .font(.system(size: 48))
+                                .foregroundStyle(Color.googleGreen)
 
-                        Text("We've sent a password reset link to:")
-                            .foregroundStyle(.secondary)
+                            Text("We've sent a password reset code to:")
+                                .googleTypography(.bodyMedium, color: .googleTextSecondary)
 
-                        Text(email)
-                            .fontWeight(.semibold)
+                            Text(email)
+                                .googleTypography(.bodyLarge)
 
-                        Text("Check your spam folder if you don't see it.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            Text("Check your spam folder if you don't see it.")
+                                .googleTypography(.labelSmall, color: .googleTextTertiary)
+                        }
                     }
-                    .padding()
+                    .padding(.horizontal, GoogleSpacing.sm)
 
                     // Enter reset code button
-                    Button("Enter Reset Code") {
-                        showResetPassword = true
-                    }
-                    .fontWeight(.semibold)
-                    .padding()
+                    GooglePrimaryButton(
+                        title: "Enter Reset Code",
+                        action: { showResetPassword = true }
+                    )
+                    .padding(.horizontal, GoogleSpacing.sm)
 
                     // Send again button
-                    Button("Send Again") {
+                    GoogleTextButton(title: "Send Again") {
                         isEmailSent = false
                     }
-                    .font(.footnote)
                 } else {
                     // Form
-                    VStack(spacing: 16) {
-                        TextField("Email", text: $email)
-                            .textContentType(.emailAddress)
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                            .autocorrectionDisabled()
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                    VStack(spacing: GoogleSpacing.sm) {
+                        GoogleTextField(
+                            label: "Email",
+                            text: $email,
+                            keyboardType: .emailAddress,
+                            textContentType: .emailAddress,
+                            autocapitalization: .never
+                        )
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, GoogleSpacing.sm)
 
                     // Error message
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
+                            .googleTypography(.bodySmall, color: .googleError)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                            .padding(.horizontal, GoogleSpacing.sm)
                     }
 
                     // Send button
-                    Button(action: sendResetEmail) {
-                        HStack {
-                            if isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            }
-                            Text("Send Reset Link")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(isFormValid ? Color.blue : Color.gray)
-                        .foregroundStyle(.white)
-                        .cornerRadius(10)
-                    }
-                    .disabled(!isFormValid || isLoading)
-                    .padding(.horizontal)
+                    GooglePrimaryButton(
+                        title: "Send Reset Code",
+                        action: sendResetEmail,
+                        isLoading: isLoading,
+                        isDisabled: !isFormValid
+                    )
+                    .padding(.horizontal, GoogleSpacing.sm)
                 }
 
                 Spacer()
             }
         }
+        .background(Color.googleSurface)
         .navigationTitle("Forgot Password")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $showResetPassword) {

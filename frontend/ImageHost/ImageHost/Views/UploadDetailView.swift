@@ -21,138 +21,98 @@ struct UploadDetailView: View {
     }()
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Thumbnail preview
-                Group {
-                    if let thumbnailData = record.thumbnailData,
-                       let uiImage = UIImage(data: thumbnailData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: 300)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .shadow(radius: 4)
-                    } else {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(height: 200)
-                            .overlay {
-                                VStack {
-                                    Image(systemName: "photo")
-                                        .font(.largeTitle)
-                                    Text("No preview available")
-                                        .font(.caption)
-                                }
-                                .foregroundStyle(.gray)
-                            }
-                    }
-                }
-                .padding(.horizontal)
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-                // URL Section
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Image URL")
-                        .font(.headline)
-
-                    HStack {
-                        Text(record.url)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-
-                        Spacer()
-
-                        Button {
-                            copyToClipboard(record.url)
-                            copiedField = .url
-                        } label: {
-                            Image(systemName: copiedField == .url ? "checkmark" : "doc.on.doc")
-                                .foregroundStyle(copiedField == .url ? .green : .blue)
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .padding(.horizontal)
-
-                // Delete URL Section
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Delete URL")
-                        .font(.headline)
-
-                    HStack {
-                        Text(record.deleteUrl)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-
-                        Spacer()
-
-                        Button {
-                            copyToClipboard(record.deleteUrl)
-                            copiedField = .deleteUrl
-                        } label: {
-                            Image(systemName: copiedField == .deleteUrl ? "checkmark" : "doc.on.doc")
-                                .foregroundStyle(copiedField == .deleteUrl ? .green : .blue)
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .padding(.horizontal)
-
-                // Details
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Details")
-                        .font(.headline)
-
-                    VStack(spacing: 0) {
-                        DetailRow(label: "Uploaded", value: dateFormatter.string(from: record.createdAt))
-                        Divider()
-                        if let filename = record.originalFilename {
-                            DetailRow(label: "Original File", value: filename)
-                            Divider()
-                        }
-                        DetailRow(label: "ID", value: record.id)
-                    }
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .padding(.horizontal)
-
-                // Action buttons
-                VStack(spacing: 12) {
-                    Button {
-                        openInBrowser()
-                    } label: {
-                        Label("Open in Browser", systemImage: "safari")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button(role: .destructive) {
-                        showDeleteConfirmation = true
-                    } label: {
-                        if isDeleting {
-                            ProgressView()
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Full-bleed image preview
+                    Group {
+                        if let thumbnailData = record.thumbnailData,
+                           let uiImage = UIImage(data: thumbnailData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
                                 .frame(maxWidth: .infinity)
                         } else {
-                            Label("Delete from Server", systemImage: "trash")
-                                .frame(maxWidth: .infinity)
+                            Rectangle()
+                                .fill(Color.googleSurfaceSecondary)
+                                .aspectRatio(4/3, contentMode: .fit)
+                                .overlay {
+                                    VStack(spacing: GoogleSpacing.sm) {
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 48))
+                                        Text("No preview available")
+                                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                                    }
+                                    .foregroundStyle(Color.googleTextTertiary)
+                                }
                         }
                     }
-                    .buttonStyle(.bordered)
-                    .disabled(isDeleting)
+
+                    // Action bar
+                    ActionBar(
+                        onShare: { shareImage() },
+                        onCopy: {
+                            copyToClipboard(record.url)
+                            copiedField = .url
+                        },
+                        onOpen: { openInBrowser() },
+                        onDelete: { showDeleteConfirmation = true },
+                        isCopied: copiedField == .url,
+                        isDeleting: isDeleting
+                    )
+
+                    // Details section
+                    VStack(spacing: 0) {
+                        DetailSection(title: "Image URL") {
+                            CopyableRow(
+                                text: record.url,
+                                isCopied: copiedField == .url,
+                                onCopy: {
+                                    copyToClipboard(record.url)
+                                    copiedField = .url
+                                }
+                            )
+                        }
+
+                        Divider().background(Color.googleOutline)
+
+                        DetailSection(title: "Delete URL") {
+                            CopyableRow(
+                                text: record.deleteUrl,
+                                isCopied: copiedField == .deleteUrl,
+                                onCopy: {
+                                    copyToClipboard(record.deleteUrl)
+                                    copiedField = .deleteUrl
+                                }
+                            )
+                        }
+
+                        Divider().background(Color.googleOutline)
+
+                        DetailSection(title: "Details") {
+                            VStack(spacing: 0) {
+                                InfoRow(label: "Uploaded", value: dateFormatter.string(from: record.createdAt))
+
+                                if let filename = record.originalFilename {
+                                    Divider().background(Color.googleOutline.opacity(0.5))
+                                    InfoRow(label: "Original File", value: filename)
+                                }
+
+                                Divider().background(Color.googleOutline.opacity(0.5))
+                                InfoRow(label: "ID", value: record.id)
+                            }
+                        }
+                    }
+                    .background(Color.googleSurface)
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 24)
             }
         }
-        .navigationTitle("Upload Details")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .confirmationDialog(
             "Delete Image",
             isPresented: $showDeleteConfirmation,
@@ -167,7 +127,6 @@ struct UploadDetailView: View {
         }
         .onChange(of: copiedField) { _, newValue in
             if newValue != nil {
-                // Reset after delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                     copiedField = nil
                 }
@@ -177,9 +136,18 @@ struct UploadDetailView: View {
 
     private func copyToClipboard(_ text: String) {
         UIPasteboard.general.string = text
-        // Haptic feedback
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
+    }
+
+    private func shareImage() {
+        guard let url = URL(string: record.url) else { return }
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootVC = window.rootViewController {
+            rootVC.present(activityVC, animated: true)
+        }
     }
 
     private func openInBrowser() {
@@ -201,27 +169,140 @@ struct UploadDetailView: View {
             } catch {
                 await MainActor.run {
                     isDeleting = false
-                    // Could show error alert here
                 }
             }
         }
     }
 }
 
-struct DetailRow: View {
+// MARK: - Action Bar
+
+struct ActionBar: View {
+    let onShare: () -> Void
+    let onCopy: () -> Void
+    let onOpen: () -> Void
+    let onDelete: () -> Void
+    let isCopied: Bool
+    let isDeleting: Bool
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ActionButton(icon: "square.and.arrow.up", label: "Share", action: onShare)
+            ActionButton(
+                icon: isCopied ? "checkmark" : "doc.on.doc",
+                label: isCopied ? "Copied" : "Copy",
+                iconColor: isCopied ? .googleGreen : .white,
+                action: onCopy
+            )
+            ActionButton(icon: "safari", label: "Open", action: onOpen)
+            ActionButton(
+                icon: isDeleting ? "ellipsis" : "trash",
+                label: "Delete",
+                iconColor: .googleRed,
+                action: onDelete
+            )
+            .disabled(isDeleting)
+        }
+        .padding(.vertical, GoogleSpacing.sm)
+        .background(Color.black)
+    }
+}
+
+// MARK: - Action Button
+
+struct ActionButton: View {
+    let icon: String
+    let label: String
+    var iconColor: Color = .white
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: GoogleSpacing.xxxs) {
+                Image(systemName: icon)
+                    .font(.system(size: GoogleIconSize.md))
+                    .foregroundStyle(iconColor)
+                Text(label)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+// MARK: - Detail Section
+
+struct DetailSection<Content: View>: View {
+    let title: String
+    let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: GoogleSpacing.xxs) {
+            Text(title)
+                .googleTypography(.labelMedium, color: .googleTextSecondary)
+                .padding(.horizontal, GoogleSpacing.sm)
+                .padding(.top, GoogleSpacing.sm)
+
+            content
+                .padding(.horizontal, GoogleSpacing.sm)
+                .padding(.bottom, GoogleSpacing.sm)
+        }
+    }
+}
+
+// MARK: - Copyable Row
+
+struct CopyableRow: View {
+    let text: String
+    let isCopied: Bool
+    let onCopy: () -> Void
+
+    var body: some View {
+        HStack {
+            Text(text)
+                .googleTypography(.bodySmall, color: .googleTextPrimary)
+                .lineLimit(2)
+                .font(.system(.caption, design: .monospaced))
+
+            Spacer()
+
+            Button(action: onCopy) {
+                Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc")
+                    .font(.system(size: GoogleIconSize.sm))
+                    .foregroundStyle(isCopied ? Color.googleGreen : Color.googleBlue)
+            }
+        }
+        .padding(GoogleSpacing.sm)
+        .background(
+            RoundedRectangle(cornerRadius: GoogleCornerRadius.sm)
+                .fill(Color.googleSurfaceSecondary)
+        )
+    }
+}
+
+// MARK: - Info Row
+
+struct InfoRow: View {
     let label: String
     let value: String
 
     var body: some View {
         HStack {
             Text(label)
-                .foregroundStyle(.secondary)
+                .googleTypography(.bodyMedium, color: .googleTextSecondary)
             Spacer()
             Text(value)
+                .googleTypography(.bodyMedium)
                 .lineLimit(1)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
+        .padding(.horizontal, GoogleSpacing.sm)
+        .padding(.vertical, GoogleSpacing.xs)
     }
 }
 

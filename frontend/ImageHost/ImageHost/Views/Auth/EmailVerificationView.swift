@@ -11,114 +11,104 @@ struct EmailVerificationView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: GoogleSpacing.lg) {
                 // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "envelope.badge.fill")
-                        .font(.system(size: 60))
-                        .foregroundStyle(.blue)
+                VStack(spacing: GoogleSpacing.sm) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.googleBlue, .googleYellow],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 80, height: 80)
+
+                        Image(systemName: "envelope.badge.fill")
+                            .font(.system(size: 36, weight: .medium))
+                            .foregroundStyle(.white)
+                    }
 
                     Text("Verify Your Email")
-                        .font(.title)
-                        .fontWeight(.bold)
+                        .googleTypography(.headlineMedium)
 
                     if let email = authState.currentUser?.email {
                         Text("We sent a verification code to")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
 
                         Text(email)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                            .googleTypography(.bodyLarge)
                     }
                 }
-                .padding(.top, 40)
-                .padding(.bottom, 10)
+                .padding(.top, GoogleSpacing.xxl)
+                .padding(.bottom, GoogleSpacing.sm)
 
                 // Info box
-                VStack(spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(.blue)
-                    Text("You need to verify your email before you can upload images.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                GoogleCard(backgroundColor: Color.googleBlue.opacity(0.1)) {
+                    HStack(spacing: GoogleSpacing.sm) {
+                        Image(systemName: "info.circle.fill")
+                            .font(.system(size: GoogleIconSize.md))
+                            .foregroundStyle(Color.googleBlue)
+
+                        Text("You need to verify your email before you can upload images.")
+                            .googleTypography(.bodySmall, color: .googleTextSecondary)
+                    }
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-                .padding(.horizontal)
+                .padding(.horizontal, GoogleSpacing.sm)
 
                 // Form
-                VStack(spacing: 16) {
-                    TextField("Verification Code", text: $verificationCode)
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled()
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
+                VStack(spacing: GoogleSpacing.sm) {
+                    GoogleTextField(
+                        label: "Verification Code",
+                        text: $verificationCode,
+                        autocapitalization: .never
+                    )
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, GoogleSpacing.sm)
 
                 // Messages
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                        .googleTypography(.bodySmall, color: .googleError)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                        .padding(.horizontal, GoogleSpacing.sm)
                 }
 
                 if let successMessage = successMessage {
                     Text(successMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.green)
+                        .googleTypography(.bodySmall, color: .googleGreen)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                        .padding(.horizontal, GoogleSpacing.sm)
                 }
 
                 // Verify button
-                Button(action: verifyEmail) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        }
-                        Text("Verify Email")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(!verificationCode.isEmpty ? Color.blue : Color.gray)
-                    .foregroundStyle(.white)
-                    .cornerRadius(10)
-                }
-                .disabled(verificationCode.isEmpty || isLoading)
-                .padding(.horizontal)
+                GooglePrimaryButton(
+                    title: "Verify Email",
+                    action: verifyEmail,
+                    isLoading: isLoading,
+                    isDisabled: verificationCode.isEmpty
+                )
+                .padding(.horizontal, GoogleSpacing.sm)
 
                 // Resend code
-                Button(action: resendCode) {
-                    HStack {
-                        if isResending {
-                            ProgressView()
-                        }
-                        Text("Resend Code")
+                HStack(spacing: GoogleSpacing.xxs) {
+                    if isResending {
+                        ProgressView()
+                            .scaleEffect(0.8)
                     }
+                    GoogleTextButton(title: "Resend Code", action: resendCode)
                 }
                 .disabled(isResending)
-                .font(.footnote)
 
-                Spacer()
+                Spacer(minLength: GoogleSpacing.xxl)
 
                 // Logout option
-                Button(action: logout) {
-                    Text("Log Out")
-                        .foregroundStyle(.red)
-                }
-                .font(.footnote)
-                .padding(.bottom, 20)
+                GoogleTextButton(title: "Sign Out", action: logout, color: .googleRed)
+                    .padding(.bottom, GoogleSpacing.lg)
             }
         }
+        .background(Color.googleSurface)
     }
 
     private func verifyEmail() {

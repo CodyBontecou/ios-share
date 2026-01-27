@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		14EBDD7432ABCF77C17602EE /* GoogleColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77EF9A77B62440BA76E7919A /* GoogleColors.swift */; };
+		22BE19555A3C3B23E913A532 /* GoogleSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A09518DA218CA8C573BCEEF /* GoogleSpacing.swift */; };
+		46C6716F291ACC3B60FD7C97 /* GoogleTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FBA8EDF575959E863DA8C8 /* GoogleTypography.swift */; };
 		A1000001001 /* ImageHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000 /* ImageHostApp.swift */; };
 		A1000002001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002000 /* ContentView.swift */; };
 		A1000003001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000003000 /* SettingsView.swift */; };
@@ -42,6 +45,8 @@
 		A1000039001 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000019000 /* User.swift */; };
 		A100003A001 /* AuthState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A000 /* AuthState.swift */; };
 		A1000040001 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1000040000 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF090D7998F3920533D43773 /* GoogleComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33B2B177AAB3C2D4F56ED74B /* GoogleComponents.swift */; };
+		D65665EB6905B182E0F76EBC /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92EC531C9EE3CD96675D03D8 /* PhotoGridView.swift */; };
 		F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8915CA80904ADBA74F2AB9 /* ExportService.swift */; };
 /* End PBXBuildFile section */
 
@@ -71,6 +76,10 @@
 
 /* Begin PBXFileReference section */
 		0F8915CA80904ADBA74F2AB9 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
+		33B2B177AAB3C2D4F56ED74B /* GoogleComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleComponents.swift; sourceTree = "<group>"; };
+		4A09518DA218CA8C573BCEEF /* GoogleSpacing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleSpacing.swift; sourceTree = "<group>"; };
+		77EF9A77B62440BA76E7919A /* GoogleColors.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleColors.swift; sourceTree = "<group>"; };
+		92EC531C9EE3CD96675D03D8 /* PhotoGridView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
 		A1000001000 /* ImageHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHostApp.swift; sourceTree = "<group>"; };
 		A1000002000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A1000003000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -102,6 +111,7 @@
 		A1000080000 /* ImageHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ImageHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000F1000 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A10000F2000 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		A3FBA8EDF575959E863DA8C8 /* GoogleTypography.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleTypography.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -122,6 +132,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		553984877C35A24C0D159E8F /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				77EF9A77B62440BA76E7919A /* GoogleColors.swift */,
+				A3FBA8EDF575959E863DA8C8 /* GoogleTypography.swift */,
+				4A09518DA218CA8C573BCEEF /* GoogleSpacing.swift */,
+				33B2B177AAB3C2D4F56ED74B /* GoogleComponents.swift */,
+			);
+			name = DesignSystem;
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
 		A10000A0000 = {
 			isa = PBXGroup;
 			children = (
@@ -141,6 +163,7 @@
 				A10000B1000 /* Views */,
 				A1000006000 /* Info.plist */,
 				A1000007000 /* ImageHost.entitlements */,
+				553984877C35A24C0D159E8F /* DesignSystem */,
 			);
 			path = ImageHost;
 			sourceTree = "<group>";
@@ -152,6 +175,7 @@
 				A1000004000 /* HistoryView.swift */,
 				A1000005000 /* UploadDetailView.swift */,
 				A10000B2000 /* Auth */,
+				92EC531C9EE3CD96675D03D8 /* PhotoGridView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -352,6 +376,11 @@
 				A1000019001 /* User.swift in Sources */,
 				A100001A001 /* AuthState.swift in Sources */,
 				F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */,
+				14EBDD7432ABCF77C17602EE /* GoogleColors.swift in Sources */,
+				46C6716F291ACC3B60FD7C97 /* GoogleTypography.swift in Sources */,
+				22BE19555A3C3B23E913A532 /* GoogleSpacing.swift in Sources */,
+				AF090D7998F3920533D43773 /* GoogleComponents.swift in Sources */,
+				D65665EB6905B182E0F76EBC /* PhotoGridView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -7,11 +7,19 @@ struct ContentView: View {
     var body: some View {
         Group {
             if authState.isLoading {
-                // Loading state
-                VStack(spacing: 16) {
-                    ProgressView()
-                    Text("Loading...")
-                        .foregroundStyle(.secondary)
+                // Loading state with Google branding
+                ZStack {
+                    Color.googleSurface.ignoresSafeArea()
+
+                    VStack(spacing: GoogleSpacing.lg) {
+                        AppLogo(size: 80)
+
+                        ProgressView()
+                            .scaleEffect(1.2)
+
+                        Text("Loading...")
+                            .googleTypography(.bodyMedium, color: .googleTextSecondary)
+                    }
                 }
             } else if !authState.isAuthenticated {
                 // Not logged in - show login
@@ -24,7 +32,7 @@ struct ContentView: View {
                 TabView(selection: $selectedTab) {
                     HistoryView()
                         .tabItem {
-                            Label("History", systemImage: "clock.arrow.circlepath")
+                            Label("Photos", systemImage: "photo.on.rectangle.angled")
                         }
                         .tag(0)
 
@@ -34,6 +42,7 @@ struct ContentView: View {
                         }
                         .tag(1)
                 }
+                .tint(.googleBlue)
             }
         }
     }
