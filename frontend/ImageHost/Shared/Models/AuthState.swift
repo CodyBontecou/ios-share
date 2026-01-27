@@ -69,23 +69,37 @@ final class AuthState: ObservableObject {
             id: response.userId,
             email: response.email,
             subscriptionTier: response.subscriptionTier,
+            subscriptionStatus: nil,
+            hasSubscriptionAccess: nil,
             emailVerified: response.emailVerified,
             storageUsedBytes: 0,
-            storageLimitBytes: 0
+            storageLimitBytes: 0,
+            imageCount: nil,
+            uploadsRemaining: nil,
+            trialEndsAt: nil,
+            trialDaysRemaining: nil,
+            currentPeriodEnd: nil
         )
     }
 
     /// Update email verified status
     func setEmailVerified(_ verified: Bool) {
         isEmailVerified = verified
-        if var user = currentUser {
+        if let user = currentUser {
             currentUser = User(
                 id: user.id,
                 email: user.email,
                 subscriptionTier: user.subscriptionTier,
+                subscriptionStatus: user.subscriptionStatus,
+                hasSubscriptionAccess: user.hasSubscriptionAccess,
                 emailVerified: verified,
                 storageUsedBytes: user.storageUsedBytes,
-                storageLimitBytes: user.storageLimitBytes
+                storageLimitBytes: user.storageLimitBytes,
+                imageCount: user.imageCount,
+                uploadsRemaining: user.uploadsRemaining,
+                trialEndsAt: user.trialEndsAt,
+                trialDaysRemaining: user.trialDaysRemaining,
+                currentPeriodEnd: user.currentPeriodEnd
             )
         }
     }
@@ -102,5 +116,8 @@ final class AuthState: ObservableObject {
         isAuthenticated = false
         isEmailVerified = false
         currentUser = nil
+
+        // Reset subscription state
+        SubscriptionState.shared.reset()
     }
 }

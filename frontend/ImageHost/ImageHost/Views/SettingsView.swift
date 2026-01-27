@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var authState: AuthState
+    @EnvironmentObject var subscriptionState: SubscriptionState
     @Environment(\.dismiss) var dismiss
 
     @State private var isTesting = false
@@ -115,6 +116,11 @@ struct SettingsView: View {
                         }
                         .padding(.bottom, 24)
                     }
+
+                    // Subscription Section
+                    SubscriptionStatusView()
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 24)
 
                     // Link Format Section
                     VStack(spacing: 0) {
@@ -512,5 +518,6 @@ struct CustomLinkFormatSheet: View {
     NavigationStack {
         SettingsView()
             .environmentObject(AuthState.shared)
+            .environmentObject(SubscriptionState.shared)
     }
 }

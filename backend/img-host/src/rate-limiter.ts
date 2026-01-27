@@ -403,7 +403,8 @@ export function getRateLimitConfig(
 
   // Tier-based limits per day
   const tierLimits: Record<string, { uploads: number; api: number }> = {
-    free: { uploads: 100, api: 1000 },
+    free: { uploads: 0, api: 100 },           // Block uploads for free tier (subscription required)
+    trial: { uploads: 100, api: 5000 },       // Pro-like features but limited uploads
     starter: { uploads: 1000, api: 5000 },
     pro: { uploads: 10000, api: 50000 },
     business: { uploads: 999999, api: 999999 }, // Effectively unlimited

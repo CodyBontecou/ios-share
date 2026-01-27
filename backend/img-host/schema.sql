@@ -322,6 +322,66 @@ ALTER TABLE tier_limits ADD COLUMN daily_upload_limit INTEGER;
 ALTER TABLE tier_limits ADD COLUMN daily_api_limit INTEGER;
 
 -- Update tier limits with rate limit values
-UPDATE tier_limits SET daily_upload_limit = 100, daily_api_limit = 1000 WHERE tier = 'free';
+UPDATE tier_limits SET daily_upload_limit = 0, daily_api_limit = 100 WHERE tier = 'free'; -- Block uploads for free tier (subscription required)
 UPDATE tier_limits SET daily_upload_limit = 1000, daily_api_limit = 10000 WHERE tier = 'pro';
 UPDATE tier_limits SET daily_upload_limit = NULL, daily_api_limit = NULL WHERE tier = 'enterprise'; -- NULL means unlimited
+
+-- Add trial tier for subscription-required flow (Pro features, limited to 100 uploads and 100MB)
+INSERT OR REPLACE INTO tier_limits (tier, storage_limit_bytes, max_file_size_bytes, max_images, features, daily_upload_limit, daily_api_limit) VALUES
+  ('trial', 104857600, 52428800, 100, '{"custom_domains":false,"analytics":false,"api_access":true}', 100, 5000); -- 100MB storage, 50MB per file, 100 images max
+
+-- Add Apple subscription columns to subscriptions table
+ALTER TABLE subscriptions ADD COLUMN apple_original_transaction_id TEXT;
+ALTER TABLE subscriptions ADD COLUMN apple_product_id TEXT;
+ALTER TABLE subscriptions ADD COLUMN trial_ends_at INTEGER; -- Unix timestamp when trial expires
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_apple_transaction ON subscriptions(apple_original_transaction_id);
+
+-- Add email verification and password reset columns to users table (if not already present)
+ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN email_verification_token TEXT;
+ALTER TABLE users ADD COLUMN email_verification_token_expires INTEGER;
+ALTER TABLE users ADD COLUMN password_reset_token TEXT;
+ALTER TABLE users ADD COLUMN password_reset_token_expires INTEGER;
+ALTER TABLE users ADD COLUMN apple_user_id TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_users_apple_user_id ON users(apple_user_id);
+
+-- Refresh tokens table for JWT auth
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  token TEXT UNIQUE NOT NULL,
+  expires_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  revoked INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+
+-- Export jobs table for bulk data export
+CREATE TABLE IF NOT EXISTS export_jobs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'processing', -- 'processing', 'completed', 'failed'
+  image_count INTEGER NOT NULL DEFAULT 0,
+  archive_size INTEGER NOT NULL DEFAULT 0,
+  download_url TEXT,
+  expires_at INTEGER,
+  error_message TEXT,
+  created_at INTEGER NOT NULL,
+  completed_at INTEGER,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_export_jobs_user_id ON export_jobs(user_id);
+CREATE INDEX IF NOT EXISTS idx_export_jobs_status ON export_jobs(status);
+
+-- Export rate limits
+CREATE TABLE IF NOT EXISTS export_rate_limits (
+  user_id TEXT PRIMARY KEY,
+  last_export_at INTEGER NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var authState: AuthState
+    @StateObject private var subscriptionState = SubscriptionState.shared
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var selectedTab = 0
 
@@ -10,7 +11,7 @@ struct ContentView: View {
             if !hasCompletedOnboarding {
                 // First time user - show onboarding
                 OnboardingView()
-            } else if authState.isLoading {
+            } else if authState.isLoading || subscriptionState.isLoading {
                 // Loading state with brutal design
                 ZStack {
                     Color.brutalBackground.ignoresSafeArea()
@@ -32,8 +33,13 @@ struct ContentView: View {
             } else if !authState.isEmailVerified {
                 // Logged in but email not verified
                 EmailVerificationView()
+            } else if subscriptionState.shouldShowPaywall {
+                // Authenticated but no subscription - show paywall
+                PaywallView()
+                    .environmentObject(subscriptionState)
+                    .preferredColorScheme(.dark)
             } else {
-                // Fully authenticated - show main app
+                // Fully authenticated with subscription access - show main app
                 TabView(selection: $selectedTab) {
                     HistoryView()
                         .tabItem {
@@ -51,6 +57,19 @@ struct ContentView: View {
                 }
                 .tint(.white)
                 .preferredColorScheme(.dark)
+                .environmentObject(subscriptionState)
+            }
+        }
+        .task {
+            // Check subscription status when authenticated
+            if authState.isAuthenticated && authState.isEmailVerified {
+                await subscriptionState.checkStatus()
+            }
+        }
+        .onChange(of: authState.isAuthenticated) { _, isAuthenticated in
+            if !isAuthenticated {
+                // Reset subscription state on logout
+                subscriptionState.reset()
             }
         }
     }

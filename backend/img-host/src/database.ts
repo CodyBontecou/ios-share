@@ -5,7 +5,7 @@ export interface User {
   email: string;
   password_hash: string;
   created_at: number;
-  subscription_tier: 'free' | 'pro' | 'enterprise';
+  subscription_tier: 'free' | 'trial' | 'pro' | 'enterprise';
   api_token: string;
   storage_limit_bytes: number;
   email_verified: number;
@@ -47,10 +47,13 @@ export interface Image {
 export interface Subscription {
   id: string;
   user_id: string;
-  tier: 'free' | 'pro' | 'enterprise';
-  status: 'active' | 'cancelled' | 'past_due' | 'trialing';
+  tier: 'free' | 'trial' | 'pro' | 'enterprise';
+  status: 'active' | 'cancelled' | 'past_due' | 'trialing' | 'expired';
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
+  apple_original_transaction_id?: string;
+  apple_product_id?: string;
+  trial_ends_at?: number;
   current_period_start?: number;
   current_period_end?: number;
   cancel_at_period_end: boolean;
@@ -88,16 +91,27 @@ export interface ExportJob {
 export class Database {
   constructor(private db: D1Database) {}
 
+  // Helper to get storage limit for tier
+  private getStorageLimitForTier(tier: 'free' | 'trial' | 'pro' | 'enterprise'): number {
+    switch (tier) {
+      case 'free': return 104857600;      // 100MB
+      case 'trial': return 104857600;     // 100MB (Pro features but limited storage)
+      case 'pro': return 10737418240;     // 10GB
+      case 'enterprise': return 107374182400; // 100GB
+      default: return 104857600;
+    }
+  }
+
   // User operations
   async createUser(
     email: string,
     passwordHash: string,
     apiToken: string,
-    tier: 'free' | 'pro' | 'enterprise' = 'free'
+    tier: 'free' | 'trial' | 'pro' | 'enterprise' = 'free'
   ): Promise<User> {
     const id = crypto.randomUUID();
     const createdAt = Date.now();
-    const storageLimitBytes = tier === 'free' ? 104857600 : tier === 'pro' ? 10737418240 : 107374182400;
+    const storageLimitBytes = this.getStorageLimitForTier(tier);
 
     await this.db
       .prepare(
@@ -161,11 +175,11 @@ export class Database {
   async createAppleUser(
     email: string,
     appleUserId: string,
-    tier: 'free' | 'pro' | 'enterprise' = 'free'
+    tier: 'free' | 'trial' | 'pro' | 'enterprise' = 'free'
   ): Promise<User> {
     const id = crypto.randomUUID();
     const createdAt = Date.now();
-    const storageLimitBytes = tier === 'free' ? 104857600 : tier === 'pro' ? 10737418240 : 107374182400;
+    const storageLimitBytes = this.getStorageLimitForTier(tier);
     const apiToken = crypto.randomUUID();
 
     // Use special marker for Apple-only accounts (no password)
@@ -192,8 +206,8 @@ export class Database {
     };
   }
 
-  async updateUserTier(userId: string, tier: 'free' | 'pro' | 'enterprise'): Promise<void> {
-    const storageLimitBytes = tier === 'free' ? 104857600 : tier === 'pro' ? 10737418240 : 107374182400;
+  async updateUserTier(userId: string, tier: 'free' | 'trial' | 'pro' | 'enterprise'): Promise<void> {
+    const storageLimitBytes = this.getStorageLimitForTier(tier);
     await this.db
       .prepare('UPDATE users SET subscription_tier = ?, storage_limit_bytes = ? WHERE id = ?')
       .bind(tier, storageLimitBytes, userId)
@@ -294,8 +308,8 @@ export class Database {
   // Subscription operations
   async createSubscription(
     userId: string,
-    tier: 'free' | 'pro' | 'enterprise',
-    status: 'active' | 'cancelled' | 'past_due' | 'trialing',
+    tier: 'free' | 'trial' | 'pro' | 'enterprise',
+    status: 'active' | 'cancelled' | 'past_due' | 'trialing' | 'expired',
     stripeCustomerId?: string,
     stripeSubscriptionId?: string
   ): Promise<Subscription> {
@@ -323,6 +337,97 @@ export class Database {
     };
   }
 
+  // Create subscription with Apple IAP details
+  async createAppleSubscription(
+    userId: string,
+    tier: 'trial' | 'pro',
+    status: 'active' | 'trialing' | 'expired',
+    appleOriginalTransactionId: string,
+    appleProductId: string,
+    currentPeriodEnd: number,
+    trialEndsAt?: number
+  ): Promise<Subscription> {
+    const id = crypto.randomUUID();
+    const now = Date.now();
+
+    await this.db
+      .prepare(
+        `INSERT INTO subscriptions (id, user_id, tier, status, apple_original_transaction_id, apple_product_id, current_period_start, current_period_end, trial_ends_at, cancel_at_period_end, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+      )
+      .bind(id, userId, tier, status, appleOriginalTransactionId, appleProductId, now, currentPeriodEnd, trialEndsAt || null, now, now)
+      .run();
+
+    // Also update user tier
+    await this.updateUserTier(userId, tier);
+
+    return {
+      id,
+      user_id: userId,
+      tier,
+      status,
+      apple_original_transaction_id: appleOriginalTransactionId,
+      apple_product_id: appleProductId,
+      current_period_start: now,
+      current_period_end: currentPeriodEnd,
+      trial_ends_at: trialEndsAt,
+      cancel_at_period_end: false,
+      created_at: now,
+      updated_at: now,
+    };
+  }
+
+  // Get subscription by Apple transaction ID
+  async getSubscriptionByAppleTransactionId(transactionId: string): Promise<Subscription | null> {
+    const result = await this.db
+      .prepare('SELECT * FROM subscriptions WHERE apple_original_transaction_id = ?')
+      .bind(transactionId)
+      .first<Subscription>();
+    return result || null;
+  }
+
+  // Update subscription with Apple IAP details
+  async updateSubscriptionWithApple(
+    userId: string,
+    tier: 'trial' | 'pro',
+    status: 'active' | 'trialing' | 'expired',
+    appleOriginalTransactionId: string,
+    appleProductId: string,
+    currentPeriodEnd: number,
+    trialEndsAt?: number
+  ): Promise<void> {
+    const now = Date.now();
+
+    await this.db
+      .prepare(
+        `UPDATE subscriptions
+         SET tier = ?, status = ?, apple_original_transaction_id = ?, apple_product_id = ?,
+             current_period_end = ?, trial_ends_at = ?, updated_at = ?
+         WHERE user_id = ?`
+      )
+      .bind(tier, status, appleOriginalTransactionId, appleProductId, currentPeriodEnd, trialEndsAt || null, now, userId)
+      .run();
+
+    // Also update user tier
+    await this.updateUserTier(userId, tier);
+  }
+
+  // Update subscription status and tier
+  async updateSubscriptionTierAndStatus(
+    userId: string,
+    tier: 'free' | 'trial' | 'pro' | 'enterprise',
+    status: 'active' | 'cancelled' | 'past_due' | 'trialing' | 'expired'
+  ): Promise<void> {
+    const now = Date.now();
+    await this.db
+      .prepare('UPDATE subscriptions SET tier = ?, status = ?, updated_at = ? WHERE user_id = ?')
+      .bind(tier, status, now, userId)
+      .run();
+
+    // Also update user tier
+    await this.updateUserTier(userId, tier);
+  }
+
   async getSubscriptionByUserId(userId: string): Promise<Subscription | null> {
     const result = await this.db
       .prepare('SELECT * FROM subscriptions WHERE user_id = ?')
@@ -333,7 +438,7 @@ export class Database {
 
   async updateSubscriptionStatus(
     userId: string,
-    status: 'active' | 'cancelled' | 'past_due' | 'trialing'
+    status: 'active' | 'cancelled' | 'past_due' | 'trialing' | 'expired'
   ): Promise<void> {
     const now = Date.now();
     await this.db

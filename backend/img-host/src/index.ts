@@ -14,6 +14,12 @@ import {
   handleResendVerification,
   handleAppleSignIn
 } from './auth-handlers';
+import {
+  handleVerifyPurchase,
+  handleSubscriptionStatus,
+  handleRestorePurchases,
+  checkSubscriptionAccess
+} from './subscription-handlers';
 import type { ExportJobResponse } from './types';
 
 export interface Env {
@@ -24,6 +30,7 @@ export interface Env {
   EMAIL_FROM?: string;
   EMAIL_API_KEY?: string;
   BASE_URL?: string;
+  APPLE_BUNDLE_ID?: string;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -96,6 +103,18 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   // Check if email is verified
   if (user.email_verified !== 1) {
     return json({ error: 'Email verification required', email_verified: false }, 403);
+  }
+
+  // Check subscription access (subscription required for uploads)
+  const subscriptionCheck = await checkSubscriptionAccess(user.id, db);
+  if (!subscriptionCheck.hasAccess) {
+    return json({
+      error: 'Subscription required',
+      subscription_required: true,
+      reason: subscriptionCheck.reason,
+      current_tier: subscriptionCheck.tier,
+      current_status: subscriptionCheck.status,
+    }, 403);
   }
 
   // Check if user is suspended
@@ -537,14 +556,40 @@ async function handleGetUser(request: Request, env: Env): Promise<Response> {
   // Get storage usage
   const usage = await db.getStorageUsage(user.id);
 
+  // Get subscription status
+  const subscription = await db.getSubscriptionByUserId(user.id);
+  const subscriptionAccess = await checkSubscriptionAccess(user.id, db);
+
+  // Calculate uploads remaining for trial users
+  let uploadsRemaining: number | undefined;
+  if (user.subscription_tier === 'trial') {
+    const tierLimits = await db.getTierLimits('trial');
+    if (tierLimits) {
+      uploadsRemaining = Math.max(0, (tierLimits.max_images || 100) - usage.image_count);
+    }
+  }
+
+  // Calculate trial days remaining
+  let trialDaysRemaining: number | undefined;
+  if (subscription?.status === 'trialing' && subscription?.trial_ends_at) {
+    const msRemaining = subscription.trial_ends_at - Date.now();
+    trialDaysRemaining = Math.max(0, Math.ceil(msRemaining / (24 * 60 * 60 * 1000)));
+  }
+
   return json({
     user_id: user.id,
     email: user.email,
     subscription_tier: user.subscription_tier,
+    subscription_status: subscription?.status || 'none',
+    has_subscription_access: subscriptionAccess.hasAccess,
     email_verified: user.email_verified === 1,
     storage_limit_bytes: user.storage_limit_bytes,
     storage_used_bytes: usage.total_bytes_used,
     image_count: usage.image_count,
+    uploads_remaining: uploadsRemaining,
+    trial_ends_at: subscription?.trial_ends_at ? new Date(subscription.trial_ends_at).toISOString() : undefined,
+    trial_days_remaining: trialDaysRemaining,
+    current_period_end: subscription?.current_period_end ? new Date(subscription.current_period_end).toISOString() : undefined,
   });
 }
 
@@ -868,6 +913,21 @@ export default {
       // POST /auth/apple - Sign in with Apple
       if (method === 'POST' && path === '/auth/apple') {
         return await handleAppleSignIn(request, env);
+      }
+
+      // POST /subscription/verify-purchase - Verify App Store purchase
+      if (method === 'POST' && path === '/subscription/verify-purchase') {
+        return await handleVerifyPurchase(request, env);
+      }
+
+      // GET /subscription/status - Get subscription status
+      if (method === 'GET' && path === '/subscription/status') {
+        return await handleSubscriptionStatus(request, env);
+      }
+
+      // POST /subscription/restore - Restore purchases
+      if (method === 'POST' && path === '/subscription/restore') {
+        return await handleRestorePurchases(request, env);
       }
 
       // GET /user
