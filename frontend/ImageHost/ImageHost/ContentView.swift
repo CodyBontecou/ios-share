@@ -47,13 +47,19 @@ struct ContentView: View {
                         }
                         .tag(0)
 
+                    UploadView()
+                        .tabItem {
+                            Label("Upload", systemImage: "arrow.up.circle")
+                        }
+                        .tag(1)
+
                     NavigationStack {
                         SettingsView()
                     }
                     .tabItem {
                         Label("Settings", systemImage: "gearshape")
                     }
-                    .tag(1)
+                    .tag(2)
                 }
                 .tint(.white)
                 .preferredColorScheme(.dark)

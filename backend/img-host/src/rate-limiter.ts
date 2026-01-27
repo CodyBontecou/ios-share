@@ -34,6 +34,16 @@ export class RateLimiter {
     const windowStart = Math.floor(now / config.windowMs) * config.windowMs;
     const reset = windowStart + config.windowMs;
 
+    // If maxRequests is 0, always deny (e.g., free tier with no upload allowance)
+    if (config.maxRequests <= 0) {
+      return {
+        allowed: false,
+        limit: 0,
+        remaining: 0,
+        reset,
+      };
+    }
+
     // Get or create rate limit record
     const existing = await this.db
       .prepare(
