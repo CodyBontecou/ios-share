@@ -11,7 +11,6 @@ struct SettingsView: View {
     @State private var alertTitle = ""
     @State private var alertMessage = ""
     @State private var showClearConfirmation = false
-    @State private var showLogoutConfirmation = false
     @State private var selectedLinkFormat: LinkFormat = LinkFormatService.shared.currentFormat
     @State private var customLinkTemplate: String = LinkFormatService.shared.customTemplate
     @State private var showCustomFormatSheet = false
@@ -22,27 +21,7 @@ struct SettingsView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    // Header
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("SET-\nTINGS")
-                            .font(.system(size: 56, weight: .black))
-                            .foregroundStyle(.white)
-                            .lineSpacing(-8)
-
-                        HStack {
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(width: 24, height: 1)
-
-                            Text("ACCOUNT & PREFERENCES")
-                                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
-                                .tracking(2)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 24)
-                    .padding(.bottom, 32)
+                    headerSection
 
                     // Profile Section
                     if let user = authState.currentUser {
@@ -148,7 +127,7 @@ struct SettingsView: View {
                                         HStack {
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(format.displayName)
-                                                    .brutalTypography(.body)
+                                                    .brutalTypography(.bodyMedium)
 
                                                 Text(format == .custom ? customLinkTemplate : format.previewExample)
                                                     .brutalTypography(.monoSmall, color: .brutalTextTertiary)
@@ -274,7 +253,8 @@ struct SettingsView: View {
 
                     // Sign Out
                     BrutalSecondaryButton(title: "Sign Out") {
-                        showLogoutConfirmation = true
+                        authState.logout()
+                        dismiss()
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 48)
@@ -315,19 +295,6 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will remove all upload history from this device. Images on the server will not be affected.")
-        }
-        .confirmationDialog(
-            "Sign Out",
-            isPresented: $showLogoutConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Sign Out", role: .destructive) {
-                authState.logout()
-                dismiss()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Are you sure you want to sign out?")
         }
         .sheet(isPresented: $showCustomFormatSheet) {
             CustomLinkFormatSheet(
@@ -392,6 +359,32 @@ struct SettingsView: View {
         alertMessage = message
         showAlert = true
     }
+
+    // MARK: - View Sections (extracted to help compiler type-check)
+
+    @ViewBuilder
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("SET-\nTINGS")
+                .font(.system(size: 56, weight: .black))
+                .foregroundStyle(.white)
+                .lineSpacing(-8)
+
+            HStack {
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 24, height: 1)
+
+                Text("ACCOUNT & PREFERENCES")
+                    .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                    .tracking(2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 32)
+    }
 }
 
 // MARK: - Custom Link Format Sheet
@@ -416,7 +409,7 @@ struct CustomLinkFormatSheet: View {
                             .lineSpacing(-4)
 
                         Text("Define your own link template")
-                            .brutalTypography(.body, color: .brutalTextSecondary)
+                            .brutalTypography(.bodyMedium, color: .brutalTextSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
