@@ -10,3 +10,6 @@ bucket_name = "images"
 binding = "DB"
 database_name = "imagehost"
 database_id = "e8297db4-525b-4280-9bca-ac87f41861c8"
+
+[vars]
+APPLE_CLIENT_ID = "com.imagehost.app"

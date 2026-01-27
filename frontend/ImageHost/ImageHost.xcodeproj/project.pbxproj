@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8915CA80904ADBA74F2AB9 /* ExportService.swift */; };
 		A1000001001 /* ImageHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000 /* ImageHostApp.swift */; };
 		A1000002001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002000 /* ContentView.swift */; };
 		A1000003001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000003000 /* SettingsView.swift */; };
@@ -20,6 +19,15 @@
 		A1000014001 /* HistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014000 /* HistoryService.swift */; };
 		A1000015001 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015000 /* ImageProcessor.swift */; };
 		A1000016001 /* UploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016000 /* UploadService.swift */; };
+		A1000017001 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017000 /* AuthService.swift */; };
+		A1000018001 /* AuthResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018000 /* AuthResponse.swift */; };
+		A1000019001 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000019000 /* User.swift */; };
+		A100001A001 /* AuthState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A000 /* AuthState.swift */; };
+		A100001B001 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001B000 /* LoginView.swift */; };
+		A100001C001 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001C000 /* RegisterView.swift */; };
+		A100001D001 /* EmailVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001D000 /* EmailVerificationView.swift */; };
+		A100001E001 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E000 /* ForgotPasswordView.swift */; };
+		A100001F001 /* ResetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001F000 /* ResetPasswordView.swift */; };
 		A1000020001 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020000 /* ShareViewController.swift */; };
 		A1000021001 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021000 /* ShareView.swift */; };
 		A1000030001 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010000 /* Config.swift */; };
@@ -29,7 +37,12 @@
 		A1000034001 /* HistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014000 /* HistoryService.swift */; };
 		A1000035001 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015000 /* ImageProcessor.swift */; };
 		A1000036001 /* UploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016000 /* UploadService.swift */; };
+		A1000037001 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017000 /* AuthService.swift */; };
+		A1000038001 /* AuthResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018000 /* AuthResponse.swift */; };
+		A1000039001 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000019000 /* User.swift */; };
+		A100003A001 /* AuthState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A000 /* AuthState.swift */; };
 		A1000040001 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1000040000 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8915CA80904ADBA74F2AB9 /* ExportService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +85,15 @@
 		A1000014000 /* HistoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryService.swift; sourceTree = "<group>"; };
 		A1000015000 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
 		A1000016000 /* UploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadService.swift; sourceTree = "<group>"; };
+		A1000017000 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		A1000018000 /* AuthResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthResponse.swift; sourceTree = "<group>"; };
+		A1000019000 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		A100001A000 /* AuthState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthState.swift; sourceTree = "<group>"; };
+		A100001B000 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		A100001C000 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		A100001D000 /* EmailVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailVerificationView.swift; sourceTree = "<group>"; };
+		A100001E000 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
+		A100001F000 /* ResetPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetPasswordView.swift; sourceTree = "<group>"; };
 		A1000020000 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		A1000021000 /* ShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareView.swift; sourceTree = "<group>"; };
 		A1000022000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -129,8 +151,21 @@
 				A1000003000 /* SettingsView.swift */,
 				A1000004000 /* HistoryView.swift */,
 				A1000005000 /* UploadDetailView.swift */,
+				A10000B2000 /* Auth */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A10000B2000 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A100001B000 /* LoginView.swift */,
+				A100001C000 /* RegisterView.swift */,
+				A100001D000 /* EmailVerificationView.swift */,
+				A100001E000 /* ForgotPasswordView.swift */,
+				A100001F000 /* ResetPasswordView.swift */,
+			);
+			path = Auth;
 			sourceTree = "<group>";
 		};
 		A10000C0000 /* ShareExtension */ = {
@@ -159,6 +194,9 @@
 			children = (
 				A1000011000 /* UploadRecord.swift */,
 				A1000012000 /* ImageHostError.swift */,
+				A1000018000 /* AuthResponse.swift */,
+				A1000019000 /* User.swift */,
+				A100001A000 /* AuthState.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -170,8 +208,9 @@
 				A1000014000 /* HistoryService.swift */,
 				A1000015000 /* ImageProcessor.swift */,
 				A1000016000 /* UploadService.swift */,
-			
-				0F8915CA80904ADBA74F2AB9 /* ExportService.swift */,);
+				A1000017000 /* AuthService.swift */,
+				0F8915CA80904ADBA74F2AB9 /* ExportService.swift */,
+			);
 			path = Services;
 			sourceTree = "<group>";
 		};
@@ -240,7 +279,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					A1000060000 = {
 						CreatedOnToolsVersion = 15.0;
@@ -296,6 +335,11 @@
 				A1000003001 /* SettingsView.swift in Sources */,
 				A1000004001 /* HistoryView.swift in Sources */,
 				A1000005001 /* UploadDetailView.swift in Sources */,
+				A100001B001 /* LoginView.swift in Sources */,
+				A100001C001 /* RegisterView.swift in Sources */,
+				A100001D001 /* EmailVerificationView.swift in Sources */,
+				A100001E001 /* ForgotPasswordView.swift in Sources */,
+				A100001F001 /* ResetPasswordView.swift in Sources */,
 				A1000010001 /* Config.swift in Sources */,
 				A1000011001 /* UploadRecord.swift in Sources */,
 				A1000012001 /* ImageHostError.swift in Sources */,
@@ -303,8 +347,12 @@
 				A1000014001 /* HistoryService.swift in Sources */,
 				A1000015001 /* ImageProcessor.swift in Sources */,
 				A1000016001 /* UploadService.swift in Sources */,
-			
-				F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */,);
+				A1000017001 /* AuthService.swift in Sources */,
+				A1000018001 /* AuthResponse.swift in Sources */,
+				A1000019001 /* User.swift in Sources */,
+				A100001A001 /* AuthState.swift in Sources */,
+				F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A1000150000 /* Sources */ = {
@@ -320,6 +368,10 @@
 				A1000034001 /* HistoryService.swift in Sources */,
 				A1000035001 /* ImageProcessor.swift in Sources */,
 				A1000036001 /* UploadService.swift in Sources */,
+				A1000037001 /* AuthService.swift in Sources */,
+				A1000038001 /* AuthResponse.swift in Sources */,
+				A1000039001 /* User.swift in Sources */,
+				A100003A001 /* AuthState.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -370,6 +422,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 67KC823C9A;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -393,6 +446,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -434,6 +488,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 67KC823C9A;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -450,6 +505,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -458,13 +514,11 @@
 		A10001A0000 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ImageHost/ImageHost.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 67KC823C9A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ImageHost/Info.plist;
@@ -490,13 +544,11 @@
 		A10001B0000 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ImageHost/ImageHost.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 67KC823C9A;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ImageHost/Info.plist;
@@ -525,7 +577,6 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 67KC823C9A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ImageHost;
@@ -552,7 +603,6 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 67KC823C9A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ImageHost;

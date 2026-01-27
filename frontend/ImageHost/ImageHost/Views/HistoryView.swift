@@ -171,7 +171,7 @@ struct HistoryView: View {
                         exportState = .exporting(progress: 0.0)
                     case .processing(let progress):
                         exportState = .exporting(progress: progress)
-                    case .completed(let downloadUrl):
+                    case .completed:
                         // Will be handled after polling completes
                         break
                     case .failed(let error):
@@ -184,7 +184,7 @@ struct HistoryView: View {
                     exportState = .downloading(progress: 0.0)
 
                     let fileURL = try await ExportService.shared.downloadArchive(jobId: jobId) { progress in
-                        Task { @MainActor in
+                        _ = Task { @MainActor in
                             exportState = .downloading(progress: progress)
                         }
                     }

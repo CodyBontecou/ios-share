@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --ip 0.0.0.0",
     "deploy": "wrangler deploy",
     "db:init": "./scripts/init-db.sh",
     "db:migrate": "wrangler d1 execute imagehost --remote --file=./migrations/0001_initial_schema.sql",

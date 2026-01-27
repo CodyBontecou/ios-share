@@ -108,7 +108,7 @@ final class ExportService: NSObject {
     /// Starts an export job on the backend
     /// - Returns: The job ID for tracking the export
     func startExport() async throws -> String {
-        let backendUrl = Config.effectiveBackendURL
+        let backendUrl = Config.backendURL
         guard !backendUrl.isEmpty else {
             throw ExportError.notConfigured
         }
@@ -151,7 +151,7 @@ final class ExportService: NSObject {
     /// - Parameter jobId: The ID of the export job
     /// - Returns: The current status of the export
     func checkStatus(jobId: String) async throws -> ExportStatus {
-        let backendUrl = Config.effectiveBackendURL
+        let backendUrl = Config.backendURL
         guard !backendUrl.isEmpty else {
             throw ExportError.notConfigured
         }
@@ -193,7 +193,7 @@ final class ExportService: NSObject {
     ///   - progress: Progress callback that receives values from 0.0 to 1.0
     /// - Returns: URL to the downloaded archive file
     func downloadArchive(jobId: String, progress: @escaping (Double) -> Void) async throws -> URL {
-        let backendUrl = Config.effectiveBackendURL
+        let backendUrl = Config.backendURL
         guard !backendUrl.isEmpty else {
             throw ExportError.notConfigured
         }
@@ -299,7 +299,7 @@ final class ExportService: NSObject {
         statusCheckTimer?.invalidate()
         statusCheckTimer = nil
 
-        let backendUrl = Config.effectiveBackendURL
+        let backendUrl = Config.backendURL
         guard !backendUrl.isEmpty else {
             throw ExportError.notConfigured
         }
