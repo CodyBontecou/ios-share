@@ -48,6 +48,23 @@ curl -s -X POST https://img-host.costream.workers.dev/auth/apple -H "Content-Typ
 wrangler tail --format=pretty
 ```
 
+## API Response Format
+
+**CRITICAL**: All backend JSON responses must use **snake_case** for field names.
+
+The iOS Swift models use `CodingKeys` to map snake_case JSON to camelCase properties:
+```swift
+enum CodingKeys: String, CodingKey {
+    case subscriptionTier = "subscription_tier"  // JSON uses snake_case
+}
+```
+
+When adding new fields to API responses:
+- Backend: `subscription_tier`, `storage_limit_bytes`, `has_access`
+- NOT: `subscriptionTier`, `storageLimitBytes`, `hasAccess`
+
+If you see `keyNotFound` decoding errors in the iOS app, check that the backend response uses snake_case.
+
 ## Project Structure
 
 - `backend/img-host/` - Cloudflare Worker backend

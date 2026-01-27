@@ -111,10 +111,9 @@ final class StoreKitManager: ObservableObject {
             // Get all transactions and verify with backend
             var transactions: [String] = []
             for await result in Transaction.currentEntitlements {
-                if let transaction = try? checkVerified(result) {
-                    if let jwsRepresentation = result.jwsRepresentation {
-                        transactions.append(jwsRepresentation)
-                    }
+                if (try? checkVerified(result)) != nil {
+                    let jwsRepresentation = result.jwsRepresentation
+                    transactions.append(jwsRepresentation)
                 }
             }
 
@@ -193,14 +192,12 @@ final class StoreKitManager: ObservableObject {
 
     /// Verify transaction with backend
     private func verifyWithBackend(transaction: Transaction) async throws {
-        // Get the JWS representation of the transaction
-        guard let jwsRepresentation = transaction.jsonRepresentation else {
-            throw StoreKitError.noJWSRepresentation
-        }
+        // Get the JSON representation of the transaction
+        let jsonRepresentation = transaction.jsonRepresentation
 
         // Create a signed transaction string for backend verification
         // StoreKit 2 provides the signed transaction data
-        let signedTransaction = String(data: jwsRepresentation, encoding: .utf8) ?? ""
+        let signedTransaction = String(data: jsonRepresentation, encoding: .utf8) ?? ""
 
         // For now, we'll use the transaction ID as we need the actual JWS
         // In production, you'd use the signedTransactionInfo from the receipt

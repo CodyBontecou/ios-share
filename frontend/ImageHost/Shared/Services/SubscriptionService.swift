@@ -18,7 +18,7 @@ final class SubscriptionService {
         originalTransactionId: String,
         expiresDate: Date?
     ) async throws {
-        guard let token = keychainService.accessToken else {
+        guard let token = keychainService.loadAccessToken() else {
             throw SubscriptionError.notAuthenticated
         }
 
@@ -63,7 +63,7 @@ final class SubscriptionService {
 
     /// Get current subscription status from backend
     func getSubscriptionStatus() async throws -> SubscriptionStatusResponse {
-        guard let token = keychainService.accessToken else {
+        guard let token = keychainService.loadAccessToken() else {
             throw SubscriptionError.notAuthenticated
         }
 
@@ -94,7 +94,7 @@ final class SubscriptionService {
 
     /// Restore purchases with backend
     func restorePurchases(transactions: [String]) async throws {
-        guard let token = keychainService.accessToken else {
+        guard let token = keychainService.loadAccessToken() else {
             throw SubscriptionError.notAuthenticated
         }
 
@@ -164,7 +164,4 @@ enum SubscriptionError: LocalizedError {
 }
 
 // MARK: - Helper Types
-
-private struct ErrorResponse: Codable {
-    let error: String
-}
+// Note: Uses ErrorResponse from AuthResponse.swift

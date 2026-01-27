@@ -125,16 +125,16 @@ export async function handleVerifyPurchase(request: Request, env: Env): Promise<
       subscription: {
         status,
         tier,
-        productId: transaction.productId,
-        expiresAt: new Date(transaction.expiresDate).toISOString(),
-        isTrialPeriod,
-        trialEndsAt: trialEndsAt ? new Date(trialEndsAt).toISOString() : undefined,
+        product_id: transaction.productId,
+        expires_at: new Date(transaction.expiresDate).toISOString(),
+        is_trial_period: isTrialPeriod,
+        trial_ends_at: trialEndsAt ? new Date(trialEndsAt).toISOString() : undefined,
       },
       user: {
-        subscriptionTier: updatedUser?.subscription_tier,
-        storageLimitBytes: updatedUser?.storage_limit_bytes,
-        storageUsedBytes: usage.total_bytes_used,
-        imageCount: usage.image_count,
+        subscription_tier: updatedUser?.subscription_tier,
+        storage_limit_bytes: updatedUser?.storage_limit_bytes,
+        storage_used_bytes: usage.total_bytes_used,
+        image_count: usage.image_count,
       },
     });
   } catch (error) {
@@ -170,12 +170,13 @@ export async function handleSubscriptionStatus(request: Request, env: Env): Prom
       return json({
         status: 'none',
         tier: 'free',
-        hasAccess: false,
+        has_access: false,
+        will_renew: false,
         user: {
-          subscriptionTier: user.subscription_tier,
-          storageLimitBytes: user.storage_limit_bytes,
-          storageUsedBytes: usage.total_bytes_used,
-          imageCount: usage.image_count,
+          subscription_tier: user.subscription_tier,
+          storage_limit_bytes: user.storage_limit_bytes,
+          storage_used_bytes: usage.total_bytes_used,
+          image_count: usage.image_count,
         },
       });
     }
@@ -211,22 +212,22 @@ export async function handleSubscriptionStatus(request: Request, env: Env): Prom
     return json({
       status: effectiveStatus,
       tier: subscription.tier,
-      hasAccess,
-      productId: subscription.apple_product_id,
-      expiresAt: subscription.current_period_end
+      has_access: hasAccess,
+      product_id: subscription.apple_product_id,
+      expires_at: subscription.current_period_end
         ? new Date(subscription.current_period_end).toISOString()
         : undefined,
-      trialEndsAt: subscription.trial_ends_at
+      trial_ends_at: subscription.trial_ends_at
         ? new Date(subscription.trial_ends_at).toISOString()
         : undefined,
-      trialDaysRemaining,
-      uploadsRemaining,
-      willRenew: !subscription.cancel_at_period_end,
+      trial_days_remaining: trialDaysRemaining,
+      uploads_remaining: uploadsRemaining,
+      will_renew: !subscription.cancel_at_period_end,
       user: {
-        subscriptionTier: user.subscription_tier,
-        storageLimitBytes: user.storage_limit_bytes,
-        storageUsedBytes: usage.total_bytes_used,
-        imageCount: usage.image_count,
+        subscription_tier: user.subscription_tier,
+        storage_limit_bytes: user.storage_limit_bytes,
+        storage_used_bytes: usage.total_bytes_used,
+        image_count: usage.image_count,
       },
     });
   } catch (error) {
@@ -295,7 +296,7 @@ export async function handleRestorePurchases(request: Request, env: Env): Promis
       return json({
         success: false,
         message: 'All subscriptions have expired',
-        expiredAt: new Date(transaction.expiresDate).toISOString(),
+        expired_at: new Date(transaction.expiresDate).toISOString(),
       });
     }
 
@@ -341,16 +342,16 @@ export async function handleRestorePurchases(request: Request, env: Env): Promis
       subscription: {
         status,
         tier,
-        productId: transaction.productId,
-        expiresAt: new Date(transaction.expiresDate).toISOString(),
-        isTrialPeriod,
-        trialEndsAt: trialEndsAt ? new Date(trialEndsAt).toISOString() : undefined,
+        product_id: transaction.productId,
+        expires_at: new Date(transaction.expiresDate).toISOString(),
+        is_trial_period: isTrialPeriod,
+        trial_ends_at: trialEndsAt ? new Date(trialEndsAt).toISOString() : undefined,
       },
       user: {
-        subscriptionTier: updatedUser?.subscription_tier,
-        storageLimitBytes: updatedUser?.storage_limit_bytes,
-        storageUsedBytes: usage.total_bytes_used,
-        imageCount: usage.image_count,
+        subscription_tier: updatedUser?.subscription_tier,
+        storage_limit_bytes: updatedUser?.storage_limit_bytes,
+        storage_used_bytes: usage.total_bytes_used,
+        image_count: usage.image_count,
       },
     });
   } catch (error) {

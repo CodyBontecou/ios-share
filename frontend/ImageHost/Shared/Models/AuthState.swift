@@ -64,21 +64,14 @@ final class AuthState: ObservableObject {
         isAuthenticated = true
         isEmailVerified = response.emailVerified
 
-        // Create user from response
+        // Create user from response (subscription status comes from SubscriptionState)
         currentUser = User(
             id: response.userId,
             email: response.email,
-            subscriptionTier: response.subscriptionTier,
-            subscriptionStatus: nil,
-            hasSubscriptionAccess: nil,
             emailVerified: response.emailVerified,
             storageUsedBytes: 0,
             storageLimitBytes: 0,
-            imageCount: nil,
-            uploadsRemaining: nil,
-            trialEndsAt: nil,
-            trialDaysRemaining: nil,
-            currentPeriodEnd: nil
+            imageCount: nil
         )
     }
 
@@ -89,17 +82,10 @@ final class AuthState: ObservableObject {
             currentUser = User(
                 id: user.id,
                 email: user.email,
-                subscriptionTier: user.subscriptionTier,
-                subscriptionStatus: user.subscriptionStatus,
-                hasSubscriptionAccess: user.hasSubscriptionAccess,
                 emailVerified: verified,
                 storageUsedBytes: user.storageUsedBytes,
                 storageLimitBytes: user.storageLimitBytes,
-                imageCount: user.imageCount,
-                uploadsRemaining: user.uploadsRemaining,
-                trialEndsAt: user.trialEndsAt,
-                trialDaysRemaining: user.trialDaysRemaining,
-                currentPeriodEnd: user.currentPeriodEnd
+                imageCount: user.imageCount
             )
         }
     }
@@ -117,7 +103,9 @@ final class AuthState: ObservableObject {
         isEmailVerified = false
         currentUser = nil
 
-        // Reset subscription state
+        // Reset subscription state (not available in share extension)
+        #if !SHARE_EXTENSION
         SubscriptionState.shared.reset()
+        #endif
     }
 }

@@ -59,8 +59,8 @@ struct SettingsView: View {
 
                                         HStack(spacing: 8) {
                                             BrutalBadge(
-                                                text: user.subscriptionTier,
-                                                style: user.subscriptionTier.lowercased() == "free" ? .default : .success
+                                                text: subscriptionState.tier.uppercased(),
+                                                style: subscriptionState.tier.lowercased() == "free" ? .default : .success
                                             )
 
                                             if user.emailVerified {
