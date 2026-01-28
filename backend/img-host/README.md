@@ -43,7 +43,7 @@ Or manually:
 
 ```bash
 # Create D1 database
-wrangler d1 create imagehost
+wrangler d1 create imghost
 
 # Update wrangler.toml with the database_id from above
 
@@ -281,7 +281,7 @@ The legacy `UPLOAD_TOKEN` environment variable is still supported for backward c
 ## Troubleshooting
 
 ### Database Not Found
-Verify `database_id` in `wrangler.toml` matches the output from `wrangler d1 create imagehost`
+Verify `database_id` in `wrangler.toml` matches the output from `wrangler d1 create imghost`
 
 ### Migration Failed
 Check SQL syntax and ensure you're using SQLite-compatible SQL

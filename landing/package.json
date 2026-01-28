@@ -1,7 +1,7 @@
 {
-  "name": "imagehost-landing",
+  "name": "imghost-landing",
   "version": "1.0.0",
-  "description": "Marketing landing page for ImageHost iOS app",
+  "description": "Marketing landing page for imghost iOS app",
   "scripts": {
     "start": "npx serve .",
     "build": "echo 'Static site - no build needed'"

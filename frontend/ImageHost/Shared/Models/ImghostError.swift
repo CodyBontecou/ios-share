@@ -1,6 +1,6 @@
 import Foundation
 
-enum ImageHostError: LocalizedError {
+enum ImghostError: LocalizedError {
     case notConfigured
     case invalidURL
     case uploadFailed(statusCode: Int, message: String?)
@@ -46,7 +46,7 @@ enum ImageHostError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .notConfigured:
-            return "Open the ImageHost app and configure your backend URL and upload token."
+            return "Open the imghost app and configure your backend URL and upload token."
         case .invalidURL:
             return "Make sure the URL starts with https:// and is a valid web address."
         case .uploadFailed:
@@ -64,7 +64,7 @@ enum ImageHostError: LocalizedError {
         case .deleteFailed:
             return "The image may have already been deleted, or your token may not have delete permissions."
         case .emailVerificationRequired:
-            return "Open the ImageHost app and verify your email address to enable uploads."
+            return "Open the imghost app and verify your email address to enable uploads."
         }
     }
 }

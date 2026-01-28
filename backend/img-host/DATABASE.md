@@ -1,6 +1,6 @@
 # Database Setup Guide
 
-This guide covers setting up Cloudflare D1 database for multi-user support in the ImageHost backend.
+This guide covers setting up Cloudflare D1 database for multi-user support in the imghost backend.
 
 ## Overview
 
@@ -18,7 +18,7 @@ The database schema includes:
 
 ```bash
 cd backend/img-host
-wrangler d1 create imagehost
+wrangler d1 create imghost
 ```
 
 This will output a database ID. Update `wrangler.toml` with the actual database ID:
@@ -26,30 +26,30 @@ This will output a database ID. Update `wrangler.toml` with the actual database 
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "imagehost"
+database_name = "imghost"
 database_id = "your-database-id-here"
 ```
 
 ### 2. Run Initial Migration
 
 ```bash
-wrangler d1 execute imagehost --file=./migrations/0001_initial_schema.sql
+wrangler d1 execute imghost --file=./migrations/0001_initial_schema.sql
 ```
 
 Or for local development:
 
 ```bash
-wrangler d1 execute imagehost --local --file=./migrations/0001_initial_schema.sql
+wrangler d1 execute imghost --local --file=./migrations/0001_initial_schema.sql
 ```
 
 ### 3. Verify Schema
 
 ```bash
 # List all tables
-wrangler d1 execute imagehost --command="SELECT name FROM sqlite_master WHERE type='table';"
+wrangler d1 execute imghost --command="SELECT name FROM sqlite_master WHERE type='table';"
 
 # Check users table schema
-wrangler d1 execute imagehost --command="PRAGMA table_info(users);"
+wrangler d1 execute imghost --command="PRAGMA table_info(users);"
 ```
 
 ## Database Schema
@@ -266,23 +266,23 @@ Use Wrangler's local mode for development:
 npm run dev
 
 # Execute queries locally
-wrangler d1 execute imagehost --local --command="SELECT * FROM users LIMIT 10;"
+wrangler d1 execute imghost --local --command="SELECT * FROM users LIMIT 10;"
 ```
 
 ### Testing the Database
 
 ```bash
 # Create a test user
-wrangler d1 execute imagehost --local --command="
+wrangler d1 execute imghost --local --command="
 INSERT INTO users (id, email, password_hash, created_at, subscription_tier, api_token, storage_limit_bytes)
 VALUES ('test-user-1', 'test@example.com', 'hash', $(date +%s)000, 'free', 'test-token-123', 104857600);
 "
 
 # Query users
-wrangler d1 execute imagehost --local --command="SELECT * FROM users;"
+wrangler d1 execute imghost --local --command="SELECT * FROM users;"
 
 # Check storage usage
-wrangler d1 execute imagehost --local --command="SELECT * FROM storage_usage;"
+wrangler d1 execute imghost --local --command="SELECT * FROM storage_usage;"
 ```
 
 ## Migration Strategy
@@ -291,8 +291,8 @@ For future schema changes:
 
 1. Create a new migration file in `migrations/` directory
 2. Name it with incrementing number: `0002_description.sql`
-3. Test locally first: `wrangler d1 execute imagehost --local --file=./migrations/0002_description.sql`
-4. Deploy to production: `wrangler d1 execute imagehost --file=./migrations/0002_description.sql`
+3. Test locally first: `wrangler d1 execute imghost --local --file=./migrations/0002_description.sql`
+4. Deploy to production: `wrangler d1 execute imghost --file=./migrations/0002_description.sql`
 
 ## Production Deployment
 
@@ -316,7 +316,7 @@ curl https://your-worker.workers.dev/health
 ### Check Storage Usage
 
 ```bash
-wrangler d1 execute imagehost --command="
+wrangler d1 execute imghost --command="
 SELECT
   u.email,
   su.image_count,
@@ -334,7 +334,7 @@ LIMIT 10;
 
 ```bash
 # Delete API usage logs older than 30 days
-wrangler d1 execute imagehost --command="
+wrangler d1 execute imghost --command="
 DELETE FROM api_usage
 WHERE timestamp < $(date -d '30 days ago' +%s)000;
 "

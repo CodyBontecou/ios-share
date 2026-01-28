@@ -184,7 +184,7 @@ struct ShareView: View {
             Text("Not Logged In")
                 .font(.headline)
 
-            Text("Please log in via the ImageHost app to upload images.")
+            Text("Please log in via the imghost app to upload images.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

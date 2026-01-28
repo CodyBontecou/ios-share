@@ -18,18 +18,18 @@ The build configuration allows you to set the default SaaS backend URL at build 
 
 ### Modified Files
 - `Shared/Config.swift` - Added hosting mode detection and backend URL logic
-- `ImageHost/Info.plist` - Added BackendURL key to read from build settings
+- `imghost/Info.plist` - Added BackendURL key to read from build settings
 - `ShareExtension/Info.plist` - Added BackendURL key for share extension
 - `Shared/Services/UploadService.swift` - Updated to use Config.effectiveBackendURL
-- `ImageHost/Views/SettingsView.swift` - Updated to display correct URL based on mode
+- `imghost/Views/SettingsView.swift` - Updated to display correct URL based on mode
 
 ## Xcode Setup Instructions
 
 ### Step 1: Add xcconfig Files to Xcode Project
 
-1. Open `ImageHost.xcodeproj` in Xcode
+1. Open `imghost.xcodeproj` in Xcode
 2. Right-click on the project root in the Navigator
-3. Select "Add Files to ImageHost..."
+3. Select "Add Files to imghost..."
 4. Navigate to the `Config` folder
 5. Select both `Debug.xcconfig` and `Release.xcconfig`
 6. Check "Copy items if needed" and "Create groups"
@@ -40,13 +40,13 @@ The build configuration allows you to set the default SaaS backend URL at build 
 1. Select the project in the Navigator (top-level blue icon)
 2. In the project settings, select the "Info" tab
 3. Under "Configurations", expand "Debug"
-4. For both "ImageHost" and "ShareExtension" targets, select `Debug` from the dropdown
+4. For both "imghost" and "ShareExtension" targets, select `Debug` from the dropdown
 5. Repeat for "Release" configuration:
    - Assign `Release.xcconfig` to both targets
 
 ### Step 3: Verify Build Settings
 
-1. Select the "ImageHost" target
+1. Select the "imghost" target
 2. Go to "Build Settings" tab
 3. Search for "BACKEND_URL"
 4. You should see the setting inherited from the xcconfig file
@@ -72,7 +72,7 @@ BACKEND_URL = https://your-dev-backend.com
 
 ### Option 2: Override in Xcode Build Settings
 
-1. Select the target (ImageHost or ShareExtension)
+1. Select the target (imghost or ShareExtension)
 2. Go to "Build Settings"
 3. Search for "BACKEND_URL"
 4. Click the "+" to add a custom value

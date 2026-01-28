@@ -16,7 +16,7 @@ final class KeychainService {
 
     func save(key: String, value: String) throws {
         guard let data = value.data(using: .utf8) else {
-            throw ImageHostError.keychainError(status: errSecParam)
+            throw ImghostError.keychainError(status: errSecParam)
         }
 
         // First, try to delete any existing item
@@ -37,7 +37,7 @@ final class KeychainService {
         let status = SecItemAdd(query as CFDictionary, nil)
 
         guard status == errSecSuccess else {
-            throw ImageHostError.keychainError(status: status)
+            throw ImghostError.keychainError(status: status)
         }
     }
 
@@ -67,7 +67,7 @@ final class KeychainService {
         case errSecItemNotFound:
             return nil
         default:
-            throw ImageHostError.keychainError(status: status)
+            throw ImghostError.keychainError(status: status)
         }
     }
 
@@ -85,7 +85,7 @@ final class KeychainService {
         let status = SecItemDelete(query as CFDictionary)
 
         guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw ImageHostError.keychainError(status: status)
+            throw ImghostError.keychainError(status: status)
         }
     }
 

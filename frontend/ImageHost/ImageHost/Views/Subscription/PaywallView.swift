@@ -180,13 +180,13 @@ struct PaywallView: View {
                 .multilineTextAlignment(.center)
 
             HStack(spacing: 16) {
-                Link("Terms of Service", destination: URL(string: "https://imagehost.app/terms")!)
+                Link("Terms of Service", destination: URL(string: "https://imghost.isolated.tech/terms")!)
                     .brutalTypography(.monoSmall, color: .brutalTextSecondary)
 
                 Text("|")
                     .brutalTypography(.monoSmall, color: .brutalTextTertiary)
 
-                Link("Privacy Policy", destination: URL(string: "https://imagehost.app/privacy")!)
+                Link("Privacy Policy", destination: URL(string: "https://imghost.isolated.tech/privacy")!)
                     .brutalTypography(.monoSmall, color: .brutalTextSecondary)
             }
         }

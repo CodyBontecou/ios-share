@@ -114,7 +114,7 @@ export async function handleRegisterV2(request: Request, env: Env): Promise<Resp
     await sendEmail(
       email,
       'Verify your email address',
-      `Welcome to ImageHost! Please verify your email by clicking this link: ${verificationLink}\n\nThis link expires in 24 hours.`,
+      `Welcome to imghost! Please verify your email by clicking this link: ${verificationLink}\n\nThis link expires in 24 hours.`,
       env
     );
 
@@ -581,7 +581,7 @@ export async function handleAppleSignIn(request: Request, env: Env): Promise<Res
     }
 
     // Verify the identity token with Apple
-    const clientId = env.APPLE_CLIENT_ID || 'com.imagehost.app';
+    const clientId = env.APPLE_CLIENT_ID || 'com.imghost.app';
     const tokenPayload = await AppleAuth.verifyIdentityToken(identity_token, clientId);
 
     if (!tokenPayload) {

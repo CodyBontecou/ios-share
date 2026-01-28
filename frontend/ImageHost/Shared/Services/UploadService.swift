@@ -47,18 +47,18 @@ final class UploadService: NSObject {
         // Get configuration
         let backendUrl = Config.backendURL
         guard !backendUrl.isEmpty else {
-            throw ImageHostError.notConfigured
+            throw ImghostError.notConfigured
         }
 
         // Ensure we have a valid token, refresh if needed
         try await AuthService.shared.ensureValidToken()
 
         guard let token = keychainService.loadAccessToken() else {
-            throw ImageHostError.notConfigured
+            throw ImghostError.notConfigured
         }
 
         guard let url = URL(string: "\(backendUrl)/upload") else {
-            throw ImageHostError.invalidURL
+            throw ImghostError.invalidURL
         }
 
         // Upload original data without resizing
@@ -77,14 +77,14 @@ final class UploadService: NSObject {
         let (data, response) = try await uploadWithProgress(request: request, bodyData: body)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ImageHostError.invalidResponse
+            throw ImghostError.invalidResponse
         }
 
         // Handle 401 - try to refresh token and retry once
         if httpResponse.statusCode == 401 {
             try await AuthService.shared.refreshTokens()
             guard let newToken = keychainService.loadAccessToken() else {
-                throw ImageHostError.notConfigured
+                throw ImghostError.notConfigured
             }
 
             // Retry with new token
@@ -93,12 +93,12 @@ final class UploadService: NSObject {
             let (retryData, retryResponse) = try await uploadWithProgress(request: retryRequest, bodyData: body)
 
             guard let retryHttpResponse = retryResponse as? HTTPURLResponse else {
-                throw ImageHostError.invalidResponse
+                throw ImghostError.invalidResponse
             }
 
             guard retryHttpResponse.statusCode == 200 else {
                 let message = String(data: retryData, encoding: .utf8)
-                throw ImageHostError.uploadFailed(statusCode: retryHttpResponse.statusCode, message: message)
+                throw ImghostError.uploadFailed(statusCode: retryHttpResponse.statusCode, message: message)
             }
 
             return try parseUploadResponse(data: retryData, imageData: imageData, filename: filename)
@@ -106,12 +106,12 @@ final class UploadService: NSObject {
 
         // Handle 403 - email verification required
         if httpResponse.statusCode == 403 {
-            throw ImageHostError.emailVerificationRequired
+            throw ImghostError.emailVerificationRequired
         }
 
         guard httpResponse.statusCode == 200 else {
             let message = String(data: data, encoding: .utf8)
-            throw ImageHostError.uploadFailed(statusCode: httpResponse.statusCode, message: message)
+            throw ImghostError.uploadFailed(statusCode: httpResponse.statusCode, message: message)
         }
 
         return try parseUploadResponse(data: data, imageData: imageData, filename: filename)
@@ -122,7 +122,7 @@ final class UploadService: NSObject {
               let id = json["id"] as? String,
               let urlString = json["url"] as? String,
               let deleteUrl = json["deleteUrl"] as? String else {
-            throw ImageHostError.invalidResponse
+            throw ImghostError.invalidResponse
         }
 
         // Generate thumbnail
@@ -145,11 +145,11 @@ final class UploadService: NSObject {
         try await AuthService.shared.ensureValidToken()
 
         guard let token = keychainService.loadAccessToken() else {
-            throw ImageHostError.notConfigured
+            throw ImghostError.notConfigured
         }
 
         guard let url = URL(string: record.deleteUrl) else {
-            throw ImageHostError.invalidURL
+            throw ImghostError.invalidURL
         }
 
         var request = URLRequest(url: url)
@@ -159,14 +159,14 @@ final class UploadService: NSObject {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ImageHostError.invalidResponse
+            throw ImghostError.invalidResponse
         }
 
         // Handle 401 - try to refresh and retry
         if httpResponse.statusCode == 401 {
             try await AuthService.shared.refreshTokens()
             guard let newToken = keychainService.loadAccessToken() else {
-                throw ImageHostError.notConfigured
+                throw ImghostError.notConfigured
             }
 
             var retryRequest = URLRequest(url: url)
@@ -175,19 +175,19 @@ final class UploadService: NSObject {
 
             let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
             guard let retryHttpResponse = retryResponse as? HTTPURLResponse else {
-                throw ImageHostError.invalidResponse
+                throw ImghostError.invalidResponse
             }
 
             guard retryHttpResponse.statusCode == 200 || retryHttpResponse.statusCode == 204 else {
                 let message = String(data: retryData, encoding: .utf8)
-                throw ImageHostError.deleteFailed(statusCode: retryHttpResponse.statusCode, message: message)
+                throw ImghostError.deleteFailed(statusCode: retryHttpResponse.statusCode, message: message)
             }
             return
         }
 
         guard httpResponse.statusCode == 200 || httpResponse.statusCode == 204 else {
             let message = String(data: data, encoding: .utf8)
-            throw ImageHostError.deleteFailed(statusCode: httpResponse.statusCode, message: message)
+            throw ImghostError.deleteFailed(statusCode: httpResponse.statusCode, message: message)
         }
     }
 
@@ -195,7 +195,7 @@ final class UploadService: NSObject {
 
     func testConnection() async throws {
         guard let testImageData = imageProcessor.createTestImage() else {
-            throw ImageHostError.imageProcessingFailed
+            throw ImghostError.imageProcessingFailed
         }
 
         let record = try await upload(imageData: testImageData, filename: "test.png")
@@ -247,12 +247,12 @@ final class UploadService: NSObject {
             let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
             let task = session.uploadTask(with: request, from: bodyData) { data, response, error in
                 if let error = error {
-                    continuation.resume(throwing: ImageHostError.networkError(underlying: error))
+                    continuation.resume(throwing: ImghostError.networkError(underlying: error))
                     return
                 }
 
                 guard let data = data, let response = response else {
-                    continuation.resume(throwing: ImageHostError.invalidResponse)
+                    continuation.resume(throwing: ImghostError.invalidResponse)
                     return
                 }
 

@@ -195,7 +195,7 @@ export class AppleIAP {
   getTierFromProductId(productId: string): 'trial' | 'pro' {
     // During trial period, use 'trial' tier
     // After trial, use 'pro' tier
-    // Product IDs: com.imagehost.pro.monthly, com.imagehost.pro.annual
+    // Product IDs: com.imghost.pro.monthly, com.imghost.pro.annual
     if (productId.includes('pro')) {
       return 'pro';
     }
@@ -222,8 +222,8 @@ export class AppleIAP {
 
 // Product IDs for the subscription plans
 export const PRODUCT_IDS = {
-  MONTHLY: 'com.imagehost.pro.monthly',
-  ANNUAL: 'com.imagehost.pro.annual',
+  MONTHLY: 'com.imghost.pro.monthly',
+  ANNUAL: 'com.imghost.pro.annual',
 } as const;
 
 // Trial period duration (7 days)

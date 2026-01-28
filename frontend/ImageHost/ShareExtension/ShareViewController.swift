@@ -32,7 +32,7 @@ class ShareViewController: UIViewController {
 
     private func loadImage() async throws -> (Data, String) {
         guard let extensionItems = extensionContext?.inputItems as? [NSExtensionItem] else {
-            throw ImageHostError.invalidResponse
+            throw ImghostError.invalidResponse
         }
 
         for item in extensionItems {
@@ -58,19 +58,19 @@ class ShareViewController: UIViewController {
             }
         }
 
-        throw ImageHostError.invalidResponse
+        throw ImghostError.invalidResponse
     }
 
     private func loadData(from provider: NSItemProvider, typeIdentifier: String) async throws -> (Data, String) {
         return try await withCheckedThrowingContinuation { continuation in
             provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
                 if let error = error {
-                    continuation.resume(throwing: ImageHostError.networkError(underlying: error))
+                    continuation.resume(throwing: ImghostError.networkError(underlying: error))
                     return
                 }
 
                 guard let data = data else {
-                    continuation.resume(throwing: ImageHostError.invalidResponse)
+                    continuation.resume(throwing: ImghostError.invalidResponse)
                     return
                 }
 

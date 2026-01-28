@@ -60,7 +60,7 @@ export async function handleVerifyPurchase(request: Request, env: Env): Promise<
     }
 
     // Initialize Apple IAP verifier
-    const bundleId = env.APPLE_BUNDLE_ID || 'com.imagehost.app';
+    const bundleId = env.APPLE_BUNDLE_ID || 'com.imghost.app';
     const appleIAP = new AppleIAP(bundleId, 'Production');
 
     // Verify the transaction
@@ -250,7 +250,7 @@ export async function handleRestorePurchases(request: Request, env: Env): Promis
     }
 
     // Initialize Apple IAP verifier
-    const bundleId = env.APPLE_BUNDLE_ID || 'com.imagehost.app';
+    const bundleId = env.APPLE_BUNDLE_ID || 'com.imghost.app';
     const appleIAP = new AppleIAP(bundleId, 'Production');
 
     // Find the most recent valid subscription

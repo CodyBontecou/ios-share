@@ -17,7 +17,7 @@
 		E1000003001 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000003000 /* StoreKitManager.swift */; };
 		F1000001001 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000001000 /* PaywallView.swift */; };
 		F1000002001 /* SubscriptionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000002000 /* SubscriptionStatusView.swift */; };
-		A1000001001 /* ImageHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000 /* ImageHostApp.swift */; };
+		A1000001001 /* ImghostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000 /* ImghostApp.swift */; };
 		A1000002001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002000 /* ContentView.swift */; };
 		A1000003001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000003000 /* SettingsView.swift */; };
 		A1000004001 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004000 /* HistoryView.swift */; };
@@ -25,7 +25,7 @@
 		G1000001001 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1000001000 /* UploadView.swift */; };
 		A1000010001 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010000 /* Config.swift */; };
 		A1000011001 /* UploadRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011000 /* UploadRecord.swift */; };
-		A1000012001 /* ImageHostError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012000 /* ImageHostError.swift */; };
+		A1000012001 /* ImghostError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012000 /* ImghostError.swift */; };
 		A1000013001 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013000 /* KeychainService.swift */; };
 		A1000014001 /* HistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014000 /* HistoryService.swift */; };
 		A1000015001 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015000 /* ImageProcessor.swift */; };
@@ -43,7 +43,7 @@
 		A1000021001 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021000 /* ShareView.swift */; };
 		A1000030001 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010000 /* Config.swift */; };
 		A1000031001 /* UploadRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011000 /* UploadRecord.swift */; };
-		A1000032001 /* ImageHostError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012000 /* ImageHostError.swift */; };
+		A1000032001 /* ImghostError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012000 /* ImghostError.swift */; };
 		A1000033001 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013000 /* KeychainService.swift */; };
 		A1000034001 /* HistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014000 /* HistoryService.swift */; };
 		A1000035001 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015000 /* ImageProcessor.swift */; };
@@ -92,7 +92,7 @@
 		4A09518DA218CA8C573BCEEF /* GoogleSpacing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleSpacing.swift; sourceTree = "<group>"; };
 		77EF9A77B62440BA76E7919A /* GoogleColors.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleColors.swift; sourceTree = "<group>"; };
 		92EC531C9EE3CD96675D03D8 /* PhotoGridView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
-		A1000001000 /* ImageHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHostApp.swift; sourceTree = "<group>"; };
+		A1000001000 /* ImghostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImghostApp.swift; sourceTree = "<group>"; };
 		A1000002000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A1000003000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A1000004000 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -102,7 +102,7 @@
 		A1000007000 /* ImageHost.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ImageHost.entitlements; sourceTree = "<group>"; };
 		A1000010000 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		A1000011000 /* UploadRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadRecord.swift; sourceTree = "<group>"; };
-		A1000012000 /* ImageHostError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHostError.swift; sourceTree = "<group>"; };
+		A1000012000 /* ImghostError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImghostError.swift; sourceTree = "<group>"; };
 		A1000013000 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		A1000014000 /* HistoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryService.swift; sourceTree = "<group>"; };
 		A1000015000 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
@@ -180,7 +180,7 @@
 		A10000B0000 /* ImageHost */ = {
 			isa = PBXGroup;
 			children = (
-				A1000001000 /* ImageHostApp.swift */,
+				A1000001000 /* ImghostApp.swift */,
 				A1000002000 /* ContentView.swift */,
 				A10000B1000 /* Views */,
 				A1000006000 /* Info.plist */,
@@ -260,7 +260,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000011000 /* UploadRecord.swift */,
-				A1000012000 /* ImageHostError.swift */,
+				A1000012000 /* ImghostError.swift */,
 				A1000018000 /* AuthResponse.swift */,
 				A1000019000 /* User.swift */,
 				A100001A000 /* AuthState.swift */,
@@ -402,7 +402,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1000001001 /* ImageHostApp.swift in Sources */,
+				A1000001001 /* ImghostApp.swift in Sources */,
 				A1000002001 /* ContentView.swift in Sources */,
 				A1000003001 /* SettingsView.swift in Sources */,
 				A1000004001 /* HistoryView.swift in Sources */,
@@ -415,7 +415,7 @@
 				A100001F001 /* ResetPasswordView.swift in Sources */,
 				A1000010001 /* Config.swift in Sources */,
 				A1000011001 /* UploadRecord.swift in Sources */,
-				A1000012001 /* ImageHostError.swift in Sources */,
+				A1000012001 /* ImghostError.swift in Sources */,
 				A1000013001 /* KeychainService.swift in Sources */,
 				A1000014001 /* HistoryService.swift in Sources */,
 				A1000015001 /* ImageProcessor.swift in Sources */,
@@ -449,7 +449,7 @@
 				A1000021001 /* ShareView.swift in Sources */,
 				A1000030001 /* Config.swift in Sources */,
 				A1000031001 /* UploadRecord.swift in Sources */,
-				A1000032001 /* ImageHostError.swift in Sources */,
+				A1000032001 /* ImghostError.swift in Sources */,
 				A1000033001 /* KeychainService.swift in Sources */,
 				A1000034001 /* HistoryService.swift in Sources */,
 				A1000035001 /* ImageProcessor.swift in Sources */,
@@ -620,7 +620,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.imagehost.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.imghost.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -650,7 +650,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.imagehost.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.imghost.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -666,7 +666,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ImageHost;
+				INFOPLIST_KEY_CFBundleDisplayName = imghost;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -675,7 +675,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.imagehost.app.ShareExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.imghost.app.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "SHARE_EXTENSION $(inherited)";
@@ -693,7 +693,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ImageHost;
+				INFOPLIST_KEY_CFBundleDisplayName = imghost;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -702,7 +702,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.imagehost.app.ShareExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.imghost.app.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "SHARE_EXTENSION $(inherited)";

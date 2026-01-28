@@ -2,7 +2,7 @@ import SwiftUI
 import StoreKit
 
 @main
-struct ImageHostApp: App {
+struct ImghostApp: App {
     @StateObject private var authState = AuthState.shared
     @StateObject private var subscriptionState = SubscriptionState.shared
 

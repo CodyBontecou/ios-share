@@ -1,6 +1,6 @@
 # Rate Limiting and Abuse Prevention
 
-This document describes the rate limiting and abuse prevention features implemented in the ImageHost API.
+This document describes the rate limiting and abuse prevention features implemented in the imghost API.
 
 ## Overview
 

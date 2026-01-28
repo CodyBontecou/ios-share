@@ -37,7 +37,7 @@ final class HistoryService {
 
     func loadAll() throws -> [UploadRecord] {
         guard let url = historyFileURL else {
-            throw ImageHostError.fileSystemError(underlying: NSError(
+            throw ImghostError.fileSystemError(underlying: NSError(
                 domain: "HistoryService",
                 code: -1,
                 userInfo: [NSLocalizedDescriptionKey: "Could not access shared container"]
@@ -52,7 +52,7 @@ final class HistoryService {
             let data = try Data(contentsOf: url)
             return try decoder.decode([UploadRecord].self, from: data)
         } catch {
-            throw ImageHostError.fileSystemError(underlying: error)
+            throw ImghostError.fileSystemError(underlying: error)
         }
     }
 
@@ -75,7 +75,7 @@ final class HistoryService {
 
     private func write(_ records: [UploadRecord]) throws {
         guard let url = historyFileURL else {
-            throw ImageHostError.fileSystemError(underlying: NSError(
+            throw ImghostError.fileSystemError(underlying: NSError(
                 domain: "HistoryService",
                 code: -1,
                 userInfo: [NSLocalizedDescriptionKey: "Could not access shared container"]
@@ -86,7 +86,7 @@ final class HistoryService {
             let data = try encoder.encode(records)
             try data.write(to: url, options: .atomic)
         } catch {
-            throw ImageHostError.fileSystemError(underlying: error)
+            throw ImghostError.fileSystemError(underlying: error)
         }
     }
 }

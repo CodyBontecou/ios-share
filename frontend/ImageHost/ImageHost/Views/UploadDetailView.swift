@@ -10,7 +10,7 @@ struct UploadDetailView: View {
     @State private var isDeleting = false
 
     private enum CopiedField {
-        case url, deleteUrl, formatted
+        case url, formatted
     }
 
     private let dateFormatter: DateFormatter = {
@@ -72,21 +72,6 @@ struct UploadDetailView: View {
                                 onCopy: {
                                     copyToClipboard(record.url)
                                     copiedField = .url
-                                }
-                            )
-                        }
-
-                        Rectangle()
-                            .fill(Color.brutalBorder)
-                            .frame(height: 1)
-
-                        BrutalDetailSection(title: "Delete URL") {
-                            BrutalCopyableRow(
-                                text: record.deleteUrl,
-                                isCopied: copiedField == .deleteUrl,
-                                onCopy: {
-                                    copyToClipboard(record.deleteUrl)
-                                    copiedField = .deleteUrl
                                 }
                             )
                         }

@@ -13,9 +13,9 @@ bucket_name = "images"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "imagehost"
-database_id = "e8297db4-525b-4280-9bca-ac87f41861c8"
+database_name = "imghost"
+database_id = "904188b3-4cdf-43fc-bd19-c12c616e0d8e"
 
 [vars]
-APPLE_CLIENT_ID = "com.imagehost.app"
-APPLE_BUNDLE_ID = "com.imagehost.app"
+APPLE_CLIENT_ID = "com.imghost.app"
+APPLE_BUNDLE_ID = "com.imghost.app"

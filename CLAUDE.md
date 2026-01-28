@@ -1,4 +1,4 @@
-# ImageHost Development Guidelines
+# imghost Development Guidelines
 
 ## Production-First Development
 
@@ -32,7 +32,7 @@ wrangler deploy
 2. **"Local network prohibited" errors**: App is configured to hit local IP. Update Debug.xcconfig to production URL.
 3. **Stale app config**: Clear Xcode derived data and rebuild:
    ```bash
-   rm -rf ~/Library/Developer/Xcode/DerivedData/*ImageHost*
+   rm -rf ~/Library/Developer/Xcode/DerivedData/*imghost*
    ```
 
 ### Verification Commands
@@ -79,6 +79,14 @@ No Worker redeploy needed - changes are immediate.
 ## Project Structure
 
 - `backend/img-host/` - Cloudflare Worker backend
-- `frontend/ImageHost/` - iOS app and share extension
+- `frontend/ImageHost/` - iOS app and share extension (will be renamed to `imghost` in future)
 - `frontend/ImageHost/Config/` - Build configuration (xcconfig files)
 - `landing/` - Landing page (served from R2 at root path)
+
+## Bundle IDs and Product IDs
+
+- **Main App Bundle ID**: `com.imghost.app`
+- **Share Extension Bundle ID**: `com.imghost.app.ShareExtension`
+- **App Group**: `group.com.imghost.shared`
+- **IAP Products**: `com.imghost.pro.monthly`, `com.imghost.pro.annual`
+- **D1 Database**: `imghost`

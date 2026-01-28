@@ -180,7 +180,7 @@ Example log output:
 ```
 [EMAIL] To: test@example.com
 Subject: Verify your email address
-Body: Welcome to ImageHost! Please verify your email by clicking this link: http://localhost:8787/auth/verify-email?token=...
+Body: Welcome to imghost! Please verify your email by clicking this link: http://localhost:8787/auth/verify-email?token=...
 ```
 
 ### Production (Email Service Integration)

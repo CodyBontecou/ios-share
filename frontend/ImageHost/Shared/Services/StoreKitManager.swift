@@ -7,8 +7,8 @@ final class StoreKitManager: ObservableObject {
     static let shared = StoreKitManager()
 
     // Product IDs configured in App Store Connect
-    static let monthlyProductID = "com.imagehost.pro.monthly"
-    static let annualProductID = "com.imagehost.pro.annual"
+    static let monthlyProductID = "com.imghost.pro.monthly"
+    static let annualProductID = "com.imghost.pro.annual"
     static let allProductIDs: Set<String> = [monthlyProductID, annualProductID]
 
     @Published private(set) var products: [Product] = []

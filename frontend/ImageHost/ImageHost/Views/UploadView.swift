@@ -269,7 +269,7 @@ struct UploadView: View {
             do {
                 // Load the image data
                 guard let data = try await item.loadTransferable(type: Data.self) else {
-                    throw ImageHostError.imageProcessingFailed
+                    throw ImghostError.imageProcessingFailed
                 }
 
                 // Determine filename

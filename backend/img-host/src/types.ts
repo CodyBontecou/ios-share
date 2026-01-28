@@ -1,4 +1,4 @@
-// Type definitions for the ImageHost API
+// Type definitions for the imghost API
 
 export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
 

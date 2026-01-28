@@ -1,9 +1,9 @@
 import Foundation
 
 struct Config {
-    static let appGroup = "group.com.imagehost.shared"
-    static let keychainService = "com.imagehost"
-    static let keychainAccessGroup = "group.com.imagehost.shared"
+    static let appGroup = "group.com.imghost.shared"
+    static let keychainService = "com.imghost"
+    static let keychainAccessGroup = "group.com.imghost.shared"
 
     // Keys for Keychain (legacy - kept for migration)
     static let uploadTokenKey = "uploadToken"

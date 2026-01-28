@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the implementation of rate limiting and abuse prevention features for the ImageHost API, completed as part of issue `ios-share-azo`.
+This document summarizes the implementation of rate limiting and abuse prevention features for the imghost API, completed as part of issue `ios-share-azo`.
 
 ## Files Created
 

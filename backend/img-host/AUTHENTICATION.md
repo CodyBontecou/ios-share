@@ -406,10 +406,10 @@ BASE_URL = "https://your-domain.com"
 
 ```bash
 # Local development
-wrangler d1 execute imagehost --local --file=./migrations/0002_auth_enhancements.sql
+wrangler d1 execute imghost --local --file=./migrations/0002_auth_enhancements.sql
 
 # Production
-wrangler d1 execute imagehost --file=./migrations/0002_auth_enhancements.sql
+wrangler d1 execute imghost --file=./migrations/0002_auth_enhancements.sql
 ```
 
 ### Backward Compatibility
