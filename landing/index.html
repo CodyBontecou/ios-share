@@ -2531,10 +2531,14 @@
         // ============================================
         const App = {
             async init() {
-                // Initialize auth (check stored tokens, fetch user)
-                await Auth.init();
+                try {
+                    // Initialize auth (check stored tokens, fetch user)
+                    await Auth.init();
+                } catch (e) {
+                    console.error('Auth init failed:', e);
+                }
 
-                // Initialize router
+                // Initialize router (always, even if auth fails)
                 Router.init();
 
                 // Subscribe to state changes to re-render when needed
@@ -2545,8 +2549,18 @@
             }
         };
 
+        // Make modules globally accessible for onclick handlers
+        window.Router = Router;
+        window.Views = Views;
+        window.Auth = Auth;
+        window.Components = Components;
+
         // Start the app
-        App.init();
+        App.init().catch(e => {
+            console.error('App init failed:', e);
+            // Fallback: at least render the landing page
+            Router.init();
+        });
     </script>
 </body>
 </html>
