@@ -22,6 +22,52 @@ import {
 } from './subscription-handlers';
 import type { ExportJobResponse } from './types';
 
+// CORS configuration
+const ALLOWED_ORIGINS = [
+  'https://imghost.isolated.tech',
+  'http://localhost:3000', // Local development
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+
+  return headers;
+}
+
+function handleOptions(request: Request): Response {
+  const origin = request.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
+
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
+function addCorsHeaders(response: Response, origin: string | null): Response {
+  const corsHeaders = getCorsHeaders(origin);
+  const newHeaders = new Headers(response.headers);
+
+  for (const [key, value] of Object.entries(corsHeaders)) {
+    newHeaders.set(key, value);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
+}
+
 export interface Env {
   IMAGES: R2Bucket;
   DB: D1Database;
@@ -63,9 +109,11 @@ function getClientIp(request: Request): string {
   return 'unknown';
 }
 
-function json(data: unknown, status = 200, headers?: Record<string, string>): Response {
+function json(data: unknown, status = 200, headers?: Record<string, string>, origin?: string | null): Response {
+  const corsHeaders = getCorsHeaders(origin ?? null);
   const responseHeaders = new Headers({
     'Content-Type': 'application/json',
+    ...corsHeaders,
     ...headers,
   });
 
@@ -838,91 +886,100 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
+    const origin = request.headers.get('Origin');
+
+    // Handle CORS preflight requests
+    if (method === 'OPTIONS') {
+      return handleOptions(request);
+    }
+
+    // Helper to add CORS headers to response
+    const withCors = (response: Response) => addCorsHeaders(response, origin);
 
     try {
-      // GET / - Serve landing page
+      // GET / - Serve landing page (no CORS needed for HTML)
       if (method === 'GET' && path === '/') {
         return await handleLanding(env);
       }
 
       // POST /auth/register - Enhanced with JWT and email verification
       if (method === 'POST' && path === '/auth/register') {
-        return await handleRegisterV2(request, env);
+        return withCors(await handleRegisterV2(request, env));
       }
 
       // POST /auth/login - Enhanced with JWT tokens
       if (method === 'POST' && path === '/auth/login') {
-        return await handleLoginV2(request, env);
+        return withCors(await handleLoginV2(request, env));
       }
 
       // POST /auth/refresh - Refresh access token
       if (method === 'POST' && path === '/auth/refresh') {
-        return await handleRefreshToken(request, env);
+        return withCors(await handleRefreshToken(request, env));
       }
 
       // POST /auth/forgot-password - Request password reset
       if (method === 'POST' && path === '/auth/forgot-password') {
-        return await handleForgotPassword(request, env);
+        return withCors(await handleForgotPassword(request, env));
       }
 
       // POST /auth/reset-password - Reset password with token
       if (method === 'POST' && path === '/auth/reset-password') {
-        return await handleResetPassword(request, env);
+        return withCors(await handleResetPassword(request, env));
       }
 
       // POST /auth/verify-email - Verify email address
       if (method === 'POST' && path === '/auth/verify-email' || (method === 'GET' && path === '/auth/verify-email')) {
-        return await handleVerifyEmail(request, env);
+        return withCors(await handleVerifyEmail(request, env));
       }
 
       // POST /auth/resend-verification - Resend verification email
       if (method === 'POST' && path === '/auth/resend-verification') {
-        return await handleResendVerification(request, env);
+        return withCors(await handleResendVerification(request, env));
       }
 
       // POST /auth/apple - Sign in with Apple
       if (method === 'POST' && path === '/auth/apple') {
-        return await handleAppleSignIn(request, env);
+        return withCors(await handleAppleSignIn(request, env));
       }
 
       // POST /subscription/verify-purchase - Verify App Store purchase
       if (method === 'POST' && path === '/subscription/verify-purchase') {
-        return await handleVerifyPurchase(request, env);
+        return withCors(await handleVerifyPurchase(request, env));
       }
 
       // GET /subscription/status - Get subscription status
       if (method === 'GET' && path === '/subscription/status') {
-        return await handleSubscriptionStatus(request, env);
+        return withCors(await handleSubscriptionStatus(request, env));
       }
 
       // POST /subscription/restore - Restore purchases
       if (method === 'POST' && path === '/subscription/restore') {
-        return await handleRestorePurchases(request, env);
+        return withCors(await handleRestorePurchases(request, env));
       }
 
       // GET /user
       if (method === 'GET' && path === '/user') {
-        return await handleGetUser(request, env);
+        return withCors(await handleGetUser(request, env));
       }
 
       // GET /images
       if (method === 'GET' && path === '/images') {
-        return await handleGetImages(request, env);
+        return withCors(await handleGetImages(request, env));
       }
 
       // POST /upload
       if (method === 'POST' && path === '/upload') {
-        return await handleUpload(request, env);
+        return withCors(await handleUpload(request, env));
       }
 
       // POST /api/abuse-report - Submit abuse report
       if (method === 'POST' && path === '/api/abuse-report') {
-        return await handleAbuseReport(request, env);
+        return withCors(await handleAbuseReport(request, env));
       }
 
       // POST /api/export - Initiate export job
       if (method === 'POST' && path === '/api/export') {
-        return await handleExportInitiate(request, env);
+        return withCors(await handleExportInitiate(request, env));
       }
 
       // GET /api/export/{job_id}/status - Check export status
@@ -930,29 +987,29 @@ export default {
         const parts = path.split('/');
         if (parts.length === 5 && parts[4] === 'status') {
           const jobId = parts[3];
-          return await handleExportStatus(request, env, jobId);
+          return withCors(await handleExportStatus(request, env, jobId));
         }
         if (parts.length === 5 && parts[4] === 'download') {
           const jobId = parts[3];
-          return await handleExportDownload(request, env, jobId);
+          return withCors(await handleExportDownload(request, env, jobId));
         }
       }
 
       // GET /health
       if (method === 'GET' && path === '/health') {
-        return handleHealth();
+        return withCors(handleHealth());
       }
 
       // DELETE /delete/<id>
       if (method === 'DELETE' && path.startsWith('/delete/')) {
         const id = path.slice('/delete/'.length);
         if (!id) {
-          return json({ error: 'Missing id' }, 400);
+          return withCors(json({ error: 'Missing id' }, 400));
         }
-        return await handleDelete(request, env, id);
+        return withCors(await handleDelete(request, env, id));
       }
 
-      // GET /<id>.<ext> - serve image
+      // GET /<id>.<ext> - serve image (no CORS needed for images)
       if (method === 'GET') {
         const match = path.match(/^\/([a-zA-Z0-9]+\.[a-zA-Z0-9]+)$/);
         if (match) {
@@ -960,10 +1017,10 @@ export default {
         }
       }
 
-      return json({ error: 'Not found' }, 404);
+      return withCors(json({ error: 'Not found' }, 404));
     } catch (error) {
       console.error('Error:', error);
-      return json({ error: 'Internal server error' }, 500);
+      return withCors(json({ error: 'Internal server error' }, 500));
     }
   },
 };

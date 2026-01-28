@@ -104,6 +104,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            cursor: pointer;
         }
 
         .logo-mark {
@@ -131,6 +132,7 @@
             letter-spacing: var(--tracking-wide);
             text-transform: uppercase;
             transition: color 0.2s;
+            cursor: pointer;
         }
 
         .nav-links a:hover {
@@ -147,11 +149,37 @@
             text-transform: uppercase;
             text-decoration: none;
             transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: none;
+            font-family: var(--font-mono);
         }
 
         .nav-cta:hover {
             transform: translate(-2px, -2px);
             box-shadow: 2px 2px 0 var(--brutal-text-primary);
+        }
+
+        .nav-auth {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .nav-auth-link {
+            color: var(--brutal-text-secondary);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            transition: color 0.2s;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: var(--font-mono);
+        }
+
+        .nav-auth-link:hover {
+            color: var(--brutal-text-primary);
         }
 
         /* Hero */
@@ -293,6 +321,13 @@
             box-shadow: 4px 4px 0 var(--brutal-text-primary);
         }
 
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .btn-secondary {
             display: inline-flex;
             align-items: center;
@@ -314,6 +349,28 @@
         .btn-secondary:hover {
             border-color: var(--brutal-text-primary);
             background: var(--brutal-surface);
+        }
+
+        .btn-danger {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--brutal-error);
+            color: var(--brutal-text-primary);
+            padding: 12px 24px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.8;
         }
 
         .hero-stats {
@@ -776,6 +833,453 @@
             letter-spacing: var(--tracking-wide);
         }
 
+        /* Auth Forms */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 24px 80px;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--brutal-surface);
+            border: 1px solid var(--brutal-border);
+            padding: 48px 40px;
+        }
+
+        .auth-header {
+            margin-bottom: 40px;
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            font-size: 12px;
+            color: var(--brutal-text-secondary);
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 10px;
+            letter-spacing: var(--tracking-wider);
+            text-transform: uppercase;
+            color: var(--brutal-text-tertiary);
+        }
+
+        .form-input {
+            background: var(--brutal-bg);
+            border: 1px solid var(--brutal-border);
+            padding: 14px 16px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--brutal-text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--brutal-text-primary);
+        }
+
+        .form-input::placeholder {
+            color: var(--brutal-text-tertiary);
+        }
+
+        .form-error {
+            font-size: 11px;
+            color: var(--brutal-error);
+            margin-top: 4px;
+        }
+
+        .auth-error {
+            background: rgba(255, 69, 58, 0.1);
+            border: 1px solid var(--brutal-error);
+            padding: 12px 16px;
+            font-size: 12px;
+            color: var(--brutal-error);
+        }
+
+        .auth-footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--brutal-text-secondary);
+        }
+
+        .auth-footer a {
+            color: var(--brutal-text-primary);
+            text-decoration: none;
+            border-bottom: 1px solid var(--brutal-border);
+            cursor: pointer;
+        }
+
+        .auth-footer a:hover {
+            border-color: var(--brutal-text-primary);
+        }
+
+        /* Dashboard */
+        .dashboard-container {
+            padding: 120px 24px 80px;
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+        }
+
+        .dashboard-title {
+            font-size: 32px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+        }
+
+        .dashboard-count {
+            font-size: 12px;
+            color: var(--brutal-text-tertiary);
+            margin-top: 4px;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .image-card {
+            position: relative;
+            background: var(--brutal-surface);
+            border: 1px solid var(--brutal-border);
+            aspect-ratio: 1;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .image-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .image-card:hover .image-overlay {
+            opacity: 1;
+        }
+
+        .image-action {
+            background: var(--brutal-text-primary);
+            color: var(--brutal-bg);
+            padding: 8px 16px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .image-action:hover {
+            transform: scale(1.05);
+        }
+
+        .image-action.delete {
+            background: var(--brutal-error);
+            color: var(--brutal-text-primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 24px;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: 12px;
+        }
+
+        .empty-state-desc {
+            font-size: 13px;
+            color: var(--brutal-text-secondary);
+        }
+
+        .load-more {
+            margin-top: 48px;
+            text-align: center;
+        }
+
+        /* Settings */
+        .settings-container {
+            padding: 120px 24px 80px;
+            min-height: 100vh;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .settings-title {
+            font-size: 32px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: 48px;
+        }
+
+        .settings-section {
+            background: var(--brutal-surface);
+            border: 1px solid var(--brutal-border);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .settings-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: var(--tracking-wider);
+            text-transform: uppercase;
+            color: var(--brutal-text-tertiary);
+            margin-bottom: 24px;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .settings-label {
+            font-size: 13px;
+            color: var(--brutal-text-secondary);
+        }
+
+        .settings-value {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .storage-bar {
+            margin-top: 16px;
+        }
+
+        .storage-bar-track {
+            height: 8px;
+            background: var(--brutal-bg);
+            border: 1px solid var(--brutal-border);
+        }
+
+        .storage-bar-fill {
+            height: 100%;
+            background: var(--brutal-text-primary);
+            transition: width 0.3s;
+        }
+
+        .storage-bar-fill.warning {
+            background: var(--brutal-warning);
+        }
+
+        .storage-bar-fill.danger {
+            background: var(--brutal-error);
+        }
+
+        .storage-text {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--brutal-text-tertiary);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toast {
+            background: var(--brutal-surface-elevated);
+            border: 1px solid var(--brutal-border);
+            padding: 16px 24px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast.success {
+            border-color: var(--brutal-success);
+        }
+
+        .toast.error {
+            border-color: var(--brutal-error);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal {
+            background: var(--brutal-surface);
+            border: 1px solid var(--brutal-border);
+            width: 100%;
+            max-width: 400px;
+            padding: 32px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: 16px;
+        }
+
+        .modal-body {
+            font-size: 13px;
+            color: var(--brutal-text-secondary);
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Loader */
+        .loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px;
+        }
+
+        .loader-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--brutal-border);
+            border-top-color: var(--brutal-text-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Copy dropdown */
+        .copy-dropdown {
+            position: relative;
+        }
+
+        .copy-menu {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--brutal-surface-elevated);
+            border: 1px solid var(--brutal-border);
+            padding: 8px 0;
+            min-width: 150px;
+            z-index: 100;
+            display: none;
+        }
+
+        .copy-menu.show {
+            display: block;
+        }
+
+        .copy-menu-item {
+            padding: 8px 16px;
+            font-size: 10px;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: none;
+            background: none;
+            color: var(--brutal-text-primary);
+            width: 100%;
+            text-align: left;
+            font-family: var(--font-mono);
+        }
+
+        .copy-menu-item:hover {
+            background: var(--brutal-surface);
+        }
+
         /* Mobile */
         @media (max-width: 900px) {
             .nav-links {
@@ -824,6 +1328,10 @@
                 flex-direction: column;
                 gap: 24px;
                 text-align: center;
+            }
+
+            .image-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
         }
 
@@ -918,305 +1426,1077 @@
         @keyframes blink {
             50% { opacity: 0; }
         }
+
+        /* Hide landing sections when not on landing page */
+        #app:not(.view-landing) .landing-only {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav>
-        <div class="nav-inner">
-            <div class="logo">
-                <div class="logo-mark">IH</div>
-                <span>ImageHost</span>
-            </div>
-            <ul class="nav-links">
-                <li><a href="#features">Features</a></li>
-                <li><a href="#how-it-works">How It Works</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-            </ul>
-            <a href="#download" class="nav-cta">Get The App</a>
-        </div>
-    </nav>
+    <!-- Navigation (dynamic) -->
+    <nav id="navbar"></nav>
 
-    <!-- Hero -->
-    <section class="hero">
-        <div class="hero-grid"></div>
-        <div class="container hero-content">
-            <div class="hero-label">Cloud Image Hosting for iOS<span class="hero-label-brand"> — Built by <a href="https://isolated.tech" target="_blank" rel="noopener">isolated.tech</a></span></div>
-            <h1 class="hero-title">
-                <span class="line"><span class="glitch" data-text="UPLOAD.">UPLOAD.</span></span>
-                <span class="line"><span class="glitch" data-text="SHARE.">SHARE.</span></span>
-                <span class="line"><span class="glitch" data-text="DONE.">DONE.</span></span>
-            </h1>
-            <p class="hero-subtitle">
-                No fluff. No friction. Just brutal efficiency. Share images from anywhere on iOS and get instant, direct links.<span class="cursor"></span>
-            </p>
-            <div class="hero-actions">
-                <a href="#download" class="btn-primary">
+    <!-- Main app container -->
+    <div id="app"></div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Modal container -->
+    <div id="modal-container"></div>
+
+    <!-- Landing page template -->
+    <template id="landing-template">
+        <!-- Hero -->
+        <section class="hero">
+            <div class="hero-grid"></div>
+            <div class="container hero-content">
+                <div class="hero-label">Cloud Image Hosting for iOS<span class="hero-label-brand"> — Built by <a href="https://isolated.tech" target="_blank" rel="noopener">isolated.tech</a></span></div>
+                <h1 class="hero-title">
+                    <span class="line"><span class="glitch" data-text="UPLOAD.">UPLOAD.</span></span>
+                    <span class="line"><span class="glitch" data-text="SHARE.">SHARE.</span></span>
+                    <span class="line"><span class="glitch" data-text="DONE.">DONE.</span></span>
+                </h1>
+                <p class="hero-subtitle">
+                    No fluff. No friction. Just brutal efficiency. Share images from anywhere on iOS and get instant, direct links.<span class="cursor"></span>
+                </p>
+                <div class="hero-actions">
+                    <a href="#download" class="btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                        </svg>
+                        Download for iOS
+                    </a>
+                    <a href="#features" class="btn-secondary">Learn More</a>
+                </div>
+                <div class="hero-brand-mobile">Built by <a href="https://isolated.tech" target="_blank" rel="noopener">isolated.tech</a></div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-value">7</div>
+                        <div class="stat-label">Day Free Trial</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">10GB</div>
+                        <div class="stat-label">Pro Storage</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">&lt;1s</div>
+                        <div class="stat-label">Upload Speed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Tracking Pixels</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="features" id="features">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-label">01 / Features</div>
+                    <h2 class="section-title">Everything you need. Nothing you don't.</h2>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">&#8599;</div>
+                        <div class="feature-number">001</div>
+                        <h3 class="feature-title">Share Extension</h3>
+                        <p class="feature-desc">Upload directly from your Photos app or any app with iOS Share Sheet. One tap. Done.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">&#9783;</div>
+                        <div class="feature-number">002</div>
+                        <h3 class="feature-title">Photo Gallery</h3>
+                        <p class="feature-desc">All your uploads organized by date. Pinch to zoom. Swipe to delete. No learning curve.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">&#8688;</div>
+                        <div class="feature-number">003</div>
+                        <h3 class="feature-title">Direct Links</h3>
+                        <p class="feature-desc">Get clean, direct URLs. Markdown, HTML, BBCode, or raw. Your choice.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">&#9032;</div>
+                        <div class="feature-number">004</div>
+                        <h3 class="feature-title">Bulk Export</h3>
+                        <p class="feature-desc">Download all your images as a ZIP. Your data, always accessible.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">&#10697;</div>
+                        <div class="feature-number">005</div>
+                        <h3 class="feature-title">Custom Link Formats</h3>
+                        <p class="feature-desc">Markdown, HTML, BBCode, or raw URLs. Create your own format template.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">&#9055;</div>
+                        <div class="feature-number">006</div>
+                        <h3 class="feature-title">Secure by Default</h3>
+                        <p class="feature-desc">JWT authentication. Per-image delete tokens. No tracking. No ads. Ever.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="how-it-works" id="how-it-works">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-label">02 / Process</div>
+                    <h2 class="section-title">Three steps. Zero friction.</h2>
+                </div>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">01</div>
+                        <h3 class="step-title">Select Image</h3>
+                        <p class="step-desc">Open any image on your iPhone. Tap the share button.</p>
+                        <span class="step-arrow">&rarr;</span>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">02</div>
+                        <h3 class="step-title">Tap ImageHost</h3>
+                        <p class="step-desc">Find ImageHost in your share sheet. One tap to upload.</p>
+                        <span class="step-arrow">&rarr;</span>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">03</div>
+                        <h3 class="step-title">Get Your Link</h3>
+                        <p class="step-desc">Link copied to clipboard. Paste anywhere. Share everywhere.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Preview -->
+        <section class="preview">
+            <div class="container">
+                <div class="preview-container">
+                    <div class="preview-content">
+                        <div class="section-header">
+                            <div class="section-label">03 / Interface</div>
+                            <h2 class="section-title">Brutally beautiful.</h2>
+                        </div>
+                        <div class="preview-features">
+                            <div class="preview-feature">
+                                <div class="preview-feature-icon">+</div>
+                                <div class="preview-feature-text">
+                                    <strong>High Contrast UI</strong>
+                                    Pure black. Pure white. Nothing in between. Designed for focus.
+                                </div>
+                            </div>
+                            <div class="preview-feature">
+                                <div class="preview-feature-icon">+</div>
+                                <div class="preview-feature-text">
+                                    <strong>Monospace Typography</strong>
+                                    Technical. Precise. Every character counts.
+                                </div>
+                            </div>
+                            <div class="preview-feature">
+                                <div class="preview-feature-icon">+</div>
+                                <div class="preview-feature-text">
+                                    <strong>Zero Decoration</strong>
+                                    No gradients. No shadows. No rounded corners. Just function.
+                                </div>
+                            </div>
+                            <div class="preview-feature">
+                                <div class="preview-feature-icon">+</div>
+                                <div class="preview-feature-text">
+                                    <strong>Obsidian-Inspired</strong>
+                                    Built for people who appreciate raw, utilitarian design.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="phone-mockup">
+                        <div class="phone">
+                            <div class="phone-notch"></div>
+                            <div class="phone-screen">
+                                <div class="phone-header">Gallery</div>
+                                <div class="phone-title">PHOTOS</div>
+                                <div class="phone-grid">
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                    <div class="phone-grid-item"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing -->
+        <section class="pricing" id="pricing">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-label">04 / Pricing</div>
+                    <h2 class="section-title">Start free. Upgrade when ready.</h2>
+                </div>
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <div class="pricing-tier">Start Here</div>
+                        <div class="pricing-name">7-Day Trial</div>
+                        <div class="pricing-price">$0<span>/7 days</span></div>
+                        <p class="pricing-desc">Try ImageHost Pro free for 7 days. No credit card required to start.</p>
+                        <ul class="pricing-features">
+                            <li>100MB storage</li>
+                            <li>100 uploads max</li>
+                            <li>50MB max file size</li>
+                            <li>All Pro features</li>
+                            <li>Cancel anytime</li>
+                        </ul>
+                        <div class="pricing-cta">
+                            <a href="#download" class="btn-secondary">Start Free Trial</a>
+                        </div>
+                    </div>
+                    <div class="pricing-card featured">
+                        <div class="pricing-tier">Best Value</div>
+                        <div class="pricing-name">Pro Annual</div>
+                        <div class="pricing-price">$29<span>/year</span></div>
+                        <p class="pricing-desc">Save over 50% with annual billing. Full Pro access, unlimited uploads.</p>
+                        <ul class="pricing-features">
+                            <li>10GB storage</li>
+                            <li>Unlimited uploads</li>
+                            <li>50MB max file size</li>
+                            <li>Custom link formats</li>
+                            <li>Priority support</li>
+                        </ul>
+                        <div class="pricing-cta">
+                            <a href="#download" class="btn-primary">Get Pro Annual</a>
+                        </div>
+                    </div>
+                    <div class="pricing-card">
+                        <div class="pricing-tier">Flexible</div>
+                        <div class="pricing-name">Pro Monthly</div>
+                        <div class="pricing-price">$4.99<span>/month</span></div>
+                        <p class="pricing-desc">Full Pro access with monthly flexibility. Cancel anytime.</p>
+                        <ul class="pricing-features">
+                            <li>10GB storage</li>
+                            <li>Unlimited uploads</li>
+                            <li>50MB max file size</li>
+                            <li>Custom link formats</li>
+                            <li>Priority support</li>
+                        </ul>
+                        <div class="pricing-cta">
+                            <a href="#download" class="btn-secondary">Get Pro Monthly</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-section" id="download">
+            <div class="container">
+                <h2 class="cta-title">TRY IT<br>FREE.</h2>
+                <p class="cta-subtitle">Start your 7-day free trial. No credit card required. Experience brutal image hosting.</p>
+                <a href="https://apps.apple.com/app/imagehost" class="btn-primary">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                     </svg>
-                    Download for iOS
+                    Download on the App Store
                 </a>
-                <a href="#features" class="btn-secondary">Learn More</a>
             </div>
-            <div class="hero-brand-mobile">Built by <a href="https://isolated.tech" target="_blank" rel="noopener">isolated.tech</a></div>
-            <div class="hero-stats">
-                <div class="stat">
-                    <div class="stat-value">7</div>
-                    <div class="stat-label">Day Free Trial</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">10GB</div>
-                    <div class="stat-label">Pro Storage</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">&lt;1s</div>
-                    <div class="stat-label">Upload Speed</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">Tracking Pixels</div>
-                </div>
-            </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Features -->
-    <section class="features" id="features">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-label">01 / Features</div>
-                <h2 class="section-title">Everything you need. Nothing you don't.</h2>
-            </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">&#8599;</div>
-                    <div class="feature-number">001</div>
-                    <h3 class="feature-title">Share Extension</h3>
-                    <p class="feature-desc">Upload directly from your Photos app or any app with iOS Share Sheet. One tap. Done.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#9783;</div>
-                    <div class="feature-number">002</div>
-                    <h3 class="feature-title">Photo Gallery</h3>
-                    <p class="feature-desc">All your uploads organized by date. Pinch to zoom. Swipe to delete. No learning curve.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#8688;</div>
-                    <div class="feature-number">003</div>
-                    <h3 class="feature-title">Direct Links</h3>
-                    <p class="feature-desc">Get clean, direct URLs. Markdown, HTML, BBCode, or raw. Your choice.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#9032;</div>
-                    <div class="feature-number">004</div>
-                    <h3 class="feature-title">Bulk Export</h3>
-                    <p class="feature-desc">Download all your images as a ZIP. Your data, always accessible.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#10697;</div>
-                    <div class="feature-number">005</div>
-                    <h3 class="feature-title">Custom Link Formats</h3>
-                    <p class="feature-desc">Markdown, HTML, BBCode, or raw URLs. Create your own format template.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#9055;</div>
-                    <div class="feature-number">006</div>
-                    <h3 class="feature-title">Secure by Default</h3>
-                    <p class="feature-desc">JWT authentication. Per-image delete tokens. No tracking. No ads. Ever.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="how-it-works" id="how-it-works">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-label">02 / Process</div>
-                <h2 class="section-title">Three steps. Zero friction.</h2>
-            </div>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">01</div>
-                    <h3 class="step-title">Select Image</h3>
-                    <p class="step-desc">Open any image on your iPhone. Tap the share button.</p>
-                    <span class="step-arrow">&rarr;</span>
-                </div>
-                <div class="step">
-                    <div class="step-number">02</div>
-                    <h3 class="step-title">Tap ImageHost</h3>
-                    <p class="step-desc">Find ImageHost in your share sheet. One tap to upload.</p>
-                    <span class="step-arrow">&rarr;</span>
-                </div>
-                <div class="step">
-                    <div class="step-number">03</div>
-                    <h3 class="step-title">Get Your Link</h3>
-                    <p class="step-desc">Link copied to clipboard. Paste anywhere. Share everywhere.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Preview -->
-    <section class="preview">
-        <div class="container">
-            <div class="preview-container">
-                <div class="preview-content">
-                    <div class="section-header">
-                        <div class="section-label">03 / Interface</div>
-                        <h2 class="section-title">Brutally beautiful.</h2>
-                    </div>
-                    <div class="preview-features">
-                        <div class="preview-feature">
-                            <div class="preview-feature-icon">+</div>
-                            <div class="preview-feature-text">
-                                <strong>High Contrast UI</strong>
-                                Pure black. Pure white. Nothing in between. Designed for focus.
-                            </div>
-                        </div>
-                        <div class="preview-feature">
-                            <div class="preview-feature-icon">+</div>
-                            <div class="preview-feature-text">
-                                <strong>Monospace Typography</strong>
-                                Technical. Precise. Every character counts.
-                            </div>
-                        </div>
-                        <div class="preview-feature">
-                            <div class="preview-feature-icon">+</div>
-                            <div class="preview-feature-text">
-                                <strong>Zero Decoration</strong>
-                                No gradients. No shadows. No rounded corners. Just function.
-                            </div>
-                        </div>
-                        <div class="preview-feature">
-                            <div class="preview-feature-icon">+</div>
-                            <div class="preview-feature-text">
-                                <strong>Obsidian-Inspired</strong>
-                                Built for people who appreciate raw, utilitarian design.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="phone-mockup">
-                    <div class="phone">
-                        <div class="phone-notch"></div>
-                        <div class="phone-screen">
-                            <div class="phone-header">Gallery</div>
-                            <div class="phone-title">PHOTOS</div>
-                            <div class="phone-grid">
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                                <div class="phone-grid-item"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing -->
-    <section class="pricing" id="pricing">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-label">04 / Pricing</div>
-                <h2 class="section-title">Start free. Upgrade when ready.</h2>
-            </div>
-            <div class="pricing-grid">
-                <div class="pricing-card">
-                    <div class="pricing-tier">Start Here</div>
-                    <div class="pricing-name">7-Day Trial</div>
-                    <div class="pricing-price">$0<span>/7 days</span></div>
-                    <p class="pricing-desc">Try ImageHost Pro free for 7 days. No credit card required to start.</p>
-                    <ul class="pricing-features">
-                        <li>100MB storage</li>
-                        <li>100 uploads max</li>
-                        <li>50MB max file size</li>
-                        <li>All Pro features</li>
-                        <li>Cancel anytime</li>
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <div class="footer-inner">
+                    <ul class="footer-links">
+                        <li><a href="#">Privacy</a></li>
+                        <li><a href="#">Terms</a></li>
+                        <li><a href="#">Support</a></li>
+                        <li><a href="https://github.com">GitHub</a></li>
                     </ul>
-                    <div class="pricing-cta">
-                        <a href="#download" class="btn-secondary">Start Free Trial</a>
-                    </div>
-                </div>
-                <div class="pricing-card featured">
-                    <div class="pricing-tier">Best Value</div>
-                    <div class="pricing-name">Pro Annual</div>
-                    <div class="pricing-price">$29<span>/year</span></div>
-                    <p class="pricing-desc">Save over 50% with annual billing. Full Pro access, unlimited uploads.</p>
-                    <ul class="pricing-features">
-                        <li>10GB storage</li>
-                        <li>Unlimited uploads</li>
-                        <li>50MB max file size</li>
-                        <li>Custom link formats</li>
-                        <li>Priority support</li>
-                    </ul>
-                    <div class="pricing-cta">
-                        <a href="#download" class="btn-primary">Get Pro Annual</a>
-                    </div>
-                </div>
-                <div class="pricing-card">
-                    <div class="pricing-tier">Flexible</div>
-                    <div class="pricing-name">Pro Monthly</div>
-                    <div class="pricing-price">$4.99<span>/month</span></div>
-                    <p class="pricing-desc">Full Pro access with monthly flexibility. Cancel anytime.</p>
-                    <ul class="pricing-features">
-                        <li>10GB storage</li>
-                        <li>Unlimited uploads</li>
-                        <li>50MB max file size</li>
-                        <li>Custom link formats</li>
-                        <li>Priority support</li>
-                    </ul>
-                    <div class="pricing-cta">
-                        <a href="#download" class="btn-secondary">Get Pro Monthly</a>
-                    </div>
+                    <div class="footer-copy">&copy; 2026 ImageHost. Built with brutality.</div>
                 </div>
             </div>
-        </div>
-    </section>
+        </footer>
+    </template>
 
-    <!-- CTA -->
-    <section class="cta-section" id="download">
-        <div class="container">
-            <h2 class="cta-title">TRY IT<br>FREE.</h2>
-            <p class="cta-subtitle">Start your 7-day free trial. No credit card required. Experience brutal image hosting.</p>
-            <a href="https://apps.apple.com/app/imagehost" class="btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                </svg>
-                Download on the App Store
-            </a>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-inner">
-                <ul class="footer-links">
-                    <li><a href="#">Privacy</a></li>
-                    <li><a href="#">Terms</a></li>
-                    <li><a href="#">Support</a></li>
-                    <li><a href="https://github.com">GitHub</a></li>
-                </ul>
-                <div class="footer-copy">&copy; 2026 ImageHost. Built with brutality.</div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Intersection Observer for animations -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // ============================================
+        // CONFIG MODULE
+        // ============================================
+        const Config = (() => {
+            return {
+                API_URL: 'https://imghost.isolated.tech',
+                AUTH_STORAGE_KEY: 'imghost_auth',
+                TOKEN_REFRESH_MARGIN: 5 * 60 * 1000, // 5 minutes before expiry
+            };
+        })();
+
+        // ============================================
+        // STATE MODULE
+        // ============================================
+        const State = (() => {
+            let state = {
+                user: null,
+                images: [],
+                imagesLoading: false,
+                imageOffset: 0,
+                hasMoreImages: true,
+            };
+
+            const subscribers = new Set();
+
+            return {
+                get(key) {
+                    return key ? state[key] : { ...state };
+                },
+                set(updates) {
+                    state = { ...state, ...updates };
+                    subscribers.forEach(fn => fn(state));
+                },
+                subscribe(fn) {
+                    subscribers.add(fn);
+                    return () => subscribers.delete(fn);
+                },
+                reset() {
+                    state = {
+                        user: null,
+                        images: [],
+                        imagesLoading: false,
+                        imageOffset: 0,
+                        hasMoreImages: true,
+                    };
+                    subscribers.forEach(fn => fn(state));
+                }
+            };
+        })();
+
+        // ============================================
+        // API MODULE
+        // ============================================
+        const API = (() => {
+            async function request(method, path, body = null, retry = true) {
+                const auth = Auth.getTokens();
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+
+                if (auth?.access_token) {
+                    headers['Authorization'] = `Bearer ${auth.access_token}`;
+                }
+
+                const options = {
+                    method,
+                    headers,
+                };
+
+                if (body && method !== 'GET') {
+                    options.body = JSON.stringify(body);
+                }
+
+                const response = await fetch(`${Config.API_URL}${path}`, options);
+
+                // Handle 401 - try to refresh token
+                if (response.status === 401 && retry && auth?.refresh_token) {
+                    const refreshed = await Auth.refresh();
+                    if (refreshed) {
+                        return request(method, path, body, false);
+                    } else {
+                        Auth.logout();
+                        Router.navigate('/login');
+                        throw new Error('Session expired');
+                    }
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                return data;
+            }
+
+            return {
+                get: (path) => request('GET', path),
+                post: (path, body) => request('POST', path, body),
+                delete: (path) => request('DELETE', path),
+            };
+        })();
+
+        // ============================================
+        // AUTH MODULE
+        // ============================================
+        const Auth = (() => {
+            let refreshTimer = null;
+
+            function getTokens() {
+                try {
+                    const stored = localStorage.getItem(Config.AUTH_STORAGE_KEY);
+                    return stored ? JSON.parse(stored) : null;
+                } catch {
+                    return null;
+                }
+            }
+
+            function saveTokens(tokens) {
+                localStorage.setItem(Config.AUTH_STORAGE_KEY, JSON.stringify(tokens));
+                scheduleRefresh(tokens);
+            }
+
+            function clearTokens() {
+                localStorage.removeItem(Config.AUTH_STORAGE_KEY);
+                if (refreshTimer) {
+                    clearTimeout(refreshTimer);
+                    refreshTimer = null;
+                }
+            }
+
+            function scheduleRefresh(tokens) {
+                if (refreshTimer) {
+                    clearTimeout(refreshTimer);
+                }
+
+                if (!tokens?.expires_at) return;
+
+                const expiresAt = new Date(tokens.expires_at).getTime();
+                const now = Date.now();
+                const refreshAt = expiresAt - Config.TOKEN_REFRESH_MARGIN;
+
+                if (refreshAt > now) {
+                    refreshTimer = setTimeout(() => Auth.refresh(), refreshAt - now);
+                }
+            }
+
+            return {
+                getTokens,
+
+                isAuthenticated() {
+                    const tokens = getTokens();
+                    if (!tokens?.access_token) return false;
+                    // Check if token is expired
+                    if (tokens.expires_at && new Date(tokens.expires_at).getTime() < Date.now()) {
+                        return false;
+                    }
+                    return true;
+                },
+
+                async init() {
+                    const tokens = getTokens();
+                    if (tokens?.access_token) {
+                        scheduleRefresh(tokens);
+                        try {
+                            const user = await API.get('/user');
+                            State.set({ user });
+                        } catch (e) {
+                            console.error('Failed to fetch user:', e);
+                            clearTokens();
+                            State.set({ user: null });
+                        }
+                    }
+                },
+
+                async login(email, password) {
+                    const data = await API.post('/auth/login', { email, password });
+                    saveTokens({
+                        access_token: data.access_token,
+                        refresh_token: data.refresh_token,
+                        expires_at: data.expires_at,
+                    });
+                    const user = await API.get('/user');
+                    State.set({ user });
+                    return user;
+                },
+
+                async register(email, password) {
+                    const data = await API.post('/auth/register', { email, password });
+                    saveTokens({
+                        access_token: data.access_token,
+                        refresh_token: data.refresh_token,
+                        expires_at: data.expires_at,
+                    });
+                    const user = await API.get('/user');
+                    State.set({ user });
+                    return user;
+                },
+
+                async refresh() {
+                    const tokens = getTokens();
+                    if (!tokens?.refresh_token) return false;
+
+                    try {
+                        const response = await fetch(`${Config.API_URL}/auth/refresh`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ refresh_token: tokens.refresh_token }),
+                        });
+
+                        if (!response.ok) return false;
+
+                        const data = await response.json();
+                        saveTokens({
+                            access_token: data.access_token,
+                            refresh_token: data.refresh_token,
+                            expires_at: data.expires_at,
+                        });
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                },
+
+                logout() {
+                    clearTokens();
+                    State.reset();
+                    Router.navigate('/');
+                }
+            };
+        })();
+
+        // ============================================
+        // COMPONENTS MODULE
+        // ============================================
+        const Components = (() => {
+            function renderNavbar(isAuthenticated) {
+                const navbar = document.getElementById('navbar');
+
+                if (isAuthenticated) {
+                    navbar.innerHTML = `
+                        <div class="nav-inner">
+                            <div class="logo" onclick="Router.navigate('/')">
+                                <div class="logo-mark">IH</div>
+                                <span>ImageHost</span>
+                            </div>
+                            <ul class="nav-links">
+                                <li><a onclick="Router.navigate('/dashboard')">Dashboard</a></li>
+                                <li><a onclick="Router.navigate('/settings')">Settings</a></li>
+                            </ul>
+                            <div class="nav-auth">
+                                <button class="nav-auth-link" onclick="Auth.logout()">Logout</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    navbar.innerHTML = `
+                        <div class="nav-inner">
+                            <div class="logo" onclick="Router.navigate('/')">
+                                <div class="logo-mark">IH</div>
+                                <span>ImageHost</span>
+                            </div>
+                            <ul class="nav-links">
+                                <li><a href="#features">Features</a></li>
+                                <li><a href="#how-it-works">How It Works</a></li>
+                                <li><a href="#pricing">Pricing</a></li>
+                            </ul>
+                            <div class="nav-auth">
+                                <button class="nav-auth-link" onclick="Router.navigate('/login')">Login</button>
+                                <button class="nav-cta" onclick="Router.navigate('/register')">Sign Up</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            function showToast(message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                container.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+
+            function showModal(title, body, actions) {
+                const container = document.getElementById('modal-container');
+                container.innerHTML = `
+                    <div class="modal-backdrop" onclick="Components.closeModal(event)">
+                        <div class="modal" onclick="event.stopPropagation()">
+                            <h3 class="modal-title">${title}</h3>
+                            <div class="modal-body">${body}</div>
+                            <div class="modal-actions">
+                                ${actions.map(a => `
+                                    <button class="${a.class || 'btn-secondary'}" onclick="${a.onclick}">${a.label}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function closeModal(event) {
+                if (event && event.target !== event.currentTarget) return;
+                document.getElementById('modal-container').innerHTML = '';
+            }
+
+            function loader() {
+                return `
+                    <div class="loader">
+                        <div class="loader-spinner"></div>
+                    </div>
+                `;
+            }
+
+            return {
+                renderNavbar,
+                showToast,
+                showModal,
+                closeModal,
+                loader,
+            };
+        })();
+
+        // ============================================
+        // VIEWS MODULE
+        // ============================================
+        const Views = (() => {
+            function landing() {
+                const template = document.getElementById('landing-template');
+                return template.innerHTML;
+            }
+
+            function login() {
+                return `
+                    <div class="auth-container">
+                        <div class="auth-card">
+                            <div class="auth-header">
+                                <h1 class="auth-title">Login</h1>
+                                <p class="auth-subtitle">Welcome back. Enter your credentials.</p>
+                            </div>
+                            <form class="auth-form" onsubmit="Views.handleLogin(event)">
+                                <div id="auth-error"></div>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" name="email" class="form-input" placeholder="you@example.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" name="password" class="form-input" placeholder="Enter password" required>
+                                </div>
+                                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                                    Login
+                                </button>
+                            </form>
+                            <div class="auth-footer">
+                                Don't have an account? <a onclick="Router.navigate('/register')">Sign up</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async function handleLogin(event) {
+                event.preventDefault();
+                const form = event.target;
+                const email = form.email.value;
+                const password = form.password.value;
+                const errorDiv = document.getElementById('auth-error');
+                const submitBtn = form.querySelector('button[type="submit"]');
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Logging in...';
+                errorDiv.innerHTML = '';
+
+                try {
+                    await Auth.login(email, password);
+                    Components.showToast('Welcome back!');
+                    Router.navigate('/dashboard');
+                } catch (error) {
+                    errorDiv.innerHTML = `<div class="auth-error">${error.message}</div>`;
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Login';
+                }
+            }
+
+            function register() {
+                return `
+                    <div class="auth-container">
+                        <div class="auth-card">
+                            <div class="auth-header">
+                                <h1 class="auth-title">Sign Up</h1>
+                                <p class="auth-subtitle">Create your account. Start hosting images.</p>
+                            </div>
+                            <form class="auth-form" onsubmit="Views.handleRegister(event)">
+                                <div id="auth-error"></div>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" name="email" class="form-input" placeholder="you@example.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" name="password" class="form-input" placeholder="Min 8 characters" required minlength="8">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Confirm Password</label>
+                                    <input type="password" name="confirmPassword" class="form-input" placeholder="Repeat password" required>
+                                </div>
+                                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                                    Create Account
+                                </button>
+                            </form>
+                            <div class="auth-footer">
+                                Already have an account? <a onclick="Router.navigate('/login')">Login</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async function handleRegister(event) {
+                event.preventDefault();
+                const form = event.target;
+                const email = form.email.value;
+                const password = form.password.value;
+                const confirmPassword = form.confirmPassword.value;
+                const errorDiv = document.getElementById('auth-error');
+                const submitBtn = form.querySelector('button[type="submit"]');
+
+                if (password !== confirmPassword) {
+                    errorDiv.innerHTML = '<div class="auth-error">Passwords do not match</div>';
+                    return;
+                }
+
+                if (password.length < 8) {
+                    errorDiv.innerHTML = '<div class="auth-error">Password must be at least 8 characters</div>';
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating account...';
+                errorDiv.innerHTML = '';
+
+                try {
+                    await Auth.register(email, password);
+                    Components.showToast('Account created!');
+                    Router.navigate('/dashboard');
+                } catch (error) {
+                    errorDiv.innerHTML = `<div class="auth-error">${error.message}</div>`;
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Account';
+                }
+            }
+
+            function dashboard() {
+                const state = State.get();
+                const images = state.images || [];
+                const loading = state.imagesLoading;
+
+                let content = '';
+
+                if (loading && images.length === 0) {
+                    content = Components.loader();
+                } else if (images.length === 0) {
+                    content = `
+                        <div class="empty-state">
+                            <h3 class="empty-state-title">No Images Yet</h3>
+                            <p class="empty-state-desc">Upload your first image using the iOS app.</p>
+                        </div>
+                    `;
+                } else {
+                    content = `
+                        <div class="image-grid">
+                            ${images.map(img => `
+                                <div class="image-card" data-id="${img.id}" data-url="${img.url}">
+                                    <img src="${img.url}" alt="${img.filename}" loading="lazy">
+                                    <div class="image-overlay">
+                                        <div class="copy-dropdown">
+                                            <button class="image-action" onclick="Views.toggleCopyMenu(event, '${img.id}')">Copy URL</button>
+                                            <div class="copy-menu" id="copy-menu-${img.id}">
+                                                <button class="copy-menu-item" onclick="Views.copyUrl('${img.url}', 'direct')">Direct URL</button>
+                                                <button class="copy-menu-item" onclick="Views.copyUrl('${img.url}', 'markdown')">Markdown</button>
+                                                <button class="copy-menu-item" onclick="Views.copyUrl('${img.url}', 'html')">HTML</button>
+                                            </div>
+                                        </div>
+                                        <button class="image-action delete" onclick="Views.confirmDelete('${img.id}')">Delete</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${state.hasMoreImages ? `
+                            <div class="load-more">
+                                <button class="btn-secondary" onclick="Views.loadMoreImages()" ${loading ? 'disabled' : ''}>
+                                    ${loading ? 'Loading...' : 'Load More'}
+                                </button>
+                            </div>
+                        ` : ''}
+                    `;
+                }
+
+                return `
+                    <div class="dashboard-container">
+                        <div class="container">
+                            <div class="dashboard-header">
+                                <div>
+                                    <h1 class="dashboard-title">Your Images</h1>
+                                    <div class="dashboard-count">${images.length} image${images.length !== 1 ? 's' : ''}</div>
+                                </div>
+                            </div>
+                            ${content}
+                        </div>
+                    </div>
+                `;
+            }
+
+            function toggleCopyMenu(event, id) {
+                event.stopPropagation();
+                // Close all other menus
+                document.querySelectorAll('.copy-menu.show').forEach(m => m.classList.remove('show'));
+                const menu = document.getElementById(`copy-menu-${id}`);
+                menu.classList.toggle('show');
+            }
+
+            function copyUrl(url, format) {
+                let text = url;
+                if (format === 'markdown') {
+                    text = `![image](${url})`;
+                } else if (format === 'html') {
+                    text = `<img src="${url}" alt="image">`;
+                }
+                navigator.clipboard.writeText(text);
+                Components.showToast('Copied to clipboard!');
+                document.querySelectorAll('.copy-menu.show').forEach(m => m.classList.remove('show'));
+            }
+
+            function confirmDelete(id) {
+                Components.showModal(
+                    'Delete Image',
+                    'Are you sure you want to delete this image? This action cannot be undone.',
+                    [
+                        { label: 'Cancel', onclick: 'Components.closeModal()' },
+                        { label: 'Delete', class: 'btn-danger', onclick: `Views.deleteImage('${id}')` }
+                    ]
+                );
+            }
+
+            async function deleteImage(id) {
+                Components.closeModal();
+                try {
+                    // Find the image to get its delete token
+                    const images = State.get('images');
+                    const image = images.find(i => i.id === id);
+
+                    // The API expects the delete token as a query param
+                    // Since we don't have the delete token in the images list,
+                    // we'll need to handle this differently - for now show error
+                    Components.showToast('Delete via web not yet supported. Use the iOS app.', 'error');
+                } catch (error) {
+                    Components.showToast(error.message, 'error');
+                }
+            }
+
+            async function loadImages() {
+                if (State.get('imagesLoading')) return;
+
+                State.set({ imagesLoading: true });
+                try {
+                    const data = await API.get('/images?limit=24&offset=0');
+                    State.set({
+                        images: data.images,
+                        imageOffset: data.images.length,
+                        hasMoreImages: data.images.length === 24,
+                        imagesLoading: false,
+                    });
+                } catch (error) {
+                    Components.showToast(error.message, 'error');
+                    State.set({ imagesLoading: false });
+                }
+            }
+
+            async function loadMoreImages() {
+                if (State.get('imagesLoading')) return;
+
+                const offset = State.get('imageOffset');
+                State.set({ imagesLoading: true });
+
+                try {
+                    const data = await API.get(`/images?limit=24&offset=${offset}`);
+                    const currentImages = State.get('images');
+                    State.set({
+                        images: [...currentImages, ...data.images],
+                        imageOffset: offset + data.images.length,
+                        hasMoreImages: data.images.length === 24,
+                        imagesLoading: false,
+                    });
+                    Router.render(); // Re-render to show new images
+                } catch (error) {
+                    Components.showToast(error.message, 'error');
+                    State.set({ imagesLoading: false });
+                }
+            }
+
+            function settings() {
+                const user = State.get('user');
+                if (!user) return Components.loader();
+
+                const usedBytes = user.storage_used_bytes || 0;
+                const limitBytes = user.storage_limit_bytes || 0;
+                const usedPercent = limitBytes > 0 ? (usedBytes / limitBytes) * 100 : 0;
+                const barClass = usedPercent > 90 ? 'danger' : usedPercent > 70 ? 'warning' : '';
+
+                function formatBytes(bytes) {
+                    if (bytes === 0) return '0 B';
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                }
+
+                return `
+                    <div class="settings-container">
+                        <h1 class="settings-title">Settings</h1>
+
+                        <div class="settings-section">
+                            <h2 class="settings-section-title">Account</h2>
+                            <div class="settings-row">
+                                <span class="settings-label">Email</span>
+                                <span class="settings-value">${user.email}</span>
+                            </div>
+                            <div class="settings-row">
+                                <span class="settings-label">Email Verified</span>
+                                <span class="settings-value">${user.email_verified ? 'Yes' : 'No'}</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h2 class="settings-section-title">Subscription</h2>
+                            <div class="settings-row">
+                                <span class="settings-label">Plan</span>
+                                <span class="settings-value">${user.subscription_tier?.toUpperCase() || 'FREE'}</span>
+                            </div>
+                            <div class="settings-row">
+                                <span class="settings-label">Status</span>
+                                <span class="settings-value">${user.subscription_status?.toUpperCase() || 'NONE'}</span>
+                            </div>
+                            ${user.trial_days_remaining !== undefined ? `
+                            <div class="settings-row">
+                                <span class="settings-label">Trial Days Remaining</span>
+                                <span class="settings-value">${user.trial_days_remaining}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="settings-section">
+                            <h2 class="settings-section-title">Storage</h2>
+                            <div class="settings-row">
+                                <span class="settings-label">Images</span>
+                                <span class="settings-value">${user.image_count || 0}</span>
+                            </div>
+                            <div class="storage-bar">
+                                <div class="storage-bar-track">
+                                    <div class="storage-bar-fill ${barClass}" style="width: ${Math.min(usedPercent, 100)}%"></div>
+                                </div>
+                                <div class="storage-text">
+                                    ${formatBytes(usedBytes)} of ${formatBytes(limitBytes)} used (${usedPercent.toFixed(1)}%)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <button class="btn-danger" onclick="Auth.logout()">Logout</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return {
+                landing,
+                login,
+                register,
+                dashboard,
+                settings,
+                handleLogin,
+                handleRegister,
+                toggleCopyMenu,
+                copyUrl,
+                confirmDelete,
+                deleteImage,
+                loadImages,
+                loadMoreImages,
+            };
+        })();
+
+        // ============================================
+        // ROUTER MODULE
+        // ============================================
+        const Router = (() => {
+            const routes = {
+                '/': { view: 'landing', protected: false },
+                '/login': { view: 'login', protected: false, guestOnly: true },
+                '/register': { view: 'register', protected: false, guestOnly: true },
+                '/dashboard': { view: 'dashboard', protected: true },
+                '/settings': { view: 'settings', protected: true },
+            };
+
+            function getPath() {
+                const hash = window.location.hash.slice(1) || '/';
+                return hash.startsWith('/') ? hash : '/' + hash;
+            }
+
+            function navigate(path) {
+                window.location.hash = '#' + path;
+            }
+
+            function render() {
+                const path = getPath();
+                const route = routes[path] || routes['/'];
+                const isAuth = Auth.isAuthenticated();
+
+                // Update navbar
+                Components.renderNavbar(isAuth);
+
+                // Route guards
+                if (route.protected && !isAuth) {
+                    navigate('/login');
+                    return;
+                }
+
+                if (route.guestOnly && isAuth) {
+                    navigate('/dashboard');
+                    return;
+                }
+
+                // Render view
+                const app = document.getElementById('app');
+                app.className = `view-${route.view}`;
+                app.innerHTML = Views[route.view]();
+
+                // Load data for dashboard
+                if (route.view === 'dashboard' && State.get('images').length === 0) {
+                    Views.loadImages().then(() => {
+                        app.innerHTML = Views.dashboard();
+                    });
+                }
+
+                // Initialize animations for landing page
+                if (route.view === 'landing') {
+                    initLandingAnimations();
+                }
+            }
+
+            function init() {
+                window.addEventListener('hashchange', render);
+                render();
+            }
+
+            return {
+                navigate,
+                render,
+                init,
+            };
+        })();
+
+        // ============================================
+        // LANDING PAGE ANIMATIONS
+        // ============================================
+        function initLandingAnimations() {
             const observerOptions = {
                 threshold: 0.1,
                 rootMargin: '0px 0px -50px 0px'
@@ -1234,7 +2514,39 @@
                 el.style.animationPlayState = 'paused';
                 observer.observe(el);
             });
+        }
+
+        // ============================================
+        // CLICK OUTSIDE HANDLER
+        // ============================================
+        document.addEventListener('click', (e) => {
+            // Close copy menus when clicking outside
+            if (!e.target.closest('.copy-dropdown')) {
+                document.querySelectorAll('.copy-menu.show').forEach(m => m.classList.remove('show'));
+            }
         });
+
+        // ============================================
+        // APP INITIALIZATION
+        // ============================================
+        const App = {
+            async init() {
+                // Initialize auth (check stored tokens, fetch user)
+                await Auth.init();
+
+                // Initialize router
+                Router.init();
+
+                // Subscribe to state changes to re-render when needed
+                State.subscribe(() => {
+                    // Only re-render navbar on user changes
+                    Components.renderNavbar(Auth.isAuthenticated());
+                });
+            }
+        };
+
+        // Start the app
+        App.init();
     </script>
 </body>
 </html>
