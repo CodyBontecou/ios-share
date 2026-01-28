@@ -3,11 +3,9 @@ import Foundation
 /// Preset link format options
 enum LinkFormat: String, CaseIterable, Identifiable {
     case rawURL = "raw"
-    case markdown = "markdown"
     case markdownAlt = "markdown_alt"
     case html = "html"
     case bbcode = "bbcode"
-    case obsidian = "obsidian"
     case custom = "custom"
 
     var id: String { rawValue }
@@ -15,11 +13,9 @@ enum LinkFormat: String, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .rawURL: return "Raw URL"
-        case .markdown: return "Markdown"
-        case .markdownAlt: return "Markdown (with alt)"
+        case .markdownAlt: return "Markdown"
         case .html: return "HTML"
         case .bbcode: return "BBCode"
-        case .obsidian: return "Obsidian"
         case .custom: return "Custom"
         }
     }
@@ -27,11 +23,9 @@ enum LinkFormat: String, CaseIterable, Identifiable {
     var template: String {
         switch self {
         case .rawURL: return "{url}"
-        case .markdown: return "![image]({url})"
         case .markdownAlt: return "![{filename}]({url})"
         case .html: return "<img src=\"{url}\" alt=\"{filename}\">"
         case .bbcode: return "[img]{url}[/img]"
-        case .obsidian: return "![]({url})"
         case .custom: return "{url}"
         }
     }
@@ -39,11 +33,9 @@ enum LinkFormat: String, CaseIterable, Identifiable {
     var previewExample: String {
         switch self {
         case .rawURL: return "https://example.com/img.jpg"
-        case .markdown: return "![image](https://...)"
         case .markdownAlt: return "![photo.jpg](https://...)"
         case .html: return "<img src=\"https://...\">"
         case .bbcode: return "[img]https://...[/img]"
-        case .obsidian: return "![](https://...)"
         case .custom: return "Custom format"
         }
     }
