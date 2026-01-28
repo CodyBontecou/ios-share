@@ -902,6 +902,18 @@ export default {
         return await handleLanding(env);
       }
 
+      // GET /favicon.png - Serve favicon
+      if (method === 'GET' && path === '/favicon.png') {
+        const object = await env.IMAGES.get('favicon.png');
+        if (!object) {
+          return new Response('Not found', { status: 404 });
+        }
+        const headers = new Headers();
+        headers.set('Content-Type', 'image/png');
+        headers.set('Cache-Control', 'public, max-age=86400'); // 1 day cache
+        return new Response(object.body, { headers });
+      }
+
       // POST /auth/register - Enhanced with JWT and email verification
       if (method === 'POST' && path === '/auth/register') {
         return withCors(await handleRegisterV2(request, env));
