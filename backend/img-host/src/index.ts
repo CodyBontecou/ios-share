@@ -820,6 +820,19 @@ async function handleExportDownload(request: Request, env: Env, jobId: string): 
   return new Response(object.body, { headers });
 }
 
+async function handleLanding(env: Env): Promise<Response> {
+  const object = await env.IMAGES.get('landing.html');
+  if (!object) {
+    return new Response('Landing page not found', { status: 404 });
+  }
+
+  const headers = new Headers();
+  headers.set('Content-Type', 'text/html; charset=utf-8');
+  headers.set('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+
+  return new Response(object.body, { headers });
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -827,6 +840,11 @@ export default {
     const method = request.method;
 
     try {
+      // GET / - Serve landing page
+      if (method === 'GET' && path === '/') {
+        return await handleLanding(env);
+      }
+
       // POST /auth/register - Enhanced with JWT and email verification
       if (method === 'POST' && path === '/auth/register') {
         return await handleRegisterV2(request, env);
