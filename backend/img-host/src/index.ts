@@ -2,7 +2,7 @@ import { Database } from './database';
 import { Auth } from './auth';
 import { ExportService } from './export';
 import { Analytics } from './analytics';
-import { RateLimiter, getRateLimitConfig, getIpRateLimitConfig } from './rate-limiter';
+import { RateLimiter, getIpRateLimitConfig } from './rate-limiter';
 import { ContentModerator } from './content-moderation';
 import {
   handleRegisterV2,
@@ -33,7 +33,7 @@ export interface Env {
   APPLE_BUNDLE_ID?: string;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB max file size for all tiers
 
 function generateId(): string {
   return crypto.randomUUID().slice(0, 8);
@@ -127,30 +127,6 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     }, 403);
   }
 
-  // Check rate limit
-  const rateLimitConfig = getRateLimitConfig(user.subscription_tier, '/upload');
-  const rateLimit = await rateLimiter.checkUserRateLimit(
-    user.id,
-    '/upload',
-    rateLimitConfig
-  );
-
-  if (!rateLimit.allowed) {
-    return json(
-      {
-        error: 'Rate limit exceeded',
-        retry_after: new Date(rateLimit.reset).toISOString(),
-      },
-      429,
-      {
-        'X-RateLimit-Limit': rateLimit.limit.toString(),
-        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-        'X-RateLimit-Reset': rateLimit.reset.toString(),
-        'Retry-After': Math.ceil((rateLimit.reset - Date.now()) / 1000).toString(),
-      }
-    );
-  }
-
   // Check for unusual upload patterns
   const patternCheck = await moderator.detectUnusualUploadPattern(user.id);
   if (patternCheck.suspicious) {
@@ -215,16 +191,10 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  // Get tier limits for user
-  const tierLimits = await db.getTierLimits(user.subscription_tier);
-  if (!tierLimits) {
-    return json({ error: 'Invalid subscription tier' }, 500);
-  }
-
-  // Validate file size against tier limit
-  if (file.size > tierLimits.max_file_size_bytes) {
+  // Validate file size against max limit (50MB for all users)
+  if (file.size > MAX_FILE_SIZE) {
     return json({
-      error: `File exceeds ${tierLimits.max_file_size_bytes / (1024 * 1024)}MB limit for ${user.subscription_tier} tier`
+      error: `File exceeds 50MB limit`
     }, 400);
   }
 
@@ -287,19 +257,11 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const host = url.origin;
 
-  return json(
-    {
-      url: `${host}/${key}`,
-      id: image.id,
-      deleteUrl: `${host}/delete/${image.id}?token=${deleteToken}`,
-    },
-    200,
-    {
-      'X-RateLimit-Limit': rateLimit.limit.toString(),
-      'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-      'X-RateLimit-Reset': rateLimit.reset.toString(),
-    }
-  );
+  return json({
+    url: `${host}/${key}`,
+    id: image.id,
+    deleteUrl: `${host}/delete/${image.id}?token=${deleteToken}`,
+  });
 }
 
 async function handleGet(request: Request, env: Env, key: string): Promise<Response> {
@@ -560,15 +522,6 @@ async function handleGetUser(request: Request, env: Env): Promise<Response> {
   const subscription = await db.getSubscriptionByUserId(user.id);
   const subscriptionAccess = await checkSubscriptionAccess(user.id, db);
 
-  // Calculate uploads remaining for trial users
-  let uploadsRemaining: number | undefined;
-  if (user.subscription_tier === 'trial') {
-    const tierLimits = await db.getTierLimits('trial');
-    if (tierLimits) {
-      uploadsRemaining = Math.max(0, (tierLimits.max_images || 100) - usage.image_count);
-    }
-  }
-
   // Calculate trial days remaining
   let trialDaysRemaining: number | undefined;
   if (subscription?.status === 'trialing' && subscription?.trial_ends_at) {
@@ -586,7 +539,6 @@ async function handleGetUser(request: Request, env: Env): Promise<Response> {
     storage_limit_bytes: user.storage_limit_bytes,
     storage_used_bytes: usage.total_bytes_used,
     image_count: usage.image_count,
-    uploads_remaining: uploadsRemaining,
     trial_ends_at: subscription?.trial_ends_at ? new Date(subscription.trial_ends_at).toISOString() : undefined,
     trial_days_remaining: trialDaysRemaining,
     current_period_end: subscription?.current_period_end ? new Date(subscription.current_period_end).toISOString() : undefined,

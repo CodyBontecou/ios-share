@@ -158,13 +158,6 @@ export async function handleSubscriptionStatus(request: Request, env: Env): Prom
   try {
     const subscription = await db.getSubscriptionByUserId(user.id);
     const usage = await db.getStorageUsage(user.id);
-    const tierLimits = await db.getTierLimits(user.subscription_tier);
-
-    // Calculate uploads remaining for trial users
-    let uploadsRemaining: number | undefined;
-    if (user.subscription_tier === 'trial' && tierLimits) {
-      uploadsRemaining = Math.max(0, (tierLimits.max_images || 100) - usage.image_count);
-    }
 
     if (!subscription) {
       return json({
@@ -221,7 +214,6 @@ export async function handleSubscriptionStatus(request: Request, env: Env): Prom
         ? new Date(subscription.trial_ends_at).toISOString()
         : undefined,
       trial_days_remaining: trialDaysRemaining,
-      uploads_remaining: uploadsRemaining,
       will_renew: !subscription.cancel_at_period_end,
       user: {
         subscription_tier: user.subscription_tier,

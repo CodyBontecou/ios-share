@@ -404,6 +404,8 @@ export class RateLimiter {
 
 /**
  * Get rate limit configuration based on subscription tier
+ * Note: Upload limits have been removed - storage limits handle resource control.
+ * Only API rate limits remain for abuse prevention.
  */
 export function getRateLimitConfig(
   tier: string,
@@ -411,30 +413,21 @@ export function getRateLimitConfig(
 ): RateLimitConfig {
   const dailyMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-  // Tier-based limits per day
-  const tierLimits: Record<string, { uploads: number; api: number }> = {
-    free: { uploads: 0, api: 100 },           // Block uploads for free tier (subscription required)
-    trial: { uploads: 100, api: 5000 },       // Pro-like features but limited uploads
-    starter: { uploads: 1000, api: 5000 },
-    pro: { uploads: 10000, api: 50000 },
-    business: { uploads: 999999, api: 999999 }, // Effectively unlimited
-    enterprise: { uploads: 999999, api: 999999 },
+  // Tier-based API limits per day (uploads are unlimited, controlled by storage limits)
+  const tierLimits: Record<string, number> = {
+    free: 100,
+    trial: 5000,
+    starter: 5000,
+    pro: 50000,
+    business: 999999,
+    enterprise: 999999,
   };
 
-  const limits = tierLimits[tier] || tierLimits.free;
+  const apiLimit = tierLimits[tier] || tierLimits.free;
 
-  // Endpoint-specific rate limits
-  if (endpoint.includes('/upload')) {
-    return {
-      windowMs: dailyMs,
-      maxRequests: limits.uploads,
-    };
-  }
-
-  // Default API rate limit
   return {
     windowMs: dailyMs,
-    maxRequests: limits.api,
+    maxRequests: apiLimit,
   };
 }
 

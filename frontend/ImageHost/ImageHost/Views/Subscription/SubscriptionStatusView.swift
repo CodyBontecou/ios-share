@@ -62,21 +62,6 @@ struct SubscriptionStatusView: View {
                     )
                 }
 
-                // Usage Stats (for trial users)
-                if subscriptionState.status == .trialing, let uploadsRemaining = subscriptionState.uploadsRemaining {
-                    HStack {
-                        Text("UPLOADS REMAINING")
-                            .brutalTypography(.monoSmall, color: .brutalTextSecondary)
-                            .tracking(1)
-
-                        Spacer()
-
-                        Text("\(uploadsRemaining) / 100")
-                            .brutalTypography(.mono)
-                    }
-                    .padding(.top, 8)
-                }
-
                 // Manage Subscription Button
                 if subscriptionState.status == .subscribed || subscriptionState.status == .trialing {
                     BrutalSecondaryButton(title: "Manage Subscription") {

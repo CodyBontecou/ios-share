@@ -11,7 +11,6 @@ final class SubscriptionState: ObservableObject {
     @Published private(set) var currentPeriodEnd: Date?
     @Published private(set) var trialEndsAt: Date?
     @Published private(set) var willRenew: Bool = false
-    @Published private(set) var uploadsRemaining: Int?
     @Published private(set) var isLoading = false
     @Published private(set) var error: Error?
 
@@ -107,7 +106,6 @@ final class SubscriptionState: ObservableObject {
         }
 
         trialDaysRemaining = response.trialDaysRemaining
-        uploadsRemaining = response.uploadsRemaining
         willRenew = response.willRenew
 
         if let expiresAtString = response.expiresAt {
@@ -127,7 +125,6 @@ final class SubscriptionState: ObservableObject {
         currentPeriodEnd = nil
         trialEndsAt = nil
         willRenew = false
-        uploadsRemaining = nil
         error = nil
     }
 }
@@ -142,7 +139,6 @@ struct SubscriptionStatusResponse: Codable {
     let expiresAt: String?
     let trialEndsAt: String?
     let trialDaysRemaining: Int?
-    let uploadsRemaining: Int?
     let willRenew: Bool
     let user: SubscriptionUserInfo?
 
@@ -154,7 +150,6 @@ struct SubscriptionStatusResponse: Codable {
         case expiresAt = "expires_at"
         case trialEndsAt = "trial_ends_at"
         case trialDaysRemaining = "trial_days_remaining"
-        case uploadsRemaining = "uploads_remaining"
         case willRenew = "will_renew"
         case user
     }
@@ -168,7 +163,6 @@ struct SubscriptionStatusResponse: Codable {
         expiresAt = try container.decodeIfPresent(String.self, forKey: .expiresAt)
         trialEndsAt = try container.decodeIfPresent(String.self, forKey: .trialEndsAt)
         trialDaysRemaining = try container.decodeIfPresent(Int.self, forKey: .trialDaysRemaining)
-        uploadsRemaining = try container.decodeIfPresent(Int.self, forKey: .uploadsRemaining)
         willRenew = try container.decodeIfPresent(Bool.self, forKey: .willRenew) ?? false
         user = try container.decodeIfPresent(SubscriptionUserInfo.self, forKey: .user)
     }
