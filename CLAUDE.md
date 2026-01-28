@@ -21,7 +21,7 @@ wrangler deploy
 - **Debug builds use production URLs** - this is intentional
 - `frontend/ImageHost/Config/Debug.xcconfig` should always point to:
   ```
-  BACKEND_URL = https:/$()/img-host.costream.workers.dev
+  BACKEND_URL = https:/$()/imghost.isolated.tech
   ```
 - Do NOT use local IP addresses (192.168.x.x) or localhost for development
 - If you see network errors about "local network prohibited", check that Debug.xcconfig has the production URL
@@ -39,10 +39,10 @@ wrangler deploy
 
 ```bash
 # Check if endpoint exists in production
-curl -s https://img-host.costream.workers.dev/health
+curl -s https://imghost.isolated.tech/health
 
 # Test a POST endpoint
-curl -s -X POST https://img-host.costream.workers.dev/auth/apple -H "Content-Type: application/json" -d '{}'
+curl -s -X POST https://imghost.isolated.tech/auth/apple -H "Content-Type: application/json" -d '{}'
 
 # View production logs
 wrangler tail --format=pretty
@@ -65,8 +65,20 @@ When adding new fields to API responses:
 
 If you see `keyNotFound` decoding errors in the iOS app, check that the backend response uses snake_case.
 
+### Landing Page
+
+The landing page (`landing/index.html`) is served by the Worker from R2 storage.
+
+**To update the landing page:**
+```bash
+wrangler r2 object put images/landing.html --file landing/index.html --remote
+```
+
+No Worker redeploy needed - changes are immediate.
+
 ## Project Structure
 
 - `backend/img-host/` - Cloudflare Worker backend
 - `frontend/ImageHost/` - iOS app and share extension
 - `frontend/ImageHost/Config/` - Build configuration (xcconfig files)
+- `landing/` - Landing page (served from R2 at root path)
