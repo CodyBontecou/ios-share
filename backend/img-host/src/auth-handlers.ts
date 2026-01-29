@@ -581,7 +581,7 @@ export async function handleAppleSignIn(request: Request, env: Env): Promise<Res
     }
 
     // Verify the identity token with Apple
-    const clientId = env.APPLE_CLIENT_ID || 'com.imghost.app';
+    const clientId = env.APPLE_CLIENT_ID || 'com.codybontecou.imghost';
     const tokenPayload = await AppleAuth.verifyIdentityToken(identity_token, clientId);
 
     if (!tokenPayload) {
