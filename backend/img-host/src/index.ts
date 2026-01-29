@@ -914,6 +914,18 @@ export default {
         return new Response(object.body, { headers });
       }
 
+      // GET /logo.png - Serve logo
+      if (method === 'GET' && path === '/logo.png') {
+        const object = await env.IMAGES.get('logo.png');
+        if (!object) {
+          return new Response('Not found', { status: 404 });
+        }
+        const headers = new Headers();
+        headers.set('Content-Type', 'image/png');
+        headers.set('Cache-Control', 'public, max-age=86400'); // 1 day cache
+        return new Response(object.body, { headers });
+      }
+
       // POST /auth/register - Enhanced with JWT and email verification
       if (method === 'POST' && path === '/auth/register') {
         return withCors(await handleRegisterV2(request, env));
