@@ -19,7 +19,7 @@ wrangler deploy
 ### iOS App Configuration
 
 - **Debug builds use production URLs** - this is intentional
-- `frontend/ImageHost/Config/Debug.xcconfig` should always point to:
+- `frontend/imghost/Config/Debug.xcconfig` should always point to:
   ```
   BACKEND_URL = https:/$()/imghost.isolated.tech
   ```
@@ -79,14 +79,14 @@ No Worker redeploy needed - changes are immediate.
 ## Project Structure
 
 - `backend/img-host/` - Cloudflare Worker backend
-- `frontend/ImageHost/` - iOS app and share extension (will be renamed to `imghost` in future)
-- `frontend/ImageHost/Config/` - Build configuration (xcconfig files)
+- `frontend/imghost/` - iOS app and share extension
+- `frontend/imghost/Config/` - Build configuration (xcconfig files)
 - `landing/` - Landing page (served from R2 at root path)
 
 ## Bundle IDs and Product IDs
 
-- **Main App Bundle ID**: `com.imghost.app`
-- **Share Extension Bundle ID**: `com.imghost.app.ShareExtension`
+- **Main App Bundle ID**: `com.codybontecou.imghost`
+- **Share Extension Bundle ID**: `com.codybontecou.imghost.ShareExtension`
 - **App Group**: `group.com.imghost.shared`
 - **IAP Products**: `com.imghost.pro.monthly`, `com.imghost.pro.annual`
 - **D1 Database**: `imghost`

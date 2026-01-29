@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A10000F0000"
-               BuildableName = "ImageHost.app"
-               BlueprintName = "ImageHost"
-               ReferencedContainer = "container:ImageHost.xcodeproj">
+               BuildableName = "imghost.app"
+               BlueprintName = "imghost"
+               ReferencedContainer = "container:imghost.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -44,9 +44,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A10000F0000"
-            BuildableName = "ImageHost.app"
-            BlueprintName = "ImageHost"
-            ReferencedContainer = "container:ImageHost.xcodeproj">
+            BuildableName = "imghost.app"
+            BlueprintName = "imghost"
+            ReferencedContainer = "container:imghost.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -61,9 +61,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A10000F0000"
-            BuildableName = "ImageHost.app"
-            BlueprintName = "ImageHost"
-            ReferencedContainer = "container:ImageHost.xcodeproj">
+            BuildableName = "imghost.app"
+            BlueprintName = "imghost"
+            ReferencedContainer = "container:imghost.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

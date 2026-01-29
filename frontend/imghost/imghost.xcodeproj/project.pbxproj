@@ -99,7 +99,7 @@
 		A1000005000 /* UploadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadDetailView.swift; sourceTree = "<group>"; };
 		G1000001000 /* UploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadView.swift; sourceTree = "<group>"; };
 		A1000006000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A1000007000 /* ImageHost.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ImageHost.entitlements; sourceTree = "<group>"; };
+		A1000007000 /* imghost.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = imghost.entitlements; sourceTree = "<group>"; };
 		A1000010000 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		A1000011000 /* UploadRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadRecord.swift; sourceTree = "<group>"; };
 		A1000012000 /* ImghostError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImghostError.swift; sourceTree = "<group>"; };
@@ -121,7 +121,7 @@
 		A1000022000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000023000 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		A1000040000 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		A1000080000 /* ImageHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ImageHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000080000 /* imghost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = imghost.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000F1000 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A10000F2000 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		A3FBA8EDF575959E863DA8C8 /* GoogleTypography.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleTypography.swift; sourceTree = "<group>"; };
@@ -170,25 +170,25 @@
 			isa = PBXGroup;
 			children = (
 				A10000F3000 /* Config */,
-				A10000B0000 /* ImageHost */,
+				A10000B0000 /* imghost */,
 				A10000C0000 /* ShareExtension */,
 				A10000D0000 /* Shared */,
 				A10000E0000 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A10000B0000 /* ImageHost */ = {
+		A10000B0000 /* imghost */ = {
 			isa = PBXGroup;
 			children = (
 				A1000001000 /* ImghostApp.swift */,
 				A1000002000 /* ContentView.swift */,
 				A10000B1000 /* Views */,
 				A1000006000 /* Info.plist */,
-				A1000007000 /* ImageHost.entitlements */,
+				A1000007000 /* imghost.entitlements */,
 				553984877C35A24C0D159E8F /* DesignSystem */,
 				C1000001000 /* Assets.xcassets */,
 			);
-			path = ImageHost;
+			path = imghost;
 			sourceTree = "<group>";
 		};
 		A10000B1000 /* Views */ = {
@@ -288,7 +288,7 @@
 		A10000E0000 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A1000080000 /* ImageHost.app */,
+				A1000080000 /* imghost.app */,
 				A1000040000 /* ShareExtension.appex */,
 			);
 			name = Products;
@@ -323,9 +323,9 @@
 			productReference = A1000040000 /* ShareExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		A10000F0000 /* ImageHost */ = {
+		A10000F0000 /* imghost */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A1000100000 /* Build configuration list for PBXNativeTarget "ImageHost" */;
+			buildConfigurationList = A1000100000 /* Build configuration list for PBXNativeTarget "imghost" */;
 			buildPhases = (
 				A1000110000 /* Sources */,
 				A1000090000 /* Frameworks */,
@@ -337,9 +337,9 @@
 			dependencies = (
 				A1000130000 /* PBXTargetDependency */,
 			);
-			name = ImageHost;
-			productName = ImageHost;
-			productReference = A1000080000 /* ImageHost.app */;
+			name = imghost;
+			productName = imghost;
+			productReference = A1000080000 /* imghost.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -360,7 +360,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A1000170000 /* Build configuration list for PBXProject "ImageHost" */;
+			buildConfigurationList = A1000170000 /* Build configuration list for PBXProject "imghost" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -373,7 +373,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A10000F0000 /* ImageHost */,
+				A10000F0000 /* imghost */,
 				A1000060000 /* ShareExtension */,
 			);
 		};
@@ -603,12 +603,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = ImageHost/ImageHost.entitlements;
+				CODE_SIGN_ENTITLEMENTS = imghost/imghost.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ImageHost/Info.plist;
+				INFOPLIST_FILE = imghost/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -633,12 +633,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = ImageHost/ImageHost.entitlements;
+				CODE_SIGN_ENTITLEMENTS = imghost/imghost.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ImageHost/Info.plist;
+				INFOPLIST_FILE = imghost/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -715,7 +715,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1000100000 /* Build configuration list for PBXNativeTarget "ImageHost" */ = {
+		A1000100000 /* Build configuration list for PBXNativeTarget "imghost" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A10001A0000 /* Debug */,
@@ -733,7 +733,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A1000170000 /* Build configuration list for PBXProject "ImageHost" */ = {
+		A1000170000 /* Build configuration list for PBXProject "imghost" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000180000 /* Debug */,
