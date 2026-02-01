@@ -10,7 +10,7 @@ enum ExportStatus: Codable {
         case status
         case progress
         case downloadUrl
-        case error
+        case errorMessage
     }
 
     init(from decoder: Decoder) throws {
@@ -27,7 +27,7 @@ enum ExportStatus: Codable {
             let downloadUrl = try container.decode(String.self, forKey: .downloadUrl)
             self = .completed(downloadUrl: downloadUrl)
         case "failed":
-            let error = try container.decode(String.self, forKey: .error)
+            let error = try container.decodeIfPresent(String.self, forKey: .errorMessage) ?? "Unknown error"
             self = .failed(error: error)
         default:
             throw DecodingError.dataCorruptedError(
@@ -52,7 +52,7 @@ enum ExportStatus: Codable {
             try container.encode(downloadUrl, forKey: .downloadUrl)
         case .failed(let error):
             try container.encode("failed", forKey: .status)
-            try container.encode(error, forKey: .error)
+            try container.encode(error, forKey: .errorMessage)
         }
     }
 }
@@ -113,7 +113,7 @@ final class ExportService: NSObject {
             throw ExportError.notConfigured
         }
 
-        guard let token = try keychainService.loadUploadToken(),
+        guard let token = keychainService.loadAccessToken(),
               !token.isEmpty else {
             throw ExportError.notConfigured
         }
@@ -133,14 +133,14 @@ final class ExportService: NSObject {
             throw ExportError.invalidResponse
         }
 
-        guard httpResponse.statusCode == 200 || httpResponse.statusCode == 201 else {
+        guard httpResponse.statusCode == 200 || httpResponse.statusCode == 201 || httpResponse.statusCode == 202 else {
             let message = String(data: data, encoding: .utf8)
             throw ExportError.exportFailed(statusCode: httpResponse.statusCode, message: message)
         }
 
         // Parse response to get job ID
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let jobId = json["id"] as? String else {
+              let jobId = json["jobId"] as? String else {
             throw ExportError.invalidResponse
         }
 
@@ -156,7 +156,7 @@ final class ExportService: NSObject {
             throw ExportError.notConfigured
         }
 
-        guard let token = try keychainService.loadUploadToken(),
+        guard let token = keychainService.loadAccessToken(),
               !token.isEmpty else {
             throw ExportError.notConfigured
         }
@@ -198,7 +198,7 @@ final class ExportService: NSObject {
             throw ExportError.notConfigured
         }
 
-        guard let token = try keychainService.loadUploadToken(),
+        guard let token = keychainService.loadAccessToken(),
               !token.isEmpty else {
             throw ExportError.notConfigured
         }
@@ -304,7 +304,7 @@ final class ExportService: NSObject {
             throw ExportError.notConfigured
         }
 
-        guard let token = try keychainService.loadUploadToken(),
+        guard let token = keychainService.loadAccessToken(),
               !token.isEmpty else {
             throw ExportError.notConfigured
         }

@@ -705,7 +705,7 @@ function handleHealth(): Response {
   return json({ status: 'ok' });
 }
 
-async function handleExportInitiate(request: Request, env: Env): Promise<Response> {
+async function handleExportInitiate(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const db = new Database(env.DB);
 
   const authHeader = request.headers.get('Authorization');
@@ -739,12 +739,9 @@ async function handleExportInitiate(request: Request, env: Env): Promise<Respons
   // Update rate limit
   await db.updateExportRateLimit(user.id);
 
-  // Process export asynchronously
+  // Process export asynchronously using waitUntil for fire-and-forget background processing
   const exportService = new ExportService(db, env.IMAGES);
-
-  // In a production environment, you'd want to use Cloudflare Queues or Durable Objects
-  // for background processing. For now, we'll use ctx.waitUntil() for fire-and-forget
-  // This is passed via the execution context which we'll handle in the fetch handler
+  ctx.waitUntil(exportService.processExportJob(job.id, user.id));
 
   const url = new URL(request.url);
   const host = url.origin;
@@ -1004,7 +1001,7 @@ export default {
 
       // POST /api/export - Initiate export job
       if (method === 'POST' && path === '/api/export') {
-        return withCors(await handleExportInitiate(request, env));
+        return withCors(await handleExportInitiate(request, env, ctx));
       }
 
       // GET /api/export/{job_id}/status - Check export status
