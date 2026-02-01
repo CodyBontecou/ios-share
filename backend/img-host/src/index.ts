@@ -727,10 +727,10 @@ async function handleExportInitiate(request: Request, env: Env, ctx: ExecutionCo
     return json({ error: 'User not found' }, 401);
   }
 
-  // Check rate limit (1 per hour)
+  // Check rate limit (5 per hour)
   const canExport = await db.checkExportRateLimit(user.id);
   if (!canExport) {
-    return json({ error: 'Rate limit exceeded. You can only export once per hour.' }, 429);
+    return json({ error: 'Rate limit exceeded. You can only export 5 times per hour.' }, 429);
   }
 
   // Create export job

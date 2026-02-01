@@ -707,30 +707,55 @@ export class Database {
 
   async checkExportRateLimit(userId: string): Promise<boolean> {
     const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    const maxExportsPerHour = 5;
 
     const result = await this.db
-      .prepare('SELECT last_export_at FROM export_rate_limits WHERE user_id = ?')
+      .prepare('SELECT export_count, window_start FROM export_rate_limits WHERE user_id = ?')
       .bind(userId)
-      .first<{ last_export_at: number }>();
+      .first<{ export_count: number; window_start: number }>();
 
     if (!result) {
       return true; // No previous export, allowed
     }
 
-    return result.last_export_at < oneHourAgo;
+    // If window has expired, allow (will reset on update)
+    if (result.window_start < oneHourAgo) {
+      return true;
+    }
+
+    // Check if under limit within current window
+    return result.export_count < maxExportsPerHour;
   }
 
   async updateExportRateLimit(userId: string): Promise<void> {
     const now = Date.now();
+    const oneHourAgo = now - (60 * 60 * 1000);
 
-    await this.db
-      .prepare(
-        `INSERT INTO export_rate_limits (user_id, last_export_at)
-         VALUES (?, ?)
-         ON CONFLICT(user_id) DO UPDATE SET last_export_at = ?`
-      )
-      .bind(userId, now, now)
-      .run();
+    // Check if we need to reset the window
+    const existing = await this.db
+      .prepare('SELECT window_start FROM export_rate_limits WHERE user_id = ?')
+      .bind(userId)
+      .first<{ window_start: number }>();
+
+    if (!existing || existing.window_start < oneHourAgo) {
+      // Start new window
+      await this.db
+        .prepare(
+          `INSERT INTO export_rate_limits (user_id, last_export_at, export_count, window_start)
+           VALUES (?, ?, 1, ?)
+           ON CONFLICT(user_id) DO UPDATE SET last_export_at = ?, export_count = 1, window_start = ?`
+        )
+        .bind(userId, now, now, now, now)
+        .run();
+    } else {
+      // Increment count in existing window
+      await this.db
+        .prepare(
+          `UPDATE export_rate_limits SET last_export_at = ?, export_count = export_count + 1 WHERE user_id = ?`
+        )
+        .bind(now, userId)
+        .run();
+    }
   }
 
   async cleanupExpiredExports(): Promise<void> {

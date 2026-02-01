@@ -21,7 +21,7 @@ struct SettingsView: View {
     @State private var exportProgress: Double = 0.0
     @State private var exportError: String?
     @State private var exportedFileURL: URL?
-    @State private var showingShareSheet = false
+    @State private var showingFileMover = false
 
     enum ExportState {
         case idle
@@ -330,17 +330,21 @@ struct SettingsView: View {
                 exportedFileURL: exportedFileURL,
                 onStartExport: { startExport() },
                 onCancelExport: { cancelExport() },
-                onShare: { url in
-                    exportedFileURL = url
-                    showingShareSheet = true
+                onSaveToFiles: {
+                    showingFileMover = true
                 },
                 onDismiss: { resetExportState() }
             )
             .presentationDetents([.medium])
         }
-        .sheet(isPresented: $showingShareSheet) {
-            if let url = exportedFileURL {
-                ShareSheet(activityItems: [url])
+        .fileMover(isPresented: $showingFileMover, file: exportedFileURL) { result in
+            switch result {
+            case .success(let url):
+                print("File saved to: \(url)")
+                resetExportState()
+                showingExportSheet = false
+            case .failure(let error):
+                print("Failed to save file: \(error)")
             }
         }
         .preferredColorScheme(.dark)
@@ -628,7 +632,7 @@ struct BrutalExportSheetView: View {
     let exportedFileURL: URL?
     let onStartExport: () -> Void
     let onCancelExport: () -> Void
-    let onShare: (URL) -> Void
+    let onSaveToFiles: () -> Void
     let onDismiss: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -703,10 +707,10 @@ struct BrutalExportSheetView: View {
                         Text("EXPORT COMPLETE")
                             .brutalTypography(.titleMedium)
 
-                        if let url = exportedFileURL {
+                        if exportedFileURL != nil {
                             BrutalPrimaryButton(
-                                title: "Share Archive",
-                                action: { onShare(url) }
+                                title: "Save to Files",
+                                action: onSaveToFiles
                             )
                             .padding(.horizontal, 24)
                         }
@@ -747,18 +751,6 @@ struct BrutalExportSheetView: View {
         }
         .preferredColorScheme(.dark)
     }
-}
-
-// MARK: - Share Sheet
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let activityItems: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {
