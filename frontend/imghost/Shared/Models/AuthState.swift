@@ -33,6 +33,9 @@ final class AuthState: ObservableObject {
             currentUser = user
             isAuthenticated = true
             isEmailVerified = user.emailVerified
+
+            // Sync images from backend after successful auth check
+            await syncImagesFromBackend()
         } catch {
             // Token might be expired, try to refresh
             do {
@@ -41,6 +44,9 @@ final class AuthState: ObservableObject {
                 currentUser = user
                 isAuthenticated = true
                 isEmailVerified = user.emailVerified
+
+                // Sync images from backend after successful token refresh
+                await syncImagesFromBackend()
             } catch {
                 // Refresh failed, user needs to log in again
                 logout()
@@ -51,7 +57,7 @@ final class AuthState: ObservableObject {
     }
 
     /// Set authenticated state after successful login/register
-    func setAuthenticated(response: AuthResponse) {
+    func setAuthenticated(response: AuthResponse) async {
         // Save tokens
         try? keychainService.saveAccessToken(response.accessToken)
         try? keychainService.saveRefreshToken(response.refreshToken)
@@ -73,6 +79,21 @@ final class AuthState: ObservableObject {
             storageLimitBytes: 0,
             imageCount: nil
         )
+
+        // Sync images from backend after login
+        await syncImagesFromBackend()
+    }
+
+    /// Sync images from backend to local storage
+    private func syncImagesFromBackend() async {
+        #if !SHARE_EXTENSION
+        do {
+            try await ImageSyncService.shared.syncImages()
+        } catch {
+            // Sync failures are non-fatal - user can still use the app
+            print("Image sync failed: \(error.localizedDescription)")
+        }
+        #endif
     }
 
     /// Update email verified status

@@ -58,6 +58,7 @@
 		D65665EB6905B182E0F76EBC /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92EC531C9EE3CD96675D03D8 /* PhotoGridView.swift */; };
 		F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8915CA80904ADBA74F2AB9 /* ExportService.swift */; };
 		H1000001001 /* PhotosExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1000001000 /* PhotosExportService.swift */; };
+		I1000001001 /* ImageSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = I1000001000 /* ImageSyncService.swift */; };
 		B1000001001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001000 /* OnboardingView.swift */; };
 		C1000001001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1000001000 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -89,6 +90,7 @@
 /* Begin PBXFileReference section */
 		0F8915CA80904ADBA74F2AB9 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
 		H1000001000 /* PhotosExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosExportService.swift; sourceTree = "<group>"; };
+		I1000001000 /* ImageSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageSyncService.swift; sourceTree = "<group>"; };
 		33B2B177AAB3C2D4F56ED74B /* GoogleComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleComponents.swift; sourceTree = "<group>"; };
 		43B2B177AAB3C2D4F56ED74C /* BrutalComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrutalComponents.swift; sourceTree = "<group>"; };
 		4A09518DA218CA8C573BCEEF /* GoogleSpacing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleSpacing.swift; sourceTree = "<group>"; };
@@ -281,6 +283,7 @@
 				A1000017000 /* AuthService.swift */,
 				0F8915CA80904ADBA74F2AB9 /* ExportService.swift */,
 				H1000001000 /* PhotosExportService.swift */,
+				I1000001000 /* ImageSyncService.swift */,
 				D1000001000 /* LinkFormatService.swift */,
 				E1000002000 /* SubscriptionService.swift */,
 				E1000003000 /* StoreKitManager.swift */,
@@ -429,6 +432,7 @@
 				A100001A001 /* AuthState.swift in Sources */,
 				F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */,
 				H1000001001 /* PhotosExportService.swift in Sources */,
+				I1000001001 /* ImageSyncService.swift in Sources */,
 				14EBDD7432ABCF77C17602EE /* GoogleColors.swift in Sources */,
 				46C6716F291ACC3B60FD7C97 /* GoogleTypography.swift in Sources */,
 				22BE19555A3C3B23E913A532 /* GoogleSpacing.swift in Sources */,

@@ -140,9 +140,7 @@ struct RegisterView: View {
                     email: email.trimmingCharacters(in: .whitespaces),
                     password: password
                 )
-                await MainActor.run {
-                    authState.setAuthenticated(response: response)
-                }
+                await authState.setAuthenticated(response: response)
             } catch let error as AuthError {
                 await MainActor.run {
                     errorMessage = error.errorDescription

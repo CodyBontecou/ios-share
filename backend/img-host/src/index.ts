@@ -629,6 +629,7 @@ async function handleGetImages(request: Request, env: Env): Promise<Response> {
     id: img.id,
     filename: img.filename,
     url: `${host}/${img.r2_key}`,
+    delete_url: `${host}/delete/${img.id}?token=${img.delete_token}`,
     size_bytes: img.size_bytes,
     content_type: img.content_type,
     created_at: img.created_at,
