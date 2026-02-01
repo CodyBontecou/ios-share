@@ -29,6 +29,8 @@ struct SettingsView: View {
         case exporting(progress: Double)
         case downloading(progress: Double)
         case complete
+        case savingToPhotos(progress: Double)
+        case savedToPhotos(count: Int)
         case error(String)
     }
 
@@ -331,20 +333,26 @@ struct SettingsView: View {
                 onStartExport: { startExport() },
                 onCancelExport: { cancelExport() },
                 onSaveToFiles: {
-                    showingFileMover = true
+                    // Dismiss export sheet first, then show file mover
+                    showingExportSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showingFileMover = true
+                    }
                 },
+                onSaveToPhotos: { saveToPhotos() },
                 onDismiss: { resetExportState() }
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.medium, .large])
         }
         .fileMover(isPresented: $showingFileMover, file: exportedFileURL) { result in
             switch result {
             case .success(let url):
                 print("File saved to: \(url)")
                 resetExportState()
-                showingExportSheet = false
             case .failure(let error):
                 print("Failed to save file: \(error)")
+                // Re-show export sheet on failure so user can try again
+                showingExportSheet = true
             }
         }
         .preferredColorScheme(.dark)
@@ -473,6 +481,62 @@ struct SettingsView: View {
         exportProgress = 0.0
         exportError = nil
         exportedFileURL = nil
+    }
+
+    private func saveToPhotos() {
+        Task {
+            do {
+                await MainActor.run {
+                    exportState = .savingToPhotos(progress: 0.0)
+                }
+
+                // Fetch user's images from the server
+                guard let accessToken = KeychainService.shared.loadAccessToken() else {
+                    throw PhotosExportError.notAuthorized
+                }
+
+                let backendUrl = Config.backendURL
+                guard let url = URL(string: "\(backendUrl)/images") else {
+                    throw PhotosExportError.noImages
+                }
+
+                var request = URLRequest(url: url)
+                request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+                let (data, _) = try await URLSession.shared.data(for: request)
+
+                struct ImagesResponse: Codable {
+                    let images: [ImageItem]
+                }
+                struct ImageItem: Codable {
+                    let url: String
+                }
+
+                let response = try JSONDecoder().decode(ImagesResponse.self, from: data)
+                let imageURLs = response.images.compactMap { URL(string: $0.url) }
+
+                guard !imageURLs.isEmpty else {
+                    throw PhotosExportError.noImages
+                }
+
+                // Save to photos
+                let savedCount = try await PhotosExportService.shared.saveToPhotos(
+                    imageURLs: imageURLs
+                ) { progress in
+                    Task { @MainActor in
+                        exportState = .savingToPhotos(progress: progress)
+                    }
+                }
+
+                await MainActor.run {
+                    exportState = .savedToPhotos(count: savedCount)
+                }
+            } catch {
+                await MainActor.run {
+                    exportState = .error(error.localizedDescription)
+                }
+            }
+        }
     }
 
     // MARK: - View Sections (extracted to help compiler type-check)
@@ -633,6 +697,7 @@ struct BrutalExportSheetView: View {
     let onStartExport: () -> Void
     let onCancelExport: () -> Void
     let onSaveToFiles: () -> Void
+    let onSaveToPhotos: () -> Void
     let onDismiss: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -707,18 +772,58 @@ struct BrutalExportSheetView: View {
                         Text("EXPORT COMPLETE")
                             .brutalTypography(.titleMedium)
 
-                        if exportedFileURL != nil {
+                        VStack(spacing: 12) {
                             BrutalPrimaryButton(
-                                title: "Save to Files",
-                                action: onSaveToFiles
+                                title: "Save to Photos",
+                                action: onSaveToPhotos
                             )
                             .padding(.horizontal, 24)
+
+                            if exportedFileURL != nil {
+                                BrutalSecondaryButton(title: "Save to Files") {
+                                    onSaveToFiles()
+                                }
+                                .padding(.horizontal, 24)
+                            }
                         }
 
                         BrutalTextButton(title: "Done") {
                             onDismiss()
                             dismiss()
                         }
+                    }
+
+                case .savingToPhotos(let progress):
+                    VStack(spacing: 24) {
+                        Text("\(Int(progress * 100))%")
+                            .font(.system(size: 56, weight: .black, design: .monospaced))
+                            .foregroundStyle(.white)
+
+                        BrutalProgressBar(progress: progress)
+                            .padding(.horizontal, 48)
+
+                        Text("SAVING TO PHOTOS")
+                            .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                            .tracking(2)
+                    }
+
+                case .savedToPhotos(let count):
+                    VStack(spacing: 24) {
+                        Text("✓")
+                            .font(.system(size: 64, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.brutalSuccess)
+
+                        Text("SAVED TO PHOTOS")
+                            .brutalTypography(.titleMedium)
+
+                        Text("\(count) images saved to your photo library")
+                            .brutalTypography(.bodySmall, color: .brutalTextSecondary)
+
+                        BrutalPrimaryButton(title: "Done") {
+                            onDismiss()
+                            dismiss()
+                        }
+                        .frame(width: 160)
                     }
 
                 case .error(let message):

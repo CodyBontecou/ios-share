@@ -51,6 +51,10 @@
 	<string>$(BACKEND_URL)</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app needs to access local network services for development and testing.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>imghost needs access to save exported images to your photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>imghost needs access to your photo library to create an album and save exported images.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
