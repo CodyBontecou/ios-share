@@ -124,7 +124,9 @@ final class AuthService {
         case 200:
             return try JSONDecoder().decode(AuthResponse.self, from: data)
         case 401:
-            throw AuthError.invalidCredentials
+            // Parse actual error from server for Apple Sign-In
+            let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
+            throw AuthError.serverError(errorResponse?.error ?? "Apple Sign-In failed")
         case 429:
             throw AuthError.tooManyRequests
         default:

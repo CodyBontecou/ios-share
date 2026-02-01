@@ -214,11 +214,12 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     return json({ error: 'File must be an image' }, 400);
   }
 
+  // Advanced file type validation and malware scanning
+  // MUST run before file.arrayBuffer() as that consumes the stream
+  const malwareScan = await moderator.scanForMalware(file);
+
   // Read file into ArrayBuffer ONCE to avoid stream consumption issues
   const fileBuffer = await file.arrayBuffer();
-
-  // Advanced file type validation and malware scanning
-  const malwareScan = await moderator.scanForMalware(file);
   if (malwareScan.flagged) {
     const highConfidenceFlags = malwareScan.flags.filter(f => f.confidence >= 0.8);
     if (highConfidenceFlags.length > 0) {
