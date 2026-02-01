@@ -73,7 +73,12 @@ struct ContentView: View {
             }
         }
         .onChange(of: authState.isAuthenticated) { _, isAuthenticated in
-            if !isAuthenticated {
+            if isAuthenticated && authState.isEmailVerified {
+                // Check subscription status on login
+                Task {
+                    await subscriptionState.checkStatus()
+                }
+            } else if !isAuthenticated {
                 // Reset subscription state on logout
                 subscriptionState.reset()
             }
