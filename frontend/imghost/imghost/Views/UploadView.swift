@@ -8,6 +8,7 @@ struct UploadView: View {
     @State private var uploadState: UploadState = .idle
     @State private var errorMessage: String?
     @State private var uploadedRecord: UploadRecord?
+    @State private var showCopiedFeedback = false
 
     private enum UploadState {
         case idle
@@ -176,11 +177,26 @@ struct UploadView: View {
             }
 
             if let record = uploadedRecord {
-                Text(record.url)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(Color.brutalTextTertiary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 8) {
+                    Text(record.url)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(showCopiedFeedback ? .green : Color.brutalTextTertiary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                        .animation(.easeInOut(duration: 0.2), value: showCopiedFeedback)
+
+                    Text(showCopiedFeedback ? "Copied!" : "Hold to copy")
+                        .font(.system(.caption2, design: .default))
+                        .foregroundStyle(showCopiedFeedback ? .green : Color.brutalTextTertiary.opacity(0.6))
+                        .animation(.easeInOut(duration: 0.2), value: showCopiedFeedback)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.white.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .onLongPressGesture(minimumDuration: 0.5) {
+                    copyURLToClipboard(record.url)
+                }
             }
 
             Spacer()
@@ -357,6 +373,18 @@ struct UploadView: View {
         uploadProgress = 0
         errorMessage = nil
         uploadedRecord = nil
+        showCopiedFeedback = false
+    }
+
+    private func copyURLToClipboard(_ url: String) {
+        UIPasteboard.general.string = url
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        showCopiedFeedback = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            showCopiedFeedback = false
+        }
     }
 }
 

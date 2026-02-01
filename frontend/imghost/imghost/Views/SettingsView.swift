@@ -101,7 +101,7 @@ struct SettingsView: View {
 
                                         Spacer()
 
-                                        Text("\(user.storagePercentUsed)%")
+                                        Text(String(format: "%.2f%%", user.storagePercentUsed))
                                             .brutalTypography(.mono, color: user.storagePercentUsed > 90 ? .brutalError : .brutalTextSecondary)
                                     }
 
@@ -476,10 +476,11 @@ struct SettingsView: View {
     @ViewBuilder
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("SET-\nTINGS")
+            Text("SETTINGS")
                 .font(.system(size: 56, weight: .black))
                 .foregroundStyle(.white)
-                .lineSpacing(-8)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
 
             HStack {
                 Rectangle()
