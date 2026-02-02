@@ -880,6 +880,19 @@ async function handleLanding(env: Env): Promise<Response> {
   return new Response(object.body, { headers });
 }
 
+async function handleStaticPage(env: Env, filename: string): Promise<Response> {
+  const object = await env.IMAGES.get(filename);
+  if (!object) {
+    return new Response('Page not found', { status: 404 });
+  }
+
+  const headers = new Headers();
+  headers.set('Content-Type', 'text/html; charset=utf-8');
+  headers.set('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+
+  return new Response(object.body, { headers });
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -899,6 +912,16 @@ export default {
       // GET / - Serve landing page (no CORS needed for HTML)
       if (method === 'GET' && path === '/') {
         return await handleLanding(env);
+      }
+
+      // GET /privacy.html - Serve privacy policy
+      if (method === 'GET' && path === '/privacy.html') {
+        return await handleStaticPage(env, 'privacy.html');
+      }
+
+      // GET /terms.html - Serve terms of service
+      if (method === 'GET' && path === '/terms.html') {
+        return await handleStaticPage(env, 'terms.html');
       }
 
       // GET /favicon.png - Serve favicon

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — imghost</title>
+    <meta name="description" content="imghost privacy policy. How we handle your data.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brutal-bg: #000000;
+            --brutal-surface: #141414;
+            --brutal-surface-elevated: #1F1F1F;
+            --brutal-border: #333333;
+            --brutal-text-primary: #FFFFFF;
+            --brutal-text-secondary: #999999;
+            --brutal-text-tertiary: #666666;
+            --font-mono: 'JetBrains Mono', monospace;
+            --tracking-wide: 0.15em;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--brutal-bg);
+            color: var(--brutal-text-primary);
+            font-family: var(--font-mono);
+            line-height: 1.8;
+        }
+
+        ::selection {
+            background: var(--brutal-text-primary);
+            color: var(--brutal-bg);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--brutal-bg);
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--brutal-text-primary);
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+        }
+
+        .back-link {
+            font-size: 12px;
+            color: var(--brutal-text-tertiary);
+            text-decoration: none;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--brutal-text-primary);
+        }
+
+        /* Content */
+        .legal-content {
+            padding: 120px 0 80px;
+        }
+
+        .legal-header {
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .legal-title {
+            font-size: 32px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: 16px;
+        }
+
+        .legal-updated {
+            font-size: 12px;
+            color: var(--brutal-text-tertiary);
+            letter-spacing: var(--tracking-wide);
+        }
+
+        .legal-section {
+            margin-bottom: 48px;
+        }
+
+        .legal-section h2 {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            color: var(--brutal-text-primary);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .legal-section p {
+            font-size: 14px;
+            color: var(--brutal-text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .legal-section ul {
+            list-style: none;
+            margin-bottom: 16px;
+        }
+
+        .legal-section li {
+            font-size: 14px;
+            color: var(--brutal-text-secondary);
+            padding-left: 20px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .legal-section li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            color: var(--brutal-text-tertiary);
+        }
+
+        .legal-section a {
+            color: var(--brutal-text-primary);
+            text-decoration: none;
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .legal-section a:hover {
+            border-color: var(--brutal-text-primary);
+        }
+
+        /* Footer */
+        footer {
+            padding: 48px 0;
+            border-top: 1px solid var(--brutal-border);
+        }
+
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--brutal-text-tertiary);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--brutal-text-primary);
+        }
+
+        .footer-copy {
+            font-size: 11px;
+            color: var(--brutal-text-tertiary);
+            letter-spacing: var(--tracking-wide);
+        }
+
+        @media (max-width: 640px) {
+            .legal-title {
+                font-size: 24px;
+            }
+
+            .footer-inner {
+                flex-direction: column;
+                gap: 24px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="logo">
+                <img src="/logo.png" alt="imghost" class="logo-icon">
+                <span class="logo-text">imghost</span>
+            </a>
+            <a href="/" class="back-link">&larr; Back</a>
+        </div>
+    </nav>
+
+    <main class="legal-content">
+        <div class="container">
+            <header class="legal-header">
+                <h1 class="legal-title">Privacy Policy</h1>
+                <p class="legal-updated">Last updated: February 1, 2026</p>
+            </header>
+
+            <section class="legal-section">
+                <h2>Overview</h2>
+                <p>imghost ("we", "our", or "us") operates the imghost mobile application and web service. This Privacy Policy explains how we collect, use, and protect your information when you use our service.</p>
+                <p>We believe in transparency. No hidden data harvesting. No selling your information. Just honest image hosting.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Information We Collect</h2>
+                <p>We collect minimal information necessary to provide our service:</p>
+                <ul>
+                    <li><strong>Account Information:</strong> When you sign in with Apple, we receive your Apple ID identifier and optionally your email address (if you choose to share it)</li>
+                    <li><strong>Images:</strong> The images you upload to our service</li>
+                    <li><strong>Usage Data:</strong> Basic analytics about app usage to improve the service (no personal tracking)</li>
+                    <li><strong>Device Information:</strong> Device type and OS version for troubleshooting</li>
+                </ul>
+            </section>
+
+            <section class="legal-section">
+                <h2>How We Use Your Information</h2>
+                <p>We use your information solely to:</p>
+                <ul>
+                    <li>Provide the image hosting service</li>
+                    <li>Authenticate your account</li>
+                    <li>Process subscription payments through Apple</li>
+                    <li>Send important service announcements (rare)</li>
+                    <li>Improve our service based on aggregated usage patterns</li>
+                </ul>
+            </section>
+
+            <section class="legal-section">
+                <h2>Data Storage</h2>
+                <p>Your images are stored securely using Cloudflare R2 storage. We use industry-standard security measures to protect your data.</p>
+                <p>Your account data is stored in our secure database. We do not share your data with third parties except as required to operate the service (e.g., payment processing through Apple).</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Data Retention</h2>
+                <p>We retain your data for as long as your account is active. If you delete your account, we will delete your data within 30 days, except where we are required to retain it for legal purposes.</p>
+                <p>Images you delete are permanently removed from our storage.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Third-Party Services</h2>
+                <p>We use the following third-party services:</p>
+                <ul>
+                    <li><strong>Apple Sign In:</strong> For authentication</li>
+                    <li><strong>Apple In-App Purchases:</strong> For subscription processing</li>
+                    <li><strong>Cloudflare:</strong> For content delivery and storage</li>
+                </ul>
+                <p>Each of these services has their own privacy policy governing how they handle your data.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Your Rights</h2>
+                <p>You have the right to:</p>
+                <ul>
+                    <li>Access your personal data</li>
+                    <li>Delete your account and associated data</li>
+                    <li>Export your images</li>
+                    <li>Opt out of non-essential communications</li>
+                </ul>
+                <p>To exercise these rights, contact us at <a href="mailto:cody@isolated.tech">cody@isolated.tech</a>.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Children's Privacy</h2>
+                <p>Our service is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected such information, please contact us immediately.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Changes to This Policy</h2>
+                <p>We may update this Privacy Policy from time to time. We will notify you of any significant changes through the app or via email.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Contact</h2>
+                <p>Questions about this Privacy Policy? Contact us at <a href="mailto:cody@isolated.tech">cody@isolated.tech</a>.</p>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-inner">
+                <ul class="footer-links">
+                    <li><a href="/privacy.html">Privacy</a></li>
+                    <li><a href="/terms.html">Terms</a></li>
+                    <li><a href="mailto:cody@isolated.tech">Support</a></li>
+                </ul>
+                <div class="footer-copy">&copy; 2026 imghost. Built with brutality.</div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

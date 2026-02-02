@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service — imghost</title>
+    <meta name="description" content="imghost terms of service. The rules of the road.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brutal-bg: #000000;
+            --brutal-surface: #141414;
+            --brutal-surface-elevated: #1F1F1F;
+            --brutal-border: #333333;
+            --brutal-text-primary: #FFFFFF;
+            --brutal-text-secondary: #999999;
+            --brutal-text-tertiary: #666666;
+            --font-mono: 'JetBrains Mono', monospace;
+            --tracking-wide: 0.15em;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--brutal-bg);
+            color: var(--brutal-text-primary);
+            font-family: var(--font-mono);
+            line-height: 1.8;
+        }
+
+        ::selection {
+            background: var(--brutal-text-primary);
+            color: var(--brutal-bg);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--brutal-bg);
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--brutal-text-primary);
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+        }
+
+        .back-link {
+            font-size: 12px;
+            color: var(--brutal-text-tertiary);
+            text-decoration: none;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--brutal-text-primary);
+        }
+
+        /* Content */
+        .legal-content {
+            padding: 120px 0 80px;
+        }
+
+        .legal-header {
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .legal-title {
+            font-size: 32px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: 16px;
+        }
+
+        .legal-updated {
+            font-size: 12px;
+            color: var(--brutal-text-tertiary);
+            letter-spacing: var(--tracking-wide);
+        }
+
+        .legal-section {
+            margin-bottom: 48px;
+        }
+
+        .legal-section h2 {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            color: var(--brutal-text-primary);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .legal-section p {
+            font-size: 14px;
+            color: var(--brutal-text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .legal-section ul {
+            list-style: none;
+            margin-bottom: 16px;
+        }
+
+        .legal-section li {
+            font-size: 14px;
+            color: var(--brutal-text-secondary);
+            padding-left: 20px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .legal-section li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            color: var(--brutal-text-tertiary);
+        }
+
+        .legal-section a {
+            color: var(--brutal-text-primary);
+            text-decoration: none;
+            border-bottom: 1px solid var(--brutal-border);
+        }
+
+        .legal-section a:hover {
+            border-color: var(--brutal-text-primary);
+        }
+
+        /* Footer */
+        footer {
+            padding: 48px 0;
+            border-top: 1px solid var(--brutal-border);
+        }
+
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--brutal-text-tertiary);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: var(--tracking-wide);
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--brutal-text-primary);
+        }
+
+        .footer-copy {
+            font-size: 11px;
+            color: var(--brutal-text-tertiary);
+            letter-spacing: var(--tracking-wide);
+        }
+
+        @media (max-width: 640px) {
+            .legal-title {
+                font-size: 24px;
+            }
+
+            .footer-inner {
+                flex-direction: column;
+                gap: 24px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="logo">
+                <img src="/logo.png" alt="imghost" class="logo-icon">
+                <span class="logo-text">imghost</span>
+            </a>
+            <a href="/" class="back-link">&larr; Back</a>
+        </div>
+    </nav>
+
+    <main class="legal-content">
+        <div class="container">
+            <header class="legal-header">
+                <h1 class="legal-title">Terms of Service</h1>
+                <p class="legal-updated">Last updated: February 1, 2026</p>
+            </header>
+
+            <section class="legal-section">
+                <h2>Agreement</h2>
+                <p>By using imghost ("the Service"), you agree to these Terms of Service. If you don't agree, don't use the service. Simple.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>The Service</h2>
+                <p>imghost is an image hosting service. You upload images, we store them, you get links. That's the deal.</p>
+                <p>We provide the service "as is" without warranties of any kind. We'll do our best to keep things running, but we can't guarantee 100% uptime or that your images will exist forever.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Your Account</h2>
+                <p>You're responsible for your account. Keep your credentials secure. Any activity under your account is your responsibility.</p>
+                <p>You must be at least 13 years old to use this service. If you're under 18, you should have parental consent.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Acceptable Use</h2>
+                <p>Don't be a jerk. Specifically, don't use imghost to:</p>
+                <ul>
+                    <li>Host illegal content</li>
+                    <li>Store malware or malicious files</li>
+                    <li>Upload content that violates others' intellectual property rights</li>
+                    <li>Host spam, phishing, or deceptive content</li>
+                    <li>Store child sexual abuse material (CSAM) - this will result in immediate termination and reporting to authorities</li>
+                    <li>Harass, threaten, or harm others</li>
+                    <li>Attempt to hack, overload, or abuse our infrastructure</li>
+                    <li>Use automated tools to bulk upload content without permission</li>
+                </ul>
+                <p>We reserve the right to remove content and terminate accounts that violate these terms, at our sole discretion.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Your Content</h2>
+                <p>You own your images. You grant us a license to store, serve, and cache them as necessary to provide the service. We won't sell your images or use them for purposes other than operating the service.</p>
+                <p>You're responsible for having the rights to upload any content you share. Don't upload content that isn't yours or that you don't have permission to share.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Subscriptions & Payments</h2>
+                <p>imghost offers free and paid tiers. Paid subscriptions are processed through Apple's In-App Purchase system.</p>
+                <ul>
+                    <li>Subscriptions auto-renew unless cancelled at least 24 hours before the renewal date</li>
+                    <li>You can manage or cancel subscriptions in your Apple ID settings</li>
+                    <li>Refunds are handled by Apple according to their refund policies</li>
+                    <li>We reserve the right to change pricing with reasonable notice</li>
+                </ul>
+            </section>
+
+            <section class="legal-section">
+                <h2>Storage Limits</h2>
+                <p>Free accounts have limited storage. Pro accounts have expanded limits. If you exceed your limits, you won't be able to upload new images until you upgrade or delete existing content.</p>
+                <p>If you downgrade from Pro to Free and exceed Free limits, your existing images will remain but new uploads will be blocked.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Termination</h2>
+                <p>You can delete your account at any time. We can terminate your account if you violate these terms. If we terminate your account:</p>
+                <ul>
+                    <li>You'll lose access to your stored images</li>
+                    <li>We're not obligated to provide refunds for unused subscription time</li>
+                    <li>In cases of severe violations, we may report you to appropriate authorities</li>
+                </ul>
+            </section>
+
+            <section class="legal-section">
+                <h2>Limitation of Liability</h2>
+                <p>To the maximum extent permitted by law, imghost and its operators are not liable for:</p>
+                <ul>
+                    <li>Lost data or images</li>
+                    <li>Service interruptions or downtime</li>
+                    <li>Indirect, incidental, or consequential damages</li>
+                    <li>Loss of profits or business opportunities</li>
+                </ul>
+                <p>Our total liability is limited to the amount you paid us in the 12 months preceding any claim.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Indemnification</h2>
+                <p>You agree to indemnify and hold harmless imghost and its operators from any claims, damages, or expenses arising from your use of the service or violation of these terms.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Changes to Terms</h2>
+                <p>We may update these terms. We'll notify you of significant changes. Continued use after changes means you accept the new terms.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Governing Law</h2>
+                <p>These terms are governed by the laws of the United States. Any disputes will be resolved in courts of competent jurisdiction.</p>
+            </section>
+
+            <section class="legal-section">
+                <h2>Contact</h2>
+                <p>Questions about these terms? Contact us at <a href="mailto:cody@isolated.tech">cody@isolated.tech</a>.</p>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-inner">
+                <ul class="footer-links">
+                    <li><a href="/privacy.html">Privacy</a></li>
+                    <li><a href="/terms.html">Terms</a></li>
+                    <li><a href="mailto:cody@isolated.tech">Support</a></li>
+                </ul>
+                <div class="footer-copy">&copy; 2026 imghost. Built with brutality.</div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
