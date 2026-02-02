@@ -14,7 +14,8 @@ struct Config {
 
     // Image processing
     static let maxUploadDimension: CGFloat = 4096
-    static let thumbnailSize: CGFloat = 200
+    static let thumbnailSize: CGFloat = 400
+    static let thumbnailQuality: CGFloat = 0.85
     static let jpegQuality: CGFloat = 0.85
 
     // Link Format Settings

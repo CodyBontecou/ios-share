@@ -46,13 +46,13 @@ final class ImageProcessor {
         }
 
         let thumbnail = resize(image: image, maxDimension: maxSize)
-        return thumbnail.jpegData(compressionQuality: 0.7)
+        return thumbnail.jpegData(compressionQuality: Config.thumbnailQuality)
     }
 
     /// Generate a thumbnail from a UIImage
     func generateThumbnail(from image: UIImage, maxSize: CGFloat = Config.thumbnailSize) -> Data? {
         let thumbnail = resize(image: image, maxDimension: maxSize)
-        return thumbnail.jpegData(compressionQuality: 0.7)
+        return thumbnail.jpegData(compressionQuality: Config.thumbnailQuality)
     }
 
     /// Prepare an image for upload by resizing and compressing

@@ -89,8 +89,8 @@ final class ImageSyncService {
 
             guard let image = UIImage(data: data) else { return nil }
 
-            // Generate thumbnail (150x150 max)
-            let maxSize: CGFloat = 150
+            // Generate thumbnail using Config settings
+            let maxSize = Config.thumbnailSize
             let scale = min(maxSize / image.size.width, maxSize / image.size.height, 1.0)
             let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
 
@@ -99,7 +99,7 @@ final class ImageSyncService {
             let thumbnail = UIGraphicsGetImageFromCurrentImageContext()
             UIGraphicsEndImageContext()
 
-            return thumbnail?.jpegData(compressionQuality: 0.7)
+            return thumbnail?.jpegData(compressionQuality: Config.thumbnailQuality)
         } catch {
             return nil
         }
