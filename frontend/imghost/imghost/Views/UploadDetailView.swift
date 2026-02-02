@@ -26,23 +26,55 @@ struct UploadDetailView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    // Full-bleed image preview
-                    Group {
-                        if let thumbnailData = record.thumbnailData,
-                           let uiImage = UIImage(data: thumbnailData) {
-                            Image(uiImage: uiImage)
+                    // Full-bleed image preview - load full resolution from URL
+                    AsyncImage(url: URL(string: record.url)) { phase in
+                        switch phase {
+                        case .empty:
+                            // Show thumbnail as placeholder while loading
+                            if let thumbnailData = record.thumbnailData,
+                               let uiImage = UIImage(data: thumbnailData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxWidth: .infinity)
+                                    .overlay {
+                                        ProgressView()
+                                            .tint(.white)
+                                    }
+                            } else {
+                                Rectangle()
+                                    .fill(Color.brutalSurface)
+                                    .aspectRatio(4/3, contentMode: .fit)
+                                    .overlay {
+                                        ProgressView()
+                                            .tint(.white)
+                                    }
+                            }
+                        case .success(let image):
+                            image
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(maxWidth: .infinity)
-                        } else {
-                            Rectangle()
-                                .fill(Color.brutalSurface)
-                                .aspectRatio(4/3, contentMode: .fit)
-                                .overlay {
-                                    Text("□")
-                                        .font(.system(size: 48, weight: .bold))
-                                        .foregroundStyle(Color.brutalTextTertiary)
-                                }
+                        case .failure:
+                            // Fall back to thumbnail on error
+                            if let thumbnailData = record.thumbnailData,
+                               let uiImage = UIImage(data: thumbnailData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Rectangle()
+                                    .fill(Color.brutalSurface)
+                                    .aspectRatio(4/3, contentMode: .fit)
+                                    .overlay {
+                                        Text("□")
+                                            .font(.system(size: 48, weight: .bold))
+                                            .foregroundStyle(Color.brutalTextTertiary)
+                                    }
+                            }
+                        @unknown default:
+                            EmptyView()
                         }
                     }
 
