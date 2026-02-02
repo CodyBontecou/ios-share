@@ -4,7 +4,6 @@ struct SettingsView: View {
     @EnvironmentObject var authState: AuthState
     @EnvironmentObject var subscriptionState: SubscriptionState
 
-    @State private var isTesting = false
     @State private var isLoadingUser = false
     @State private var showAlert = false
     @State private var alertTitle = ""
@@ -203,44 +202,6 @@ struct SettingsView: View {
                         BrutalCard(showBorder: true) {
                             VStack(spacing: 0) {
                                 BrutalRow(
-                                    title: "Refresh Account",
-                                    subtitle: "Update storage and plan info",
-                                    showChevron: true
-                                ) {
-                                    refreshUserInfo()
-                                }
-                                .overlay(alignment: .trailing) {
-                                    if isLoadingUser {
-                                        ProgressView()
-                                            .tint(.white)
-                                    }
-                                }
-                                .disabled(isLoadingUser)
-
-                                Rectangle()
-                                    .fill(Color.brutalBorder)
-                                    .frame(height: 1)
-
-                                BrutalRow(
-                                    title: "Test Connection",
-                                    subtitle: "Verify server connectivity",
-                                    showChevron: true
-                                ) {
-                                    testConnection()
-                                }
-                                .overlay(alignment: .trailing) {
-                                    if isTesting {
-                                        ProgressView()
-                                            .tint(.white)
-                                    }
-                                }
-                                .disabled(isTesting)
-
-                                Rectangle()
-                                    .fill(Color.brutalBorder)
-                                    .frame(height: 1)
-
-                                BrutalRow(
                                     title: "Clear Upload History",
                                     subtitle: "Remove local history only",
                                     destructive: true
@@ -365,25 +326,6 @@ struct SettingsView: View {
                 await MainActor.run {
                     showError(title: "Error", message: "Failed to load account info: \(error.localizedDescription)")
                     isLoadingUser = false
-                }
-            }
-        }
-    }
-
-    private func testConnection() {
-        isTesting = true
-
-        Task {
-            do {
-                try await UploadService.shared.testConnection()
-                await MainActor.run {
-                    showError(title: "Success", message: "Connection test successful!")
-                    isTesting = false
-                }
-            } catch {
-                await MainActor.run {
-                    showError(title: "Connection Failed", message: error.localizedDescription)
-                    isTesting = false
                 }
             }
         }

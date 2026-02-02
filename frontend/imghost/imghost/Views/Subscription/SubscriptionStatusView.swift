@@ -3,7 +3,6 @@ import SwiftUI
 struct SubscriptionStatusView: View {
     @EnvironmentObject var subscriptionState: SubscriptionState
     @EnvironmentObject var authState: AuthState
-    @State private var isRefreshing = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -69,15 +68,6 @@ struct SubscriptionStatusView: View {
                     }
                     .padding(.top, 8)
                 }
-
-                // Refresh Button
-                BrutalTextButton(title: isRefreshing ? "Refreshing..." : "Refresh Status") {
-                    Task {
-                        await refreshStatus()
-                    }
-                }
-                .disabled(isRefreshing)
-                .padding(.top, 4)
             }
             .padding(16)
             .background(Color.brutalBackground)
@@ -171,12 +161,6 @@ struct SubscriptionStatusView: View {
         if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
             UIApplication.shared.open(url)
         }
-    }
-
-    private func refreshStatus() async {
-        isRefreshing = true
-        await subscriptionState.checkStatus()
-        isRefreshing = false
     }
 }
 
