@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Service responsible for syncing images from the backend to local storage
 final class ImageSyncService {
@@ -43,14 +46,21 @@ final class ImageSyncService {
         // Convert backend images to UploadRecords, preserving existing thumbnails
         var syncedRecords: [UploadRecord] = []
         for image in imagesResponse.images {
-            let createdAt = Date(timeIntervalSince1970: TimeInterval(image.createdAt))
+            // Backend returns timestamps in milliseconds, divide by 1000 for seconds
+            let createdAt = Date(timeIntervalSince1970: TimeInterval(image.createdAt) / 1000)
             let existingRecord = existingById[image.id]
+
+            // Use existing thumbnail, or fetch and generate one if missing
+            var thumbnailData = existingRecord?.thumbnailData
+            if thumbnailData == nil {
+                thumbnailData = await fetchAndGenerateThumbnail(from: image.url)
+            }
 
             let record = UploadRecord(
                 id: image.id,
                 url: image.url,
                 deleteUrl: image.deleteUrl,
-                thumbnailData: existingRecord?.thumbnailData,
+                thumbnailData: thumbnailData,
                 createdAt: createdAt,
                 originalFilename: image.filename
             )
@@ -62,6 +72,40 @@ final class ImageSyncService {
 
         // Write all synced records
         try writeAll(syncedRecords)
+    }
+
+    /// Fetch image from URL and generate a thumbnail
+    private func fetchAndGenerateThumbnail(from urlString: String) async -> Data? {
+        #if canImport(UIKit)
+        guard let url = URL(string: urlString) else { return nil }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                return nil
+            }
+
+            guard let image = UIImage(data: data) else { return nil }
+
+            // Generate thumbnail (150x150 max)
+            let maxSize: CGFloat = 150
+            let scale = min(maxSize / image.size.width, maxSize / image.size.height, 1.0)
+            let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+
+            UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+            let thumbnail = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+
+            return thumbnail?.jpegData(compressionQuality: 0.7)
+        } catch {
+            return nil
+        }
+        #else
+        return nil
+        #endif
     }
 
     /// Write all records at once, replacing existing history
