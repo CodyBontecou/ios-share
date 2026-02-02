@@ -61,8 +61,8 @@ struct SettingsView: View {
 
                                         HStack(spacing: 8) {
                                             BrutalBadge(
-                                                text: subscriptionState.tier.uppercased(),
-                                                style: subscriptionState.tier.lowercased() == "free" ? .default : .success
+                                                text: subscriptionBadgeText,
+                                                style: subscriptionBadgeStyle
                                             )
 
                                             if user.emailVerified {
@@ -536,6 +536,32 @@ struct SettingsView: View {
                     exportState = .error(error.localizedDescription)
                 }
             }
+        }
+    }
+
+    // MARK: - Computed Properties
+
+    private var subscriptionBadgeText: String {
+        switch subscriptionState.status {
+        case .trialing:
+            return "TRIAL"
+        case .subscribed, .cancelled:
+            return "PRO"
+        default:
+            return "FREE"
+        }
+    }
+
+    private var subscriptionBadgeStyle: BrutalBadge.BadgeStyle {
+        switch subscriptionState.status {
+        case .subscribed:
+            return .success
+        case .trialing, .cancelled:
+            return .warning
+        case .expired, .trialExpired:
+            return .error
+        default:
+            return .default
         }
     }
 
