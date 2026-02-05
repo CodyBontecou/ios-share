@@ -157,7 +157,7 @@ struct ShareView: View {
                     HStack(spacing: 12) {
                         Text("!")
                             .font(.system(size: 15, weight: .bold, design: .monospaced))
-                        Text("SOME FILES EXCEED 100MB LIMIT")
+                        Text("SOME FILES EXCEED 500MB LIMIT")
                             .font(.system(size: 12, weight: .medium, design: .monospaced))
                             .tracking(1)
                         Spacer()

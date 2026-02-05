@@ -75,7 +75,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "4.99",
+          "displayPrice" : "2.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "6741763618",
@@ -106,7 +106,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "29.99",
+          "displayPrice" : "24.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "6741763619",
@@ -119,7 +119,7 @@
           },
           "localizations" : [
             {
-              "description" : "Pro features billed annually - Save 50%",
+              "description" : "Pro features billed annually - Save 30%",
               "displayName" : "Pro Annual",
               "locale" : "en_US"
             }

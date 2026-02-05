@@ -19,7 +19,7 @@ struct Config {
     static let jpegQuality: CGFloat = 0.85
     
     // Upload limits
-    static let maxUploadSizeBytes: Int64 = 100 * 1024 * 1024  // 100MB backend limit
+    static let maxUploadSizeBytes: Int64 = 500 * 1024 * 1024  // 500MB backend limit (Cloudflare Workers max)
 
     // Link Format Settings
     static let linkFormatKey = "linkFormat"

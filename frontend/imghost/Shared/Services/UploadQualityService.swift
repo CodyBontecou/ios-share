@@ -69,7 +69,7 @@ final class UploadQualityService {
         get {
             guard let rawValue = Config.sharedDefaults?.string(forKey: Config.uploadQualityKey),
                   let quality = UploadQuality(rawValue: rawValue) else {
-                return .high // Default to high quality
+                return .original // Default to full quality (no compression)
             }
             return quality
         }

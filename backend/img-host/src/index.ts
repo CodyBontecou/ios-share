@@ -80,7 +80,7 @@ export interface Env {
   APPLE_BUNDLE_ID?: string;
 }
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB max file size for all tiers
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB max (Cloudflare Workers paid plan limit)
 
 function generateId(): string {
   return crypto.randomUUID().slice(0, 8);
@@ -259,10 +259,10 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  // Validate file size against max limit (50MB for all users)
+  // Validate file size against max limit (500MB - Cloudflare Workers limit)
   if (file.size > MAX_FILE_SIZE) {
     return json({
-      error: `File exceeds 50MB limit`
+      error: `File exceeds 500MB limit`
     }, 400);
   }
 

@@ -91,7 +91,7 @@ struct PaywallView: View {
 
             // Feature List
             VStack(spacing: 0) {
-                FeatureRow(icon: "photo.stack", title: "50MB File Size", description: "Upload high-resolution images")
+                FeatureRow(icon: "photo.stack", title: "500MB File Size", description: "Upload large files, videos, and more")
                 FeatureRow(icon: "externaldrive.fill", title: "10GB Storage", description: "Pro storage limit during trial")
                 FeatureRow(icon: "bolt.fill", title: "Fast Sharing", description: "Instant links for your images")
                 FeatureRow(icon: "lock.fill", title: "Private by Default", description: "Secure, encrypted storage")
@@ -138,7 +138,7 @@ struct PaywallView: View {
                         ProductCard(
                             product: annual,
                             isSelected: selectedProduct?.id == annual.id,
-                            badge: "SAVE 50%"
+                            badge: "SAVE 30%"
                         ) {
                             selectedProduct = annual
                         }

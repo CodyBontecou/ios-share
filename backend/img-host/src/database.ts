@@ -95,7 +95,7 @@ export class Database {
   private getStorageLimitForTier(tier: 'free' | 'trial' | 'pro' | 'enterprise'): number {
     switch (tier) {
       case 'free': return 104857600;      // 100MB
-      case 'trial': return 104857600;     // 100MB (Pro features but limited storage)
+      case 'trial': return 10737418240;   // 10GB (full Pro experience during trial)
       case 'pro': return 10737418240;     // 10GB
       case 'enterprise': return 107374182400; // 100GB
       default: return 104857600;
