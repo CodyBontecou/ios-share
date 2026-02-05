@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import AVFoundation
 
 final class UploadService: NSObject {
     static let shared = UploadService()
@@ -297,24 +298,50 @@ final class UploadService: NSObject {
     
     /// Generate thumbnail from file without loading entire file into memory
     private func generateThumbnailFromFile(fileURL: URL) -> Data? {
-        // For images, try to load and generate thumbnail
-        // For non-images, return nil
-        guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil) else {
-            return nil
+        // First, try to generate thumbnail as an image
+        if let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil) {
+            let options: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceThumbnailMaxPixelSize: Config.thumbnailSize,
+                kCGImageSourceCreateThumbnailWithTransform: true
+            ]
+            
+            if let thumbnail = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) {
+                let uiImage = UIImage(cgImage: thumbnail)
+                return uiImage.jpegData(compressionQuality: Config.thumbnailQuality)
+            }
         }
         
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceThumbnailMaxPixelSize: Config.thumbnailSize,
-            kCGImageSourceCreateThumbnailWithTransform: true
-        ]
+        // If image thumbnail generation failed, try video thumbnail
+        return generateVideoThumbnail(fileURL: fileURL)
+    }
+    
+    /// Generate thumbnail from video file using AVFoundation
+    private func generateVideoThumbnail(fileURL: URL) -> Data? {
+        let asset = AVURLAsset(url: fileURL)
+        let imageGenerator = AVAssetImageGenerator(asset: asset)
+        imageGenerator.appliesPreferredTrackTransform = true
         
-        guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
-            return nil
+        // Set maximum size for the thumbnail
+        imageGenerator.maximumSize = CGSize(width: Config.thumbnailSize, height: Config.thumbnailSize)
+        
+        // Try to get a frame from 1 second into the video (or beginning if shorter)
+        let time = CMTime(seconds: 1.0, preferredTimescale: 600)
+        
+        do {
+            let cgImage = try imageGenerator.copyCGImage(at: time, actualTime: nil)
+            let uiImage = UIImage(cgImage: cgImage)
+            return uiImage.jpegData(compressionQuality: Config.thumbnailQuality)
+        } catch {
+            // If 1 second fails, try the very beginning
+            do {
+                let cgImage = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
+                let uiImage = UIImage(cgImage: cgImage)
+                return uiImage.jpegData(compressionQuality: Config.thumbnailQuality)
+            } catch {
+                return nil
+            }
         }
-        
-        let uiImage = UIImage(cgImage: thumbnail)
-        return uiImage.jpegData(compressionQuality: Config.thumbnailQuality)
     }
     
     private func parseUploadResponseWithThumbnail(data: Data, thumbnailData: Data?, filename: String) throws -> UploadRecord {
