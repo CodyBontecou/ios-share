@@ -765,4 +765,62 @@ export class Database {
       .bind(now)
       .run();
   }
+
+  // Delete user account and all associated data
+  async deleteUserAccount(userId: string): Promise<{ deletedImages: string[] }> {
+    // Get all user images first (we need the r2 keys to delete from storage)
+    const images = await this.getImagesByUserId(userId, 10000, 0);
+    const r2Keys = images.map(img => img.r2_key);
+
+    // Delete all related data in order (respecting foreign key constraints)
+    // Delete images
+    await this.db
+      .prepare('DELETE FROM images WHERE user_id = ?')
+      .bind(userId)
+      .run();
+
+    // Delete subscriptions
+    await this.db
+      .prepare('DELETE FROM subscriptions WHERE user_id = ?')
+      .bind(userId)
+      .run();
+
+    // Delete refresh tokens
+    await this.db
+      .prepare('DELETE FROM refresh_tokens WHERE user_id = ?')
+      .bind(userId)
+      .run();
+
+    // Delete export jobs
+    await this.db
+      .prepare('DELETE FROM export_jobs WHERE user_id = ?')
+      .bind(userId)
+      .run();
+
+    // Delete export rate limits
+    await this.db
+      .prepare('DELETE FROM export_rate_limits WHERE user_id = ?')
+      .bind(userId)
+      .run();
+
+    // Delete API usage logs
+    await this.db
+      .prepare('DELETE FROM api_usage WHERE user_id = ?')
+      .bind(userId)
+      .run();
+
+    // Delete storage usage record (if it exists as a separate table with triggers)
+    await this.db
+      .prepare('DELETE FROM storage_usage WHERE user_id = ?')
+      .bind(userId)
+      .run();
+
+    // Finally delete the user
+    await this.db
+      .prepare('DELETE FROM users WHERE id = ?')
+      .bind(userId)
+      .run();
+
+    return { deletedImages: r2Keys };
+  }
 }

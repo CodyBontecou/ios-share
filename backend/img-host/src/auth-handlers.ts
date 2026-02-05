@@ -530,6 +530,61 @@ export async function handleResendVerification(request: Request, env: Env): Prom
 }
 
 /**
+ * Delete user account and all associated data
+ * DELETE /auth/account
+ * Requires: Bearer token (access token)
+ */
+export async function handleDeleteAccount(request: Request, env: Env, r2Bucket: R2Bucket): Promise<Response> {
+  const db = new Database(env.DB);
+
+  try {
+    // Verify authentication
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
+
+    const token = authHeader.slice(7);
+    const jwtSecret = env.JWT_SECRET || 'default-secret-change-in-production';
+
+    // Import Auth for JWT verification
+    const { Auth } = await import('./auth');
+    const jwtPayload = await Auth.verifyJWT(token, jwtSecret);
+
+    if (!jwtPayload || jwtPayload.type !== 'access') {
+      return json({ error: 'Invalid token' }, 401);
+    }
+
+    // Get user to confirm they exist
+    const user = await db.getUserById(jwtPayload.sub);
+    if (!user) {
+      return json({ error: 'User not found' }, 404);
+    }
+
+    // Delete all user data from database and get R2 keys
+    const { deletedImages } = await db.deleteUserAccount(user.id);
+
+    // Delete all images from R2 storage
+    for (const r2Key of deletedImages) {
+      try {
+        await r2Bucket.delete(r2Key);
+      } catch (error) {
+        // Log but don't fail - the database records are already deleted
+        console.error(`Failed to delete R2 object ${r2Key}:`, error);
+      }
+    }
+
+    return json({
+      message: 'Account and all data have been permanently deleted',
+      deleted_images_count: deletedImages.length
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return json({ error: 'Failed to delete account' }, 500);
+  }
+}
+
+/**
  * Sign in with Apple
  * POST /auth/apple
  *

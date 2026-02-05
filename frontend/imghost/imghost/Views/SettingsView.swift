@@ -9,6 +9,8 @@ struct SettingsView: View {
     @State private var alertTitle = ""
     @State private var alertMessage = ""
     @State private var showClearConfirmation = false
+    @State private var showDeleteAccountConfirmation = false
+    @State private var isDeletingAccount = false
     @State private var selectedLinkFormat: LinkFormat = LinkFormatService.shared.currentFormat
     @State private var customLinkTemplate: String = LinkFormatService.shared.customTemplate
     @State private var showCustomFormatSheet = false
@@ -278,6 +280,18 @@ struct SettingsView: View {
                                 ) {
                                     showingExportSheet = true
                                 }
+
+                                Rectangle()
+                                    .fill(Color.brutalBorder)
+                                    .frame(height: 1)
+
+                                BrutalRow(
+                                    title: "Delete Account",
+                                    subtitle: "Permanently delete all data",
+                                    destructive: true
+                                ) {
+                                    showDeleteAccountConfirmation = true
+                                }
                             }
                         }
                         .padding(.horizontal, 24)
@@ -327,6 +341,18 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will remove all upload history from this device. Images on the server will not be affected.")
+        }
+        .confirmationDialog(
+            "Delete Account",
+            isPresented: $showDeleteAccountConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Account", role: .destructive) {
+                deleteAccount()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete your account and all your uploaded images. This action cannot be undone.")
         }
         .sheet(isPresented: $showCustomFormatSheet) {
             CustomLinkFormatSheet(
@@ -395,6 +421,28 @@ struct SettingsView: View {
             showError(title: "History Cleared", message: "All upload history has been removed.")
         } catch {
             showError(title: "Error", message: "Failed to clear history: \(error.localizedDescription)")
+        }
+    }
+
+    private func deleteAccount() {
+        isDeletingAccount = true
+
+        Task {
+            do {
+                try await AuthService.shared.deleteAccount()
+                await MainActor.run {
+                    isDeletingAccount = false
+                    // Clear local history as well
+                    try? HistoryService.shared.clear()
+                    // Logout will update the UI state
+                    authState.logout()
+                }
+            } catch {
+                await MainActor.run {
+                    isDeletingAccount = false
+                    showError(title: "Error", message: "Failed to delete account: \(error.localizedDescription)")
+                }
+            }
         }
     }
 

@@ -289,6 +289,37 @@ final class AuthService {
         }
     }
 
+    // MARK: - Account Deletion
+
+    func deleteAccount() async throws {
+        guard let accessToken = keychainService.loadAccessToken() else {
+            throw AuthError.notAuthenticated
+        }
+
+        let url = URL(string: "\(baseURL)/auth/account")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AuthError.networkError
+        }
+
+        switch httpResponse.statusCode {
+        case 200:
+            // Clear local tokens after successful deletion
+            keychainService.clearAllTokens()
+            return
+        case 401:
+            throw AuthError.tokenExpired
+        default:
+            let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
+            throw AuthError.serverError(errorResponse?.error ?? "Failed to delete account")
+        }
+    }
+
     // MARK: - User Info
 
     func getCurrentUser() async throws -> User {

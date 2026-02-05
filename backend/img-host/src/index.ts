@@ -12,7 +12,8 @@ import {
   handleResetPassword,
   handleVerifyEmail,
   handleResendVerification,
-  handleAppleSignIn
+  handleAppleSignIn,
+  handleDeleteAccount
 } from './auth-handlers';
 import {
   handleVerifyPurchase,
@@ -209,9 +210,23 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     return json({ error: 'Missing image field' }, 400);
   }
 
-  // Validate content type
-  if (!file.type.startsWith('image/')) {
-    return json({ error: 'File must be an image' }, 400);
+  // Validate content type - allow images, videos, audio, documents, and common file types
+  const allowedTypes = [
+    'image/',
+    'video/',
+    'audio/',
+    'application/pdf',
+    'application/zip',
+    'application/gzip',
+    'application/json',
+    'application/xml',
+    'application/octet-stream',
+    'text/',
+  ];
+  
+  const isAllowedType = allowedTypes.some(type => file.type.startsWith(type));
+  if (!isAllowedType) {
+    return json({ error: 'Unsupported file type' }, 400);
   }
 
   // Advanced file type validation and malware scanning
@@ -986,6 +1001,11 @@ export default {
       // POST /auth/apple - Sign in with Apple
       if (method === 'POST' && path === '/auth/apple') {
         return withCors(await handleAppleSignIn(request, env));
+      }
+
+      // DELETE /auth/account - Delete user account and all data
+      if (method === 'DELETE' && path === '/auth/account') {
+        return withCors(await handleDeleteAccount(request, env, env.IMAGES));
       }
 
       // POST /subscription/verify-purchase - Verify App Store purchase
