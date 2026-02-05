@@ -17,10 +17,6 @@ struct ShareView: View {
     @State private var selectedQuality: UploadQuality = UploadQualityService.shared.currentQuality
     @State private var estimatedSize: String = ""
 
-    // Share extensions have ~120MB memory limit, warn at 80MB to be safe
-    private let memorySafetyLimitMB: Double = 80
-    private let memoryHardLimitMB: Double = 100
-
     private enum ShareState {
         case loading
         case ready
@@ -28,7 +24,6 @@ struct ShareView: View {
         case success
         case error
         case notConfigured
-        case fileTooLarge
     }
 
     var body: some View {
@@ -57,9 +52,6 @@ struct ShareView: View {
 
                 case .notConfigured:
                     notConfiguredView
-
-                case .fileTooLarge:
-                    fileTooLargeView
                 }
             }
             .padding(24)
@@ -241,18 +233,10 @@ struct ShareView: View {
                 .padding(.horizontal)
 
             VStack(spacing: 10) {
-                Button("Retry") {
-                    uploadOriginal()
+                Button("Try Again") {
+                    state = .ready
                 }
                 .buttonStyle(.borderedProminent)
-
-                // Only show resize option for large images
-                if fileSizeMB > 10 && isMediaFile {
-                    Button("Retry with Resize") {
-                        uploadResized()
-                    }
-                    .buttonStyle(.bordered)
-                }
 
                 Button("Done") {
                     dismiss()
@@ -281,98 +265,6 @@ struct ShareView: View {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
-        }
-    }
-
-    private var fileTooLargeView: some View {
-        VStack(spacing: 16) {
-            // Preview (image or file icon)
-            if let image = previewImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 100)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            } else if let filename = pendingFilename {
-                VStack(spacing: 8) {
-                    Image(systemName: fileIcon(for: filename))
-                        .font(.system(size: 36))
-                        .foregroundStyle(.secondary)
-                    Text(filename)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            // Warning
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.orange)
-                Text("Large File")
-                    .font(.headline)
-            }
-
-            Text(String(format: "%.1f MB — may fail due to memory limits", fileSizeMB))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            // Quality picker for images
-            if isMediaFile, previewImage != nil {
-                VStack(spacing: 8) {
-                    Text("Reduce size with compression")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Picker("Quality", selection: $selectedQuality) {
-                        ForEach(UploadQuality.allCases) { quality in
-                            Text(quality.displayName).tag(quality)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .onChange(of: selectedQuality) { _, _ in
-                        updateEstimatedSize()
-                    }
-
-                    Text(estimatedSize)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-
-            VStack(spacing: 10) {
-                if isMediaFile, previewImage != nil {
-                    Button {
-                        startUpload()
-                    } label: {
-                        Text("Upload")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                } else if fileSizeMB < memoryHardLimitMB {
-                    Button {
-                        uploadOriginal()
-                    } label: {
-                        Text("Try Upload")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-
-                Button("Cancel") {
-                    dismiss()
-                }
-                .foregroundStyle(.secondary)
-            }
-        }
-        .onAppear {
-            // Default to low quality for large files
-            if isMediaFile && previewImage != nil {
-                selectedQuality = .low
-            }
-            updateEstimatedSize()
         }
     }
 
@@ -410,13 +302,8 @@ struct ShareView: View {
                         previewImage = image
                     }
 
-                    // Check file size
-                    if fileSizeMB >= memorySafetyLimitMB {
-                        state = .fileTooLarge
-                    } else {
-                        // File is ready, show preview and quality options
-                        state = .ready
-                    }
+                    // File is ready, show preview and quality options
+                    state = .ready
                 }
             } catch {
                 await MainActor.run {
@@ -428,18 +315,6 @@ struct ShareView: View {
     }
 
     private func startUpload() {
-        guard let data = pendingFileData, let filename = pendingFilename else { return }
-
-        // Apply selected quality settings
-        let (processedData, processedFilename) = UploadQualityService.shared.processForUpload(
-            data: data,
-            filename: filename,
-            quality: selectedQuality
-        )
-        performUpload(data: processedData, filename: processedFilename)
-    }
-
-    private func uploadOriginal() {
         guard let data = pendingFileData, let filename = pendingFilename else { return }
 
         // Apply selected quality settings
@@ -480,25 +355,6 @@ struct ShareView: View {
             estimatedSize = "No compression"
         } else {
             estimatedSize = String(format: "~%.1f MB after compression", estimated)
-        }
-    }
-
-    private func uploadResized() {
-        guard let data = pendingFileData, let filename = pendingFilename else { return }
-
-        // Resize only works for images
-        if let image = UIImage(data: data),
-           let resizedData = ImageProcessor.shared.prepareForUpload(image: image) {
-            // Update filename to .jpg since we're converting
-            let newFilename = filename.replacingOccurrences(
-                of: "\\.[^.]+$",
-                with: ".jpg",
-                options: .regularExpression
-            )
-            performUpload(data: resizedData, filename: newFilename)
-        } else {
-            // Fallback to original if resize fails
-            performUpload(data: data, filename: filename)
         }
     }
 
