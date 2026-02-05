@@ -292,6 +292,9 @@ final class AuthService {
     // MARK: - Account Deletion
 
     func deleteAccount() async throws {
+        // Ensure we have a valid token, refresh if needed
+        try await ensureValidToken()
+
         guard let accessToken = keychainService.loadAccessToken() else {
             throw AuthError.notAuthenticated
         }
@@ -313,7 +316,8 @@ final class AuthService {
             keychainService.clearAllTokens()
             return
         case 401:
-            throw AuthError.tokenExpired
+            // Token is invalid even after refresh attempt - session is expired
+            throw AuthError.sessionExpired
         default:
             let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
             throw AuthError.serverError(errorResponse?.error ?? "Failed to delete account")
@@ -323,6 +327,9 @@ final class AuthService {
     // MARK: - User Info
 
     func getCurrentUser() async throws -> User {
+        // Ensure we have a valid token, refresh if needed
+        try await ensureValidToken()
+
         guard let accessToken = keychainService.loadAccessToken() else {
             throw AuthError.notAuthenticated
         }
@@ -342,7 +349,8 @@ final class AuthService {
         case 200:
             return try JSONDecoder().decode(User.self, from: data)
         case 401:
-            throw AuthError.tokenExpired
+            // Token is invalid even after refresh attempt - session is expired
+            throw AuthError.sessionExpired
         default:
             let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
             throw AuthError.serverError(errorResponse?.error ?? "Failed to get user info")
@@ -379,7 +387,8 @@ enum AuthError: LocalizedError {
     case noRefreshToken
     case refreshFailed
     case invalidToken
-    case tokenExpired
+    case tokenExpired          // For password reset / verification codes
+    case sessionExpired        // For access tokens - user needs to re-login
     case alreadyVerified
     case notAuthenticated
     case serverError(String)
@@ -404,6 +413,8 @@ enum AuthError: LocalizedError {
             return "Invalid or expired code."
         case .tokenExpired:
             return "This code has expired. Please request a new one."
+        case .sessionExpired:
+            return "Your session has expired. Please log in again."
         case .alreadyVerified:
             return "Your email is already verified."
         case .notAuthenticated:
