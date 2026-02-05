@@ -16,6 +16,9 @@ struct SettingsView: View {
     @State private var showCustomFormatSheet = false
     @State private var selectedUploadQuality: UploadQuality = UploadQualityService.shared.currentQuality
 
+    // Paywall state
+    @State private var showPaywall = false
+
     // Export state
     @State private var showingExportSheet = false
     @State private var exportState: ExportState = .idle
@@ -113,7 +116,18 @@ struct SettingsView: View {
                     // Subscription Section
                     SubscriptionStatusView()
                         .padding(.horizontal, 24)
+                        .padding(.bottom, 12)
+
+                    // Upgrade to Pro Button (visible when user doesn't have active subscription)
+                    if !subscriptionState.hasAccess {
+                        BrutalPrimaryButton(title: "Upgrade to Pro") {
+                            showPaywall = true
+                        }
+                        .padding(.horizontal, 24)
                         .padding(.bottom, 24)
+                    } else {
+                        Spacer().frame(height: 12)
+                    }
 
                     // Upload Quality Section
                     VStack(spacing: 0) {
@@ -362,6 +376,23 @@ struct SettingsView: View {
                 }
             )
         }
+        .sheet(isPresented: $showPaywall) {
+            NavigationStack {
+                PaywallView()
+                    .environmentObject(subscriptionState)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button {
+                                showPaywall = false
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    }
+            }
+            .preferredColorScheme(.dark)
+        }
         .sheet(isPresented: $showingExportSheet) {
             BrutalExportSheetView(
                 exportState: $exportState,
@@ -391,6 +422,12 @@ struct SettingsView: View {
                 print("Failed to save file: \(error)")
                 // Re-show export sheet on failure so user can try again
                 showingExportSheet = true
+            }
+        }
+        .onChange(of: subscriptionState.hasAccess) { _, hasAccess in
+            // Auto-dismiss paywall after successful purchase
+            if hasAccess && showPaywall {
+                showPaywall = false
             }
         }
         .preferredColorScheme(.dark)
