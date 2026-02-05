@@ -56,23 +56,18 @@ struct SettingsView: View {
                                 .padding(.bottom, 12)
 
                             BrutalCard {
-                                HStack(spacing: 16) {
-                                    BrutalAvatar(text: user.email, size: 48)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(user.email)
+                                        .brutalTypography(.bodyLarge)
+                                        .lineLimit(1)
 
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(user.email)
-                                            .brutalTypography(.bodyLarge)
-                                            .lineLimit(1)
-
-                                        if user.emailVerified {
-                                            Text("✓ VERIFIED")
-                                                .brutalTypography(.monoSmall, color: .brutalSuccess)
-                                                .tracking(1)
-                                        }
+                                    if user.emailVerified {
+                                        Text("✓ VERIFIED")
+                                            .brutalTypography(.monoSmall, color: .brutalSuccess)
+                                            .tracking(1)
                                     }
-
-                                    Spacer()
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(.horizontal, 24)
                         }
