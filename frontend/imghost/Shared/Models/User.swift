@@ -23,6 +23,18 @@ struct User: Codable, Equatable {
         return Double(storageUsedBytes) / Double(storageLimitBytes) * 100
     }
 
+    var storageRemainingBytes: Int {
+        max(0, storageLimitBytes - storageUsedBytes)
+    }
+
+    var storageRemainingFormatted: String {
+        ByteCountFormatter.string(fromByteCount: Int64(storageRemainingBytes), countStyle: .file)
+    }
+
+    func canUpload(bytes: Int) -> Bool {
+        return bytes <= storageRemainingBytes
+    }
+
     enum CodingKeys: String, CodingKey {
         case id = "user_id"
         case email

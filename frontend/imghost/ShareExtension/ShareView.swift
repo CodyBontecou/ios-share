@@ -16,6 +16,9 @@ struct ShareView: View {
     @State private var isMediaFile: Bool = true
     @State private var selectedQuality: UploadQuality = UploadQualityService.shared.currentQuality
     @State private var estimatedSize: String = ""
+    @State private var currentUser: User?
+    @State private var storageWarning: String?
+    @State private var wouldExceedStorage: Bool = false
 
     private enum ShareState {
         case loading
@@ -24,6 +27,7 @@ struct ShareView: View {
         case success
         case error
         case notConfigured
+        case storageFull
     }
 
     var body: some View {
@@ -52,6 +56,9 @@ struct ShareView: View {
 
                 case .notConfigured:
                     notConfiguredView
+
+                case .storageFull:
+                    storageFullView
                 }
             }
             .padding(24)
@@ -126,6 +133,17 @@ struct ShareView: View {
                 }
             }
 
+            // Storage warning
+            if let warning = storageWarning {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                    Text(warning)
+                        .font(.caption)
+                }
+                .foregroundStyle(.red)
+            }
+
             // Upload button
             Button {
                 startUpload()
@@ -134,6 +152,7 @@ struct ShareView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .disabled(wouldExceedStorage)
 
             Button("Cancel") {
                 dismiss()
@@ -268,6 +287,46 @@ struct ShareView: View {
         }
     }
 
+    private var storageFullView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "externaldrive.badge.xmark")
+                .font(.system(size: 50))
+                .foregroundStyle(.red)
+
+            Text("Storage Full")
+                .font(.headline)
+
+            if let user = currentUser {
+                VStack(spacing: 4) {
+                    Text("You've used \(user.storageUsedFormatted) of \(user.storageLimitFormatted)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text("This file needs \(String(format: "%.1f MB", fileSizeMB))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text("Available: \(user.storageRemainingFormatted)")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            }
+
+            Text("Delete some files or upgrade your plan to continue.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Button("Done") {
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+
     // MARK: - Actions
 
     private func prepareUpload() {
@@ -281,11 +340,15 @@ struct ShareView: View {
 
         Task {
             do {
-                // Load file
-                let (fileData, filename) = try await loadImage()
+                // Fetch user info and file data concurrently
+                async let userTask = AuthService.shared.getCurrentUser()
+                async let fileTask = loadImage()
+
+                let (user, (fileData, filename)) = try await (userTask, fileTask)
 
                 // Store for later use
                 await MainActor.run {
+                    currentUser = user
                     pendingFileData = fileData
                     pendingFilename = filename
                     fileSizeMB = Double(fileData.count) / (1024 * 1024)
@@ -302,8 +365,20 @@ struct ShareView: View {
                         previewImage = image
                     }
 
-                    // File is ready, show preview and quality options
-                    state = .ready
+                    // Check if file would exceed storage (at original size)
+                    if !user.canUpload(bytes: fileData.count) {
+                        // Check if any quality setting could make it fit
+                        if isMediaFile && previewImage != nil {
+                            // Maybe compression will help - go to ready state
+                            state = .ready
+                        } else {
+                            // Non-compressible file that won't fit
+                            state = .storageFull
+                        }
+                    } else {
+                        // File is ready, show preview and quality options
+                        state = .ready
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -329,11 +404,23 @@ struct ShareView: View {
     private func updateEstimatedSize() {
         guard fileSizeMB > 0 else {
             estimatedSize = ""
+            storageWarning = nil
+            wouldExceedStorage = false
             return
         }
 
         if !isMediaFile || previewImage == nil {
             estimatedSize = "No compression for this file type"
+            // Check storage for non-compressible files
+            if let user = currentUser {
+                let fileBytes = Int(fileSizeMB * 1024 * 1024)
+                wouldExceedStorage = !user.canUpload(bytes: fileBytes)
+                if wouldExceedStorage {
+                    storageWarning = "Exceeds storage limit (\(user.storageRemainingFormatted) available)"
+                } else {
+                    storageWarning = nil
+                }
+            }
             return
         }
 
@@ -350,11 +437,23 @@ struct ShareView: View {
             multiplier = 0.2
         }
 
-        let estimated = fileSizeMB * multiplier
+        let estimatedMB = fileSizeMB * multiplier
+        let estimatedBytes = Int(estimatedMB * 1024 * 1024)
+
         if selectedQuality == .original {
             estimatedSize = "No compression"
         } else {
-            estimatedSize = String(format: "~%.1f MB after compression", estimated)
+            estimatedSize = String(format: "~%.1f MB after compression", estimatedMB)
+        }
+
+        // Check against storage limit
+        if let user = currentUser {
+            wouldExceedStorage = !user.canUpload(bytes: estimatedBytes)
+            if wouldExceedStorage {
+                storageWarning = "Exceeds storage limit (\(user.storageRemainingFormatted) available)"
+            } else {
+                storageWarning = nil
+            }
         }
     }
 
