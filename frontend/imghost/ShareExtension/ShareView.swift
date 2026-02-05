@@ -2,65 +2,82 @@ import SwiftUI
 import UIKit
 import AVFoundation
 
+/// Upload status for individual items
+enum ItemUploadStatus: Equatable {
+    case pending
+    case uploading(progress: Double)
+    case compressing(progress: Double)
+    case success(url: String)
+    case failed(error: String)
+}
+
+/// Wrapper for SharedItem with upload state
+class UploadableItem: Identifiable, ObservableObject {
+    let id: UUID
+    let sharedItem: SharedItem
+    @Published var thumbnail: UIImage?
+    @Published var status: ItemUploadStatus = .pending
+    @Published var uploadedURL: String?
+    
+    init(sharedItem: SharedItem) {
+        self.id = sharedItem.id
+        self.sharedItem = sharedItem
+        self.thumbnail = sharedItem.thumbnail
+    }
+    
+    var filename: String { sharedItem.filename }
+    var fileURL: URL { sharedItem.fileURL }
+    var fileSize: Int64 { sharedItem.fileSize }
+    var fileSizeMB: Double { sharedItem.fileSizeMB }
+    var isVideo: Bool { sharedItem.isVideo }
+}
+
 struct ShareView: View {
     let extensionContext: NSExtensionContext?
-    let loadImage: () async throws -> (Data, String)
-    let loadFileURL: () async throws -> (URL, String, Int64)
+    let loadAllItems: () async throws -> [SharedItem]
 
     @State private var state: ShareState = .loading
-    @State private var progress: Double = 0
-    @State private var uploadedURL: String = ""
+    @State private var items: [UploadableItem] = []
     @State private var errorMessage: String = ""
-    @State private var previewImage: UIImage?
-    @State private var pendingFileData: Data?
-    @State private var pendingFilename: String?
-    @State private var pendingFileURL: URL?
-    @State private var fileSizeMB: Double = 0
-    @State private var isMediaFile: Bool = true
-    @State private var isLargeFile: Bool = false
-    @State private var selectedQuality: UploadQuality = UploadQualityService.shared.currentQuality
-    @State private var estimatedSize: String = ""
     @State private var currentUser: User?
     @State private var storageWarning: String?
     @State private var wouldExceedStorage: Bool = false
-    @State private var compressionStatus: String = ""
-    @State private var needsCompression: Bool = false
+    @State private var uploadedURLs: [String] = []
+    @State private var currentUploadIndex: Int = 0
+    @State private var overallProgress: Double = 0
+    @State private var selectedQuality: UploadQuality = UploadQualityService.shared.currentQuality
     
-    @State private var compressionQuality: Double = 0.8
-    @State private var maxDimensionIndex: Int = 0
-    @State private var estimatedCompressedSize: Double = 0
-    @State private var isCalculatingSize: Bool = false
-    @State private var originalImageDimensions: CGSize = .zero
-    
-    @State private var isVideoFile: Bool = false
-    @State private var selectedVideoPreset: UploadQualityService.VideoQualityPreset = .medium
-    @State private var videoDuration: Double = 0
-    @State private var videoDimensions: CGSize = .zero
-    
-    private let dimensionOptions: [(label: String, value: CGFloat?)] = [
-        ("ORIGINAL", nil),
-        ("8K", 8192),
-        ("6K", 6144),
-        ("4K", 4096),
-        ("3K", 3072),
-        ("2K", 2048),
-        ("1080P", 1920),
-        ("1K", 1024),
-    ]
-    
-    private let largeFileThreshold: Int64 = 50 * 1024 * 1024
     private var maxUploadSize: Int64 { Config.maxUploadSizeBytes }
+    private let largeFileThreshold: Int64 = 50 * 1024 * 1024
+    
+    private var totalSizeMB: Double {
+        items.reduce(0) { $0 + $1.fileSizeMB }
+    }
+    
+    private var totalSizeBytes: Int {
+        items.reduce(0) { $0 + Int($1.fileSize) }
+    }
+    
+    private var successCount: Int {
+        items.filter { if case .success = $0.status { return true } else { return false } }.count
+    }
+    
+    private var failedCount: Int {
+        items.filter { if case .failed = $0.status { return true } else { return false } }.count
+    }
+    
+    private var isAnyItemTooLarge: Bool {
+        items.contains { $0.fileSize > maxUploadSize }
+    }
 
     private enum ShareState {
         case loading
         case ready
-        case compressing
         case uploading
         case success
         case error
         case notConfigured
         case storageFull
-        case fileTooLarge
     }
 
     var body: some View {
@@ -83,10 +100,6 @@ struct ShareView: View {
                 notConfiguredView
             case .storageFull:
                 storageFullView
-            case .compressing:
-                compressingView
-            case .fileTooLarge:
-                fileTooLargeView
             }
         }
         .onAppear {
@@ -110,42 +123,51 @@ struct ShareView: View {
     private var readyView: some View {
         VStack(spacing: 0) {
             // Header
-            header(title: pendingFilename ?? "FILE")
+            header(title: items.count == 1 ? (items.first?.filename ?? "FILE") : "\(items.count) ITEMS")
             
-            // Preview area - takes up available space
+            // Preview area
             previewSection
             
             // Info & Controls
             VStack(spacing: 0) {
                 // File info bar
                 HStack {
-                    Text(String(format: "%.1f MB", fileSizeMB))
+                    Text("\(items.count) \(items.count == 1 ? "ITEM" : "ITEMS")")
                         .font(.system(size: 13, weight: .medium, design: .monospaced))
                     
                     Spacer()
                     
-                    if isVideoFile && videoDuration > 0 {
-                        Text(formatDuration(videoDuration))
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                    } else if originalImageDimensions != .zero {
-                        Text("\(Int(originalImageDimensions.width))×\(Int(originalImageDimensions.height))")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                    }
+                    Text(String(format: "%.1f MB TOTAL", totalSizeMB))
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
                 }
                 .foregroundStyle(.white.opacity(0.4))
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
                 .overlay(Rectangle().frame(height: 1).foregroundStyle(.white.opacity(0.1)), alignment: .top)
                 
-                // Quality picker or compression controls
-                if needsCompression {
-                    compressionControlsView
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 16)
-                } else if isMediaFile && previewImage != nil && !isLargeFile {
+                // Quality picker for images
+                if hasImageItems && !isAnyItemTooLarge {
                     qualitySection
                         .padding(.horizontal, 20)
                         .padding(.bottom, 16)
+                }
+                
+                // Large file warning
+                if isAnyItemTooLarge {
+                    HStack(spacing: 12) {
+                        Text("!")
+                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        Text("SOME FILES EXCEED 100MB LIMIT")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .tracking(1)
+                        Spacer()
+                    }
+                    .foregroundStyle(Color(hex: "FF453A"))
+                    .padding(16)
+                    .background(Color(hex: "FF453A").opacity(0.1))
+                    .overlay(Rectangle().stroke(Color(hex: "FF453A").opacity(0.3), lineWidth: 1))
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
                 }
 
                 // Storage warning
@@ -170,16 +192,15 @@ struct ShareView: View {
             // Action buttons
             actionButtons
         }
-        .onAppear {
-            updateEstimatedSize()
-            if !isVideoFile && originalImageDimensions == .zero {
-                loadOriginalImageDimensions()
-            }
-        }
     }
     
-    private var header: some View {
-        header(title: pendingFilename ?? "FILE")
+    private var hasImageItems: Bool {
+        items.contains { item in
+            let lowercased = item.filename.lowercased()
+            return lowercased.hasSuffix(".jpg") || lowercased.hasSuffix(".jpeg") ||
+                   lowercased.hasSuffix(".png") || lowercased.hasSuffix(".gif") ||
+                   lowercased.hasSuffix(".heic") || lowercased.hasSuffix(".webp")
+        }
     }
     
     private func header(title: String) -> some View {
@@ -216,34 +237,43 @@ struct ShareView: View {
     
     private var previewSection: some View {
         GeometryReader { geo in
-            if let image = previewImage {
-                ZStack {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: geo.size.width, maxHeight: geo.size.height)
-                    
-                    if isVideoFile {
-                        // Play button overlay
-                        Circle()
-                            .fill(.black.opacity(0.5))
-                            .frame(width: 72, height: 72)
-                            .overlay(
-                                Image(systemName: "play.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundStyle(.white)
-                                    .offset(x: 2)
-                            )
-                    }
+            if items.count == 1, let item = items.first {
+                // Single item - large preview
+                singleItemPreview(item: item, size: geo.size)
+            } else {
+                // Multiple items - grid
+                multiItemGrid(size: geo.size)
+            }
+        }
+    }
+    
+    private func singleItemPreview(item: UploadableItem, size: CGSize) -> some View {
+        ZStack {
+            if let thumbnail = item.thumbnail {
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: size.width, maxHeight: size.height)
+                
+                if item.isVideo {
+                    // Play button overlay
+                    Circle()
+                        .fill(.black.opacity(0.5))
+                        .frame(width: 72, height: 72)
+                        .overlay(
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 28))
+                                .foregroundStyle(.white)
+                                .offset(x: 2)
+                        )
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let filename = pendingFilename {
+            } else {
                 VStack(spacing: 16) {
-                    Image(systemName: fileIcon(for: filename))
+                    Image(systemName: fileIcon(for: item.filename))
                         .font(.system(size: 64))
                         .foregroundStyle(.white.opacity(0.2))
                     
-                    Text(filename.uppercased())
+                    Text(item.filename.uppercased())
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(.white.opacity(0.3))
                         .tracking(1)
@@ -251,9 +281,86 @@ struct ShareView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private func multiItemGrid(size: CGSize) -> some View {
+        ScrollView {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 4),
+                GridItem(.flexible(), spacing: 4),
+                GridItem(.flexible(), spacing: 4)
+            ], spacing: 4) {
+                ForEach(items) { item in
+                    itemThumbnail(item: item)
+                        .aspectRatio(1, contentMode: .fill)
+                }
+            }
+            .padding(4)
+        }
+    }
+    
+    private func itemThumbnail(item: UploadableItem) -> some View {
+        ZStack {
+            if let thumbnail = item.thumbnail {
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .clipped()
+                
+                if item.isVideo {
+                    // Play icon overlay
+                    Circle()
+                        .fill(.black.opacity(0.5))
+                        .frame(width: 32, height: 32)
+                        .overlay(
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.white)
+                                .offset(x: 1)
+                        )
+                }
             } else {
-                Color.clear
+                Rectangle()
+                    .fill(Color.white.opacity(0.05))
+                    .overlay(
+                        VStack(spacing: 6) {
+                            Image(systemName: fileIcon(for: item.filename))
+                                .font(.system(size: 24))
+                                .foregroundStyle(.white.opacity(0.3))
+                            
+                            Text(fileExtension(for: item.filename).uppercased())
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.3))
+                        }
+                    )
+            }
+            
+            // Size badge
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Text(String(format: "%.1fMB", item.fileSizeMB))
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(.black.opacity(0.6))
+                }
+            }
+            
+            // Too large warning
+            if item.fileSize > maxUploadSize {
+                Rectangle()
+                    .fill(Color(hex: "FF453A").opacity(0.3))
+                    .overlay(
+                        Text("TOO LARGE")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color(hex: "FF453A"))
+                    )
             }
         }
     }
@@ -261,16 +368,12 @@ struct ShareView: View {
     private var qualitySection: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("QUALITY")
+                Text("IMAGE QUALITY")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.4))
                     .tracking(2)
                 
                 Spacer()
-                
-                Text(estimatedSize)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.4))
             }
 
             qualityPicker
@@ -291,7 +394,6 @@ struct ShareView: View {
         
         return Button {
             selectedQuality = quality
-            updateEstimatedSize()
         } label: {
             Text(quality.displayLabel.uppercased())
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
@@ -308,37 +410,37 @@ struct ShareView: View {
             Button {
                 startUpload()
             } label: {
-                Text("UPLOAD")
+                Text("UPLOAD \(validItemCount) \(validItemCount == 1 ? "ITEM" : "ITEMS")")
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .tracking(3)
                     .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(wouldExceedStorage || (needsCompression && (estimatedCompressedSize > 100 || isCalculatingSize)) ? Color.white.opacity(0.3) : Color.white)
+                    .background(wouldExceedStorage || validItemCount == 0 ? Color.white.opacity(0.3) : Color.white)
             }
-            .disabled(wouldExceedStorage || (needsCompression && (estimatedCompressedSize > 100 || isCalculatingSize)))
+            .disabled(wouldExceedStorage || validItemCount == 0)
         }
+    }
+    
+    private var validItemCount: Int {
+        items.filter { $0.fileSize <= maxUploadSize }.count
     }
 
     private var uploadingView: some View {
         VStack(spacing: 0) {
             header(title: "UPLOADING")
             
-            // Preview
-            GeometryReader { geo in
-                if let image = previewImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: geo.size.width, maxHeight: geo.size.height)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .opacity(0.5)
+            // Items with status
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(items) { item in
+                        uploadingItemRow(item: item)
+                    }
                 }
             }
             
-            // Progress section
+            // Overall progress section
             VStack(spacing: 20) {
-                // Progress bar
                 VStack(spacing: 12) {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
@@ -346,14 +448,22 @@ struct ShareView: View {
                                 .fill(Color.white.opacity(0.1))
                             Rectangle()
                                 .fill(Color.white)
-                                .frame(width: geo.size.width * progress)
+                                .frame(width: geo.size.width * overallProgress)
                         }
                     }
                     .frame(height: 4)
                     
-                    Text("\(Int(progress * 100))%")
-                        .font(.system(size: 32, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.white)
+                    HStack {
+                        Text("\(successCount)/\(validItemCount)")
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                        
+                        Spacer()
+                        
+                        Text("\(Int(overallProgress * 100))%")
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                    }
                 }
                 .padding(.horizontal, 20)
                 
@@ -371,6 +481,74 @@ struct ShareView: View {
             .padding(.bottom, 40)
         }
     }
+    
+    private func uploadingItemRow(item: UploadableItem) -> some View {
+        HStack(spacing: 12) {
+            // Thumbnail
+            if let thumbnail = item.thumbnail {
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 48, height: 48)
+                    .clipped()
+            } else {
+                Rectangle()
+                    .fill(Color.white.opacity(0.05))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: fileIcon(for: item.filename))
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white.opacity(0.3))
+                    )
+            }
+            
+            // Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.filename)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                
+                Text(String(format: "%.1f MB", item.fileSizeMB))
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+            
+            Spacer()
+            
+            // Status
+            statusIndicator(for: item.status)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .overlay(Rectangle().frame(height: 1).foregroundStyle(.white.opacity(0.1)), alignment: .bottom)
+    }
+    
+    @ViewBuilder
+    private func statusIndicator(for status: ItemUploadStatus) -> some View {
+        switch status {
+        case .pending:
+            Text("—")
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.2))
+        case .uploading(let progress):
+            Text("\(Int(progress * 100))%")
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
+        case .compressing:
+            Text("...")
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color(hex: "FFD60A"))
+        case .success:
+            Text("✓")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(Color(hex: "30D158"))
+        case .failed:
+            Text("!")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(Color(hex: "FF453A"))
+        }
+    }
 
     private var successView: some View {
         VStack(spacing: 0) {
@@ -382,17 +560,30 @@ struct ShareView: View {
                     .foregroundStyle(Color(hex: "30D158"))
                 
                 VStack(spacing: 12) {
-                    Text("COPIED TO CLIPBOARD")
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.white)
-                        .tracking(2)
+                    if failedCount > 0 {
+                        Text("\(successCount) UPLOADED, \(failedCount) FAILED")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .tracking(2)
+                    } else {
+                        Text(successCount == 1 ? "COPIED TO CLIPBOARD" : "\(successCount) LINKS COPIED")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .tracking(2)
+                    }
                     
-                    Text(uploadedURL)
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.4))
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+                    if uploadedURLs.count == 1, let url = uploadedURLs.first {
+                        Text(url)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.4))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                    } else if uploadedURLs.count > 1 {
+                        Text("\(uploadedURLs.count) LINKS")
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
                 }
             }
             
@@ -529,7 +720,7 @@ struct ShareView: View {
                                 .font(.system(size: 16, weight: .medium, design: .monospaced))
                                 .foregroundStyle(.white.opacity(0.6))
                             
-                            Text("NEED \(String(format: "%.1f MB", fileSizeMB)) MORE")
+                            Text("NEED \(String(format: "%.1f MB", totalSizeMB)) MORE")
                                 .font(.system(size: 12, design: .monospaced))
                                 .foregroundStyle(.white.opacity(0.4))
                         }
@@ -540,258 +731,6 @@ struct ShareView: View {
                         .foregroundStyle(.white.opacity(0.4))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
-                }
-            }
-            
-            Spacer()
-            
-            Button {
-                dismiss()
-            } label: {
-                Text("DONE")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .tracking(3)
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color.white)
-            }
-        }
-    }
-
-    private var compressionControlsView: some View {
-        VStack(spacing: 16) {
-            // Header
-            HStack {
-                HStack(spacing: 8) {
-                    Text("↓")
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    Text("COMPRESSION")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .tracking(1)
-                }
-                .foregroundStyle(Color(hex: "FFD60A"))
-                
-                Spacer()
-                
-                // Estimated size
-                if isCalculatingSize {
-                    Text("...")
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.4))
-                } else {
-                    let exceedsLimit = estimatedCompressedSize > 100
-                    HStack(spacing: 6) {
-                        Text(exceedsLimit ? "!" : "✓")
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
-                            .foregroundStyle(exceedsLimit ? Color(hex: "FF453A") : Color(hex: "30D158"))
-                        Text(String(format: "~%.1f MB", estimatedCompressedSize))
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                            .foregroundStyle(exceedsLimit ? Color(hex: "FF453A") : .white)
-                    }
-                }
-            }
-            
-            if isVideoFile {
-                videoQualityPicker
-            } else {
-                imageCompressionControls
-            }
-        }
-        .padding(16)
-        .overlay(Rectangle().stroke(Color.white.opacity(0.2), lineWidth: 1))
-        .onAppear {
-            if isVideoFile {
-                loadVideoInfo()
-                calculateEstimatedVideoSize()
-            } else {
-                loadOriginalImageDimensions()
-                calculateEstimatedSize()
-            }
-        }
-    }
-    
-    private var videoQualityPicker: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 0) {
-                ForEach(UploadQualityService.VideoQualityPreset.allCases, id: \.self) { preset in
-                    videoPresetButton(for: preset)
-                }
-            }
-            .overlay(Rectangle().stroke(Color.white.opacity(0.2), lineWidth: 1))
-            
-            Text(videoPresetDescription.uppercased())
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.4))
-                .tracking(1)
-        }
-    }
-    
-    private func videoPresetButton(for preset: UploadQualityService.VideoQualityPreset) -> some View {
-        let isSelected = selectedVideoPreset == preset
-        
-        return Button {
-            selectedVideoPreset = preset
-            calculateEstimatedVideoSize()
-        } label: {
-            Text(preset.displayLabel.uppercased())
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .tracking(1)
-                .foregroundStyle(isSelected ? .black : .white.opacity(0.5))
-                .frame(maxWidth: .infinity)
-                .frame(height: 40)
-                .background(isSelected ? Color.white : Color.clear)
-        }
-    }
-    
-    private var imageCompressionControls: some View {
-        VStack(spacing: 20) {
-            // Quality slider
-            VStack(spacing: 10) {
-                HStack {
-                    Text("QUALITY")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.4))
-                        .tracking(1)
-                    Spacer()
-                    Text("\(Int(compressionQuality * 100))%")
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.white)
-                }
-                
-                BrutalSlider(value: $compressionQuality, range: 0.1...1.0)
-                    .onChange(of: compressionQuality) { _, _ in
-                        calculateEstimatedSize()
-                    }
-            }
-            
-            // Dimension picker
-            VStack(spacing: 10) {
-                HStack {
-                    Text("MAX SIZE")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.4))
-                        .tracking(1)
-                    Spacer()
-                    Text(dimensionOptions[maxDimensionIndex].label)
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.white)
-                }
-                
-                BrutalSlider(
-                    value: Binding(
-                        get: { Double(maxDimensionIndex) },
-                        set: { maxDimensionIndex = Int($0) }
-                    ),
-                    range: 0...Double(dimensionOptions.count - 1),
-                    step: 1
-                )
-                .onChange(of: maxDimensionIndex) { _, _ in
-                    calculateEstimatedSize()
-                }
-            }
-        }
-    }
-    
-    private var videoPresetDescription: String {
-        switch selectedVideoPreset {
-        case .high: return "Best quality, larger file"
-        case .medium: return "Balanced quality and size"
-        case .low: return "Smaller file, reduced quality"
-        case .veryLow: return "Smallest file, lowest quality"
-        }
-    }
-    
-    private func formatDuration(_ seconds: Double) -> String {
-        let mins = Int(seconds) / 60
-        let secs = Int(seconds) % 60
-        return String(format: "%d:%02d", mins, secs)
-    }
-
-    private var compressingView: some View {
-        VStack(spacing: 0) {
-            header(title: isVideoFile ? "COMPRESSING VIDEO" : "COMPRESSING")
-            
-            // Preview
-            GeometryReader { geo in
-                if let image = previewImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: geo.size.width, maxHeight: geo.size.height)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .opacity(0.5)
-                }
-            }
-            
-            // Progress section
-            VStack(spacing: 20) {
-                if isVideoFile && progress > 0 {
-                    VStack(spacing: 12) {
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.1))
-                                Rectangle()
-                                    .fill(Color.white)
-                                    .frame(width: geo.size.width * progress)
-                            }
-                        }
-                        .frame(height: 4)
-                        
-                        Text("\(Int(progress * 100))%")
-                            .font(.system(size: 32, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                    }
-                } else {
-                    Text(compressionStatus.isEmpty ? "REDUCING SIZE..." : compressionStatus.uppercased())
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.4))
-                        .tracking(1)
-                }
-                
-                Button {
-                    dismiss()
-                } label: {
-                    Text("CANCEL")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundStyle(Color(hex: "FF453A"))
-                        .tracking(2)
-                        .frame(height: 44)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 40)
-        }
-    }
-
-    private var fileTooLargeView: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            
-            VStack(spacing: 32) {
-                Text("X")
-                    .font(.system(size: 72, weight: .bold))
-                    .foregroundStyle(Color(hex: "FF453A"))
-                
-                VStack(spacing: 12) {
-                    Text("FILE TOO LARGE")
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.white)
-                        .tracking(2)
-                    
-                    VStack(spacing: 8) {
-                        Text("\(String(format: "%.0f MB", fileSizeMB)) EXCEEDS 100 MB LIMIT")
-                            .font(.system(size: 12, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.4))
-                        
-                        if let filename = pendingFilename {
-                            let canCompress = UploadQualityService.shared.canCompress(filename: filename)
-                            Text(canCompress ? "COMPRESSION FAILED" : "THIS FILE TYPE CAN'T BE COMPRESSED")
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundStyle(.white.opacity(0.4))
-                        }
-                    }
                 }
             }
             
@@ -824,77 +763,25 @@ struct ShareView: View {
         Task {
             do {
                 let user = try await AuthService.shared.getCurrentUser()
-                let (fileURL, filename, fileSize) = try await loadFileURL()
+                let sharedItems = try await loadAllItems()
+                
+                // Create uploadable items
+                let uploadableItems = sharedItems.map { UploadableItem(sharedItem: $0) }
                 
                 await MainActor.run {
                     currentUser = user
-                    pendingFilename = filename
-                    pendingFileURL = fileURL
-                    fileSizeMB = Double(fileSize) / (1024 * 1024)
-                    isLargeFile = fileSize >= largeFileThreshold
-                    needsCompression = fileSize > maxUploadSize
-
-                    let lowercased = filename.lowercased()
-                    isMediaFile = lowercased.hasSuffix(".jpg") || lowercased.hasSuffix(".jpeg") ||
-                                  lowercased.hasSuffix(".png") || lowercased.hasSuffix(".gif") ||
-                                  lowercased.hasSuffix(".heic") || lowercased.hasSuffix(".webp") ||
-                                  lowercased.hasSuffix(".bmp") || lowercased.hasSuffix(".tiff")
-                    
-                    isVideoFile = UploadQualityService.shared.isVideo(filename: filename)
+                    items = uploadableItems
                 }
                 
-                let isVideo = UploadQualityService.shared.isVideo(filename: filename)
+                // Generate thumbnails in background
+                await generateThumbnails()
                 
-                if isVideo {
-                    let thumbnail = await generateVideoThumbnail(fileURL: fileURL)
-                    await MainActor.run {
-                        previewImage = thumbnail
-                    }
-                    // Load video info
-                    if let info = await UploadQualityService.shared.getVideoInfo(fileURL: fileURL) {
-                        await MainActor.run {
-                            videoDuration = info.duration
-                            videoDimensions = info.dimensions
-                        }
-                    }
-                } else if !isLargeFile || isMediaFile {
-                    if fileSize < 100 * 1024 * 1024 {
-                        let fileData = try Data(contentsOf: fileURL)
-                        
-                        await MainActor.run {
-                            pendingFileData = fileData
-                            if isMediaFile, let image = UIImage(data: fileData) {
-                                previewImage = image
-                            }
-                        }
-                    } else {
-                        await MainActor.run {
-                            if isMediaFile {
-                                previewImage = generateThumbnailFromURL(fileURL)
-                            }
-                        }
-                    }
-                }
-
+                // Check storage
                 await MainActor.run {
-                    if fileSize > maxUploadSize {
-                        let canCompress = UploadQualityService.shared.canCompress(filename: filename)
-                        if canCompress {
-                            needsCompression = true
-                            state = .ready
-                        } else {
-                            state = .fileTooLarge
-                        }
-                        return
-                    }
-                    
-                    if !user.canUpload(bytes: Int(fileSize)) {
-                        if isMediaFile && previewImage != nil && !isLargeFile {
-                            state = .ready
-                        } else {
-                            state = .storageFull
-                        }
+                    if !user.canUpload(bytes: totalSizeBytes) {
+                        state = .storageFull
                     } else {
+                        updateStorageWarning()
                         state = .ready
                     }
                 }
@@ -907,12 +794,36 @@ struct ShareView: View {
         }
     }
     
-    private func generateThumbnailFromURL(_ url: URL) -> UIImage? {
-        guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+    private func generateThumbnails() async {
+        await withTaskGroup(of: (UUID, UIImage?).self) { group in
+            for item in items {
+                group.addTask {
+                    if item.isVideo {
+                        let thumbnail = await self.generateVideoThumbnail(fileURL: item.fileURL)
+                        return (item.id, thumbnail)
+                    } else {
+                        let thumbnail = self.generateImageThumbnail(fileURL: item.fileURL)
+                        return (item.id, thumbnail)
+                    }
+                }
+            }
+            
+            for await (id, thumbnail) in group {
+                await MainActor.run {
+                    if let index = items.firstIndex(where: { $0.id == id }) {
+                        items[index].thumbnail = thumbnail
+                    }
+                }
+            }
+        }
+    }
+    
+    private func generateImageThumbnail(fileURL: URL) -> UIImage? {
+        guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil) else { return nil }
         
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceThumbnailMaxPixelSize: 800,
+            kCGImageSourceThumbnailMaxPixelSize: 400,
             kCGImageSourceCreateThumbnailWithTransform: true
         ]
         
@@ -924,7 +835,7 @@ struct ShareView: View {
         let asset = AVURLAsset(url: fileURL)
         let imageGenerator = AVAssetImageGenerator(asset: asset)
         imageGenerator.appliesPreferredTrackTransform = true
-        imageGenerator.maximumSize = CGSize(width: 800, height: 800)
+        imageGenerator.maximumSize = CGSize(width: 400, height: 400)
         
         do {
             let cgImage = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
@@ -934,276 +845,129 @@ struct ShareView: View {
         }
     }
     
-    private func loadOriginalImageDimensions() {
-        guard let fileURL = pendingFileURL else { return }
+    private func updateStorageWarning() {
+        guard let user = currentUser else { return }
         
-        Task.detached {
-            guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil),
-                  let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any],
-                  let width = properties[kCGImagePropertyPixelWidth] as? CGFloat,
-                  let height = properties[kCGImagePropertyPixelHeight] as? CGFloat else { return }
-            
-            await MainActor.run {
-                originalImageDimensions = CGSize(width: width, height: height)
-            }
-        }
-    }
-    
-    private func calculateEstimatedSize() {
-        guard let fileURL = pendingFileURL else { return }
-        
-        isCalculatingSize = true
-        
-        Task {
-            try? await Task.sleep(nanoseconds: 200_000_000)
-            
-            let quality = compressionQuality
-            let maxDim = dimensionOptions[maxDimensionIndex].value
-            
-            let estimatedMB = await Task.detached { () -> Double in
-                guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil),
-                      let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else { return 0 }
-                
-                var image = UIImage(cgImage: cgImage)
-                
-                if let maxDimension = maxDim {
-                    image = ImageProcessor.shared.resize(image: image, maxDimension: maxDimension)
-                }
-                
-                if let data = image.jpegData(compressionQuality: quality) {
-                    return Double(data.count) / (1024 * 1024)
-                }
-                
-                return 0
-            }.value
-            
-            await MainActor.run {
-                estimatedCompressedSize = estimatedMB
-                isCalculatingSize = false
-            }
-        }
-    }
-    
-    private func loadVideoInfo() {
-        guard let fileURL = pendingFileURL else { return }
-        
-        Task {
-            if let info = await UploadQualityService.shared.getVideoInfo(fileURL: fileURL) {
-                await MainActor.run {
-                    videoDuration = info.duration
-                    videoDimensions = info.dimensions
-                }
-            }
-        }
-    }
-    
-    private func calculateEstimatedVideoSize() {
-        isCalculatingSize = true
-        
-        Task {
-            try? await Task.sleep(nanoseconds: 100_000_000)
-            
-            await MainActor.run {
-                estimatedCompressedSize = UploadQualityService.shared.estimateCompressedVideoSize(
-                    originalSizeMB: fileSizeMB,
-                    preset: selectedVideoPreset
-                )
-                isCalculatingSize = false
-            }
-        }
+        wouldExceedStorage = !user.canUpload(bytes: totalSizeBytes)
+        storageWarning = wouldExceedStorage ? "EXCEEDS STORAGE (\(user.storageRemainingFormatted))" : nil
     }
 
     private func startUpload() {
-        guard let filename = pendingFilename else { return }
-
-        if needsCompression, let fileURL = pendingFileURL {
-            performCompressedUpload(fileURL: fileURL, filename: filename)
-            return
-        }
-        
-        if isLargeFile, let fileURL = pendingFileURL {
-            performFileUpload(fileURL: fileURL, filename: filename)
-            return
-        }
-        
-        guard let data = pendingFileData else { return }
-
-        let (processedData, processedFilename) = UploadQualityService.shared.processForUpload(
-            data: data,
-            filename: filename,
-            quality: selectedQuality
-        )
-        performUpload(data: processedData, filename: processedFilename)
-    }
-    
-    private func performCompressedUpload(fileURL: URL, filename: String) {
-        state = .compressing
-        compressionStatus = "Preparing..."
-        
-        if isVideoFile {
-            performVideoCompressedUpload(fileURL: fileURL, filename: filename)
-        } else {
-            performImageCompressedUpload(fileURL: fileURL, filename: filename)
-        }
-    }
-    
-    private func performImageCompressedUpload(fileURL: URL, filename: String) {
-        compressionStatus = "Applying settings..."
-        
-        let quality = compressionQuality
-        let maxDim = dimensionOptions[maxDimensionIndex].value
-        
-        Task {
-            let result = await Task.detached { () -> (Data, String)? in
-                guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil),
-                      let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else { return nil }
-                
-                var image = UIImage(cgImage: cgImage)
-                
-                if let maxDimension = maxDim {
-                    await MainActor.run { self.compressionStatus = "Resizing..." }
-                    image = ImageProcessor.shared.resize(image: image, maxDimension: maxDimension)
-                }
-                
-                await MainActor.run { self.compressionStatus = "Compressing..." }
-                
-                guard let compressedData = image.jpegData(compressionQuality: quality) else { return nil }
-                
-                let newFilename = filename.replacingOccurrences(of: "\\.[^.]+$", with: ".jpg", options: .regularExpression)
-                
-                return (compressedData, newFilename)
-            }.value
-            
-            await MainActor.run {
-                if let (compressedData, compressedFilename) = result {
-                    performUpload(data: compressedData, filename: compressedFilename)
-                } else {
-                    errorMessage = "Failed to compress image"
-                    state = .error
-                }
-            }
-        }
-    }
-    
-    private func performVideoCompressedUpload(fileURL: URL, filename: String) {
-        compressionStatus = "Starting..."
-        progress = 0
-        
-        let preset = selectedVideoPreset
-        
-        Task {
-            let compressedURL = await UploadQualityService.shared.compressVideo(
-                fileURL: fileURL,
-                preset: preset
-            ) { status, progressValue in
-                Task { @MainActor in
-                    self.compressionStatus = status
-                    if let p = progressValue {
-                        self.progress = p * 0.5
-                    }
-                }
-            }
-            
-            await MainActor.run {
-                if let outputURL = compressedURL {
-                    let newFilename = filename.replacingOccurrences(of: "\\.[^.]+$", with: ".mp4", options: .regularExpression)
-                    performFileUploadWithCleanup(fileURL: outputURL, filename: newFilename)
-                } else {
-                    errorMessage = "Failed to compress video"
-                    state = .error
-                }
-            }
-        }
-    }
-    
-    private func performFileUploadWithCleanup(fileURL: URL, filename: String) {
         state = .uploading
-        compressionStatus = ""
+        overallProgress = 0
+        uploadedURLs = []
+        
+        // Filter out items that are too large
+        let validItems = items.filter { $0.fileSize <= maxUploadSize }
+        let totalItems = validItems.count
         
         Task {
-            do {
-                let record = try await UploadService.shared.uploadFromFile(
-                    fileURL: fileURL,
-                    filename: filename
-                ) { uploadProgress in
-                    Task { @MainActor in
-                        self.progress = 0.5 + (uploadProgress * 0.5)
+            var successfulUploads: [String] = []
+            
+            for (index, item) in validItems.enumerated() {
+                await MainActor.run {
+                    currentUploadIndex = index
+                    item.status = .uploading(progress: 0)
+                }
+                
+                do {
+                    let record = try await uploadItem(item: item) { progress in
+                        Task { @MainActor in
+                            item.status = .uploading(progress: progress)
+                            // Overall progress: completed items + current item progress
+                            let completedProgress = Double(index) / Double(totalItems)
+                            let currentItemProgress = progress / Double(totalItems)
+                            overallProgress = completedProgress + currentItemProgress
+                        }
+                    }
+                    
+                    await MainActor.run {
+                        item.status = .success(url: record.url)
+                        item.uploadedURL = record.url
+                        successfulUploads.append(record.url)
+                    }
+                    
+                    // Save to history
+                    try? HistoryService.shared.save(record)
+                    
+                } catch {
+                    await MainActor.run {
+                        item.status = .failed(error: error.localizedDescription)
                     }
                 }
-                
+            }
+            
+            // Mark items that were too large as failed
+            for item in items where item.fileSize > maxUploadSize {
                 await MainActor.run {
-                    let formattedLink = LinkFormatService.shared.format(url: record.url, filename: record.originalFilename)
-                    UIPasteboard.general.string = formattedLink
+                    item.status = .failed(error: "File too large")
+                }
+            }
+            
+            await MainActor.run {
+                uploadedURLs = successfulUploads
+                overallProgress = 1.0
+                
+                // Copy to clipboard
+                if !successfulUploads.isEmpty {
+                    if successfulUploads.count == 1, let record = items.first(where: { $0.uploadedURL != nil }) {
+                        let formattedLink = LinkFormatService.shared.format(url: record.uploadedURL!, filename: record.filename)
+                        UIPasteboard.general.string = formattedLink
+                    } else {
+                        // Multiple URLs - join with newlines
+                        let formattedLinks = items.compactMap { item -> String? in
+                            guard let url = item.uploadedURL else { return nil }
+                            return LinkFormatService.shared.format(url: url, filename: item.filename)
+                        }
+                        UIPasteboard.general.string = formattedLinks.joined(separator: "\n")
+                    }
+                    
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.success)
                 }
                 
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.success)
-                
-                try? HistoryService.shared.save(record)
-                
-                await MainActor.run {
-                    uploadedURL = record.url
-                    state = .success
-                }
-                
-                try? FileManager.default.removeItem(at: fileURL)
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    state = .error
-                }
-                try? FileManager.default.removeItem(at: fileURL)
+                state = .success
             }
         }
     }
-
-    private func updateEstimatedSize() {
-        guard fileSizeMB > 0 else {
-            estimatedSize = ""
-            storageWarning = nil
-            wouldExceedStorage = false
-            return
-        }
-
-        if needsCompression {
-            estimatedSize = "WILL COMPRESS"
-            wouldExceedStorage = false
-            storageWarning = nil
-            return
-        }
-
-        if isLargeFile || !isMediaFile || previewImage == nil {
-            estimatedSize = isLargeFile ? "ORIGINAL" : "NO COMPRESSION"
-            if let user = currentUser {
-                let fileBytes = Int(fileSizeMB * 1024 * 1024)
-                wouldExceedStorage = !user.canUpload(bytes: fileBytes)
-                storageWarning = wouldExceedStorage ? "EXCEEDS STORAGE (\(user.storageRemainingFormatted))" : nil
-            }
-            return
-        }
-
-        let multiplier: Double
-        switch selectedQuality {
-        case .original: multiplier = 1.0
-        case .high: multiplier = 0.7
-        case .medium: multiplier = 0.4
-        case .low: multiplier = 0.2
-        }
-
-        let estimatedMB = fileSizeMB * multiplier
-        let estimatedBytes = Int(estimatedMB * 1024 * 1024)
-
-        estimatedSize = selectedQuality == .original ? "ORIGINAL" : String(format: "~%.1f MB", estimatedMB)
-
-        if let user = currentUser {
-            wouldExceedStorage = !user.canUpload(bytes: estimatedBytes)
-            storageWarning = wouldExceedStorage ? "EXCEEDS STORAGE (\(user.storageRemainingFormatted))" : nil
+    
+    private func uploadItem(item: UploadableItem, progressHandler: @escaping (Double) -> Void) async throws -> UploadRecord {
+        let fileURL = item.fileURL
+        let filename = item.filename
+        
+        // Check if we need to process the image for quality
+        let lowercased = filename.lowercased()
+        let isImage = lowercased.hasSuffix(".jpg") || lowercased.hasSuffix(".jpeg") ||
+                      lowercased.hasSuffix(".png") || lowercased.hasSuffix(".gif") ||
+                      lowercased.hasSuffix(".heic") || lowercased.hasSuffix(".webp")
+        
+        if isImage && selectedQuality != .original && item.fileSize < 50 * 1024 * 1024 {
+            // Load data and process
+            let data = try Data(contentsOf: fileURL)
+            let (processedData, processedFilename) = UploadQualityService.shared.processForUpload(
+                data: data,
+                filename: filename,
+                quality: selectedQuality
+            )
+            return try await UploadService.shared.upload(
+                imageData: processedData,
+                filename: processedFilename,
+                progressHandler: progressHandler
+            )
+        } else {
+            // Upload file directly
+            return try await UploadService.shared.uploadFromFile(
+                fileURL: fileURL,
+                filename: filename,
+                progressHandler: progressHandler
+            )
         }
     }
 
     private func fileIcon(for filename: String) -> String {
         let lowercased = filename.lowercased()
         
+        if lowercased.hasSuffix(".jpg") || lowercased.hasSuffix(".jpeg") || lowercased.hasSuffix(".png") || lowercased.hasSuffix(".gif") || lowercased.hasSuffix(".heic") || lowercased.hasSuffix(".webp") { return "photo" }
         if lowercased.hasSuffix(".mp4") || lowercased.hasSuffix(".mov") || lowercased.hasSuffix(".avi") || lowercased.hasSuffix(".mkv") || lowercased.hasSuffix(".webm") { return "film" }
         if lowercased.hasSuffix(".mp3") || lowercased.hasSuffix(".wav") || lowercased.hasSuffix(".m4a") || lowercased.hasSuffix(".aac") || lowercased.hasSuffix(".flac") { return "waveform" }
         if lowercased.hasSuffix(".pdf") { return "doc.richtext" }
@@ -1214,132 +978,18 @@ struct ShareView: View {
         
         return "doc"
     }
-
-    private func performUpload(data: Data, filename: String) {
-        state = .uploading
-        progress = 0
-
-        Task {
-            do {
-                let record = try await UploadService.shared.upload(
-                    imageData: data,
-                    filename: filename
-                ) { uploadProgress in
-                    Task { @MainActor in
-                        progress = uploadProgress
-                    }
-                }
-
-                await MainActor.run {
-                    let formattedLink = LinkFormatService.shared.format(url: record.url, filename: record.originalFilename)
-                    UIPasteboard.general.string = formattedLink
-                }
-
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.success)
-
-                try? HistoryService.shared.save(record)
-
-                await MainActor.run {
-                    uploadedURL = record.url
-                    state = .success
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    state = .error
-                }
-            }
-        }
-    }
     
-    private func performFileUpload(fileURL: URL, filename: String) {
-        state = .uploading
-        progress = 0
-
-        Task {
-            do {
-                let record = try await UploadService.shared.uploadFromFile(
-                    fileURL: fileURL,
-                    filename: filename
-                ) { uploadProgress in
-                    Task { @MainActor in
-                        progress = uploadProgress
-                    }
-                }
-
-                await MainActor.run {
-                    let formattedLink = LinkFormatService.shared.format(url: record.url, filename: record.originalFilename)
-                    UIPasteboard.general.string = formattedLink
-                }
-
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.success)
-
-                try? HistoryService.shared.save(record)
-
-                await MainActor.run {
-                    uploadedURL = record.url
-                    state = .success
-                }
-                
-                try? FileManager.default.removeItem(at: fileURL)
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    state = .error
-                }
-                try? FileManager.default.removeItem(at: fileURL)
-            }
-        }
+    private func fileExtension(for filename: String) -> String {
+        let parts = filename.split(separator: ".")
+        return parts.count > 1 ? String(parts.last!) : ""
     }
 
     private func dismiss() {
-        extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
-    }
-}
-
-// MARK: - Brutal Slider
-
-struct BrutalSlider: View {
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    var step: Double? = nil
-    
-    var body: some View {
-        GeometryReader { geo in
-            let normalizedValue = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
-            let thumbPosition = normalizedValue * geo.size.width
-            
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(height: 4)
-                
-                Rectangle()
-                    .fill(Color.white)
-                    .frame(width: thumbPosition, height: 4)
-                
-                Rectangle()
-                    .fill(Color.white)
-                    .frame(width: 20, height: 20)
-                    .offset(x: thumbPosition - 10)
-            }
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        let newValue = (gesture.location.x / geo.size.width) * (range.upperBound - range.lowerBound) + range.lowerBound
-                        var clampedValue = min(max(newValue, range.lowerBound), range.upperBound)
-                        
-                        if let step = step {
-                            clampedValue = (clampedValue / step).rounded() * step
-                        }
-                        
-                        value = clampedValue
-                    }
-            )
+        // Clean up temp files
+        for item in items {
+            try? FileManager.default.removeItem(at: item.fileURL)
         }
-        .frame(height: 20)
+        extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     }
 }
 
@@ -1386,15 +1036,15 @@ extension Color {
 #Preview {
     ShareView(
         extensionContext: nil,
-        loadImage: {
-            let image = UIImage(systemName: "photo")!
-            return (image.pngData()!, "test.png")
-        },
-        loadFileURL: {
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("test.png")
-            let image = UIImage(systemName: "photo")!
-            try? image.pngData()?.write(to: tempURL)
-            return (tempURL, "test.png", 1024)
+        loadAllItems: {
+            [
+                SharedItem(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("test1.png"),
+                          filename: "test1.png", fileSize: 1024 * 1024, thumbnail: nil, isVideo: false, videoDuration: nil, dimensions: nil),
+                SharedItem(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("test2.jpg"),
+                          filename: "test2.jpg", fileSize: 2048 * 1024, thumbnail: nil, isVideo: false, videoDuration: nil, dimensions: nil),
+                SharedItem(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("video.mp4"),
+                          filename: "video.mp4", fileSize: 5 * 1024 * 1024, thumbnail: nil, isVideo: true, videoDuration: 30, dimensions: nil)
+            ]
         }
     )
 }

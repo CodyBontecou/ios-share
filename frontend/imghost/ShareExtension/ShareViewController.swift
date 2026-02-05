@@ -2,6 +2,22 @@ import UIKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Represents a single shared item with its file info
+struct SharedItem: Identifiable {
+    let id = UUID()
+    let fileURL: URL
+    let filename: String
+    let fileSize: Int64
+    var thumbnail: UIImage?
+    var isVideo: Bool
+    var videoDuration: Double?
+    var dimensions: CGSize?
+    
+    var fileSizeMB: Double {
+        Double(fileSize) / (1024 * 1024)
+    }
+}
+
 class ShareViewController: UIViewController {
     private var hostingController: UIHostingController<ShareView>?
 
@@ -10,8 +26,7 @@ class ShareViewController: UIViewController {
 
         let shareView = ShareView(
             extensionContext: extensionContext,
-            loadImage: loadImage,
-            loadFileURL: loadFileURL
+            loadAllItems: loadAllFileURLs
         )
 
         let hostingController = UIHostingController(rootView: shareView)
@@ -31,12 +46,14 @@ class ShareViewController: UIViewController {
         hostingController.didMove(toParent: self)
     }
 
-    /// Load file as URL for large file support (avoids memory issues)
-    private func loadFileURL() async throws -> (URL, String, Int64) {
+    /// Load all shared items as file URLs
+    private func loadAllFileURLs() async throws -> [SharedItem] {
         guard let extensionItems = extensionContext?.inputItems as? [NSExtensionItem] else {
             throw ImghostError.invalidResponse
         }
 
+        var items: [SharedItem] = []
+        
         for item in extensionItems {
             guard let attachments = item.attachments else { continue }
 
@@ -44,7 +61,8 @@ class ShareViewController: UIViewController {
                 // Try to load as file URL first (preserves original filename)
                 if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
                     if let result = try? await loadFileURLOnly(from: provider) {
-                        return result
+                        items.append(result)
+                        continue
                     }
                 }
                 
@@ -60,17 +78,22 @@ class ShareViewController: UIViewController {
                 for type in supportedTypes {
                     if provider.hasItemConformingToTypeIdentifier(type.identifier) {
                         if let result = try? await loadDataToTempFile(from: provider, typeIdentifier: type.identifier) {
-                            return result
+                            items.append(result)
+                            break
                         }
                     }
                 }
             }
         }
+        
+        guard !items.isEmpty else {
+            throw ImghostError.invalidResponse
+        }
 
-        throw ImghostError.invalidResponse
+        return items
     }
     
-    private func loadFileURLOnly(from provider: NSItemProvider) async throws -> (URL, String, Int64) {
+    private func loadFileURLOnly(from provider: NSItemProvider) async throws -> SharedItem {
         return try await withCheckedThrowingContinuation { continuation in
             provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
                 if let error = error {
@@ -92,7 +115,18 @@ class ShareViewController: UIViewController {
                     let attributes = try FileManager.default.attributesOfItem(atPath: tempURL.path)
                     let fileSize = (attributes[.size] as? Int64) ?? 0
                     let filename = url.lastPathComponent
-                    continuation.resume(returning: (tempURL, filename, fileSize))
+                    let isVideo = UploadQualityService.shared.isVideo(filename: filename)
+                    
+                    let item = SharedItem(
+                        fileURL: tempURL,
+                        filename: filename,
+                        fileSize: fileSize,
+                        thumbnail: nil,
+                        isVideo: isVideo,
+                        videoDuration: nil,
+                        dimensions: nil
+                    )
+                    continuation.resume(returning: item)
                 } catch {
                     continuation.resume(throwing: ImghostError.networkError(underlying: error))
                 }
@@ -100,7 +134,7 @@ class ShareViewController: UIViewController {
         }
     }
     
-    private func loadDataToTempFile(from provider: NSItemProvider, typeIdentifier: String) async throws -> (URL, String, Int64) {
+    private func loadDataToTempFile(from provider: NSItemProvider, typeIdentifier: String) async throws -> SharedItem {
         return try await withCheckedThrowingContinuation { continuation in
             provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
                 if let error = error {
@@ -115,6 +149,7 @@ class ShareViewController: UIViewController {
 
                 // Generate filename based on type
                 let filename = self.generateFilename(for: typeIdentifier)
+                let isVideo = UploadQualityService.shared.isVideo(filename: filename)
                 
                 // Write to temp file
                 let tempDir = FileManager.default.temporaryDirectory
@@ -127,115 +162,34 @@ class ShareViewController: UIViewController {
                            let jpegData = image.jpegData(compressionQuality: Config.jpegQuality) {
                             try jpegData.write(to: tempURL)
                             let jpegFilename = filename.replacingOccurrences(of: ".heic", with: ".jpg")
-                            continuation.resume(returning: (tempURL, jpegFilename, Int64(jpegData.count)))
+                            let item = SharedItem(
+                                fileURL: tempURL,
+                                filename: jpegFilename,
+                                fileSize: Int64(jpegData.count),
+                                thumbnail: nil,
+                                isVideo: false,
+                                videoDuration: nil,
+                                dimensions: nil
+                            )
+                            continuation.resume(returning: item)
                             return
                         }
                     }
                     
                     try data.write(to: tempURL)
-                    continuation.resume(returning: (tempURL, filename, Int64(data.count)))
+                    let item = SharedItem(
+                        fileURL: tempURL,
+                        filename: filename,
+                        fileSize: Int64(data.count),
+                        thumbnail: nil,
+                        isVideo: isVideo,
+                        videoDuration: nil,
+                        dimensions: nil
+                    )
+                    continuation.resume(returning: item)
                 } catch {
                     continuation.resume(throwing: ImghostError.networkError(underlying: error))
                 }
-            }
-        }
-    }
-
-    private func loadImage() async throws -> (Data, String) {
-        guard let extensionItems = extensionContext?.inputItems as? [NSExtensionItem] else {
-            throw ImghostError.invalidResponse
-        }
-
-        for item in extensionItems {
-            guard let attachments = item.attachments else { continue }
-
-            for provider in attachments {
-                // Try to load as file URL first (preserves original filename)
-                if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-                    if let result = try? await loadFileURL(from: provider) {
-                        return result
-                    }
-                }
-                
-                // Try different content types in order of preference
-                let supportedTypes: [UTType] = [
-                    // Images
-                    .image, .jpeg, .png, .heic, .gif, .webP, .bmp, .tiff,
-                    // Videos
-                    .movie, .video, .mpeg4Movie, .quickTimeMovie, .avi,
-                    // Audio
-                    .audio, .mp3, .wav, .mpeg4Audio,
-                    // Documents
-                    .pdf, .plainText, .rtf, .html,
-                    // Archives
-                    .zip, .gzip,
-                    // Data
-                    .json, .xml, .data
-                ]
-
-                for type in supportedTypes {
-                    if provider.hasItemConformingToTypeIdentifier(type.identifier) {
-                        let (data, filename) = try await loadData(from: provider, typeIdentifier: type.identifier)
-                        return (data, filename)
-                    }
-                }
-            }
-        }
-
-        throw ImghostError.invalidResponse
-    }
-
-    private func loadFileURL(from provider: NSItemProvider) async throws -> (Data, String) {
-        return try await withCheckedThrowingContinuation { continuation in
-            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
-                if let error = error {
-                    continuation.resume(throwing: ImghostError.networkError(underlying: error))
-                    return
-                }
-                
-                guard let url = item as? URL else {
-                    continuation.resume(throwing: ImghostError.invalidResponse)
-                    return
-                }
-                
-                do {
-                    let data = try Data(contentsOf: url)
-                    let filename = url.lastPathComponent
-                    continuation.resume(returning: (data, filename))
-                } catch {
-                    continuation.resume(throwing: ImghostError.networkError(underlying: error))
-                }
-            }
-        }
-    }
-
-    private func loadData(from provider: NSItemProvider, typeIdentifier: String) async throws -> (Data, String) {
-        return try await withCheckedThrowingContinuation { continuation in
-            provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
-                if let error = error {
-                    continuation.resume(throwing: ImghostError.networkError(underlying: error))
-                    return
-                }
-
-                guard let data = data else {
-                    continuation.resume(throwing: ImghostError.invalidResponse)
-                    return
-                }
-
-                // Generate filename based on type
-                let filename = self.generateFilename(for: typeIdentifier)
-
-                // Convert HEIC to JPEG for better compatibility
-                if typeIdentifier == UTType.heic.identifier {
-                    if let image = UIImage(data: data),
-                       let jpegData = image.jpegData(compressionQuality: Config.jpegQuality) {
-                        let jpegFilename = filename.replacingOccurrences(of: ".heic", with: ".jpg")
-                        continuation.resume(returning: (jpegData, jpegFilename))
-                        return
-                    }
-                }
-
-                continuation.resume(returning: (data, filename))
             }
         }
     }
