@@ -5,6 +5,7 @@ import StoreKit
 struct ImghostApp: App {
     @StateObject private var authState = AuthState.shared
     @StateObject private var subscriptionState = SubscriptionState.shared
+    @State private var deepLinkToLogin = false
 
     init() {
         // Start listening for StoreKit transactions immediately
@@ -30,6 +31,21 @@ struct ImghostApp: App {
                         await subscriptionState.checkStatus()
                     }
                 }
+                .onOpenURL { url in
+                    handleDeepLink(url)
+                }
+        }
+    }
+
+    private func handleDeepLink(_ url: URL) {
+        // Handle imghost://login - user was redirected from share extension
+        if url.scheme == "imghost" && url.host == "login" {
+            // If already authenticated, the ContentView will show the main app
+            // If not authenticated, ContentView will show LoginView automatically
+            // We just need to ensure we're checking auth status
+            Task {
+                await authState.checkAuthStatus()
+            }
         }
     }
 }

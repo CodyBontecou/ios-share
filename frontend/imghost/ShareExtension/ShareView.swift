@@ -77,6 +77,7 @@ struct ShareView: View {
         case success
         case error
         case notConfigured
+        case sessionExpired
         case storageFull
     }
 
@@ -98,6 +99,8 @@ struct ShareView: View {
                 errorView
             case .notConfigured:
                 notConfiguredView
+            case .sessionExpired:
+                sessionExpiredView
             case .storageFull:
                 storageFullView
             }
@@ -698,16 +701,81 @@ struct ShareView: View {
             
             Spacer()
             
-            Button {
-                dismiss()
-            } label: {
-                Text("DONE")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .tracking(3)
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color.white)
+            VStack(spacing: 0) {
+                Button {
+                    openMainApp()
+                } label: {
+                    Text("OPEN APP")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .tracking(3)
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.white)
+                }
+                
+                Button {
+                    dismiss()
+                } label: {
+                    Text("CANCEL")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .tracking(2)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                }
+            }
+        }
+    }
+
+    private var sessionExpiredView: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            
+            VStack(spacing: 32) {
+                Text("!")
+                    .font(.system(size: 72, weight: .bold))
+                    .foregroundStyle(Color(hex: "FF9500"))
+                
+                VStack(spacing: 12) {
+                    Text("SESSION EXPIRED")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .tracking(2)
+                    
+                    Text("PLEASE LOG IN AGAIN TO CONTINUE UPLOADING")
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+            }
+            
+            Spacer()
+            
+            VStack(spacing: 0) {
+                Button {
+                    openMainApp()
+                } label: {
+                    Text("OPEN APP TO LOGIN")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .tracking(3)
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.white)
+                }
+                
+                Button {
+                    dismiss()
+                } label: {
+                    Text("CANCEL")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .tracking(2)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                }
             }
         }
     }
@@ -796,6 +864,17 @@ struct ShareView: View {
                     } else {
                         updateStorageWarning()
                         state = .ready
+                    }
+                }
+            } catch let error as AuthError {
+                await MainActor.run {
+                    // Check for session-related errors
+                    switch error {
+                    case .sessionExpired, .refreshFailed, .noRefreshToken, .notAuthenticated:
+                        state = .sessionExpired
+                    default:
+                        errorMessage = error.localizedDescription
+                        state = .error
                     }
                 }
             } catch {
@@ -1012,6 +1091,20 @@ struct ShareView: View {
     private func fileExtension(for filename: String) -> String {
         let parts = filename.split(separator: ".")
         return parts.count > 1 ? String(parts.last!) : ""
+    }
+
+    private func openMainApp() {
+        // Open the main app via URL scheme for login
+        guard let url = URL(string: "imghost://login") else {
+            dismiss()
+            return
+        }
+
+        // Share extensions use extensionContext to open URLs
+        extensionContext?.open(url) { success in
+            // Dismiss the share sheet after opening the app
+            self.dismiss()
+        }
     }
 
     private func dismiss() {
