@@ -2,6 +2,6 @@
 // https://help.apple.com/xcode/#/dev745c5c974
 
 // Backend URL for Debug builds
-BACKEND_URL = https:/$()/img-host.costream.workers.dev
+BACKEND_URL = https:/$()/imghost.isolated.tech
 // Alternative for localhost issues: BACKEND_URL = http:/$()/localhost:8787
-// Production: BACKEND_URL = https:/$()/img-host.costream.workers.dev
+// Production: BACKEND_URL = https:/$()/imghost.isolated.tech

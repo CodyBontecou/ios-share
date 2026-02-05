@@ -48,6 +48,6 @@ struct Config {
             return url
         }
         // Fallback to hardcoded production URL if build config not set
-        return "https://img.yourdomain.com"
+        return "https://imghost.isolated.tech"
     }
 }
