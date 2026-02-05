@@ -77,7 +77,7 @@ struct PhotoGridView: View {
             }
         }
         .confirmationDialog(
-            "Delete \(selectedIds.count) image\(selectedIds.count == 1 ? "" : "s")?",
+            "Delete \(selectedIds.count) file\(selectedIds.count == 1 ? "" : "s")?",
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
@@ -86,7 +86,7 @@ struct PhotoGridView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete the selected images from the server.")
+            Text("This will permanently delete the selected files from the server.")
         }
     }
 
@@ -271,7 +271,7 @@ struct JustifiedPhotoItem: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // Thumbnail
+            // Thumbnail or file icon
             if let thumbnailData = record.thumbnailData,
                let uiImage = UIImage(data: thumbnailData) {
                 Image(uiImage: uiImage)
@@ -280,12 +280,25 @@ struct JustifiedPhotoItem: View {
                     .frame(width: width, height: height)
                     .clipped()
             } else {
+                // Show file icon for non-image files
                 Rectangle()
                     .fill(Color.brutalSurface)
                     .frame(width: width, height: height)
                     .overlay {
-                        Text("□")
-                            .brutalTypography(.titleLarge, color: .brutalTextTertiary)
+                        VStack(spacing: 8) {
+                            Image(systemName: fileIcon(for: record.originalFilename ?? record.url))
+                                .font(.system(size: min(width, height) * 0.3))
+                                .foregroundStyle(Color.brutalTextTertiary)
+                            
+                            if let filename = record.originalFilename {
+                                Text(filename)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(Color.brutalTextTertiary)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 4)
+                            }
+                        }
                     }
             }
 
@@ -321,6 +334,65 @@ struct JustifiedPhotoItem: View {
         .onLongPressGesture(minimumDuration: 0.5) {
             onLongPress()
         }
+    }
+    
+    private func fileIcon(for filename: String) -> String {
+        let lowercased = filename.lowercased()
+        
+        // Videos
+        if lowercased.hasSuffix(".mp4") || lowercased.hasSuffix(".mov") ||
+           lowercased.hasSuffix(".avi") || lowercased.hasSuffix(".mkv") ||
+           lowercased.hasSuffix(".webm") || lowercased.hasSuffix(".m4v") {
+            return "film"
+        }
+        
+        // Audio
+        if lowercased.hasSuffix(".mp3") || lowercased.hasSuffix(".wav") ||
+           lowercased.hasSuffix(".m4a") || lowercased.hasSuffix(".aac") ||
+           lowercased.hasSuffix(".flac") || lowercased.hasSuffix(".ogg") {
+            return "waveform"
+        }
+        
+        // Documents
+        if lowercased.hasSuffix(".pdf") {
+            return "doc.richtext"
+        }
+        if lowercased.hasSuffix(".doc") || lowercased.hasSuffix(".docx") {
+            return "doc.text"
+        }
+        if lowercased.hasSuffix(".xls") || lowercased.hasSuffix(".xlsx") {
+            return "tablecells"
+        }
+        if lowercased.hasSuffix(".ppt") || lowercased.hasSuffix(".pptx") {
+            return "slider.horizontal.below.rectangle"
+        }
+        if lowercased.hasSuffix(".txt") || lowercased.hasSuffix(".md") || lowercased.hasSuffix(".rtf") {
+            return "doc.plaintext"
+        }
+        
+        // Archives
+        if lowercased.hasSuffix(".zip") || lowercased.hasSuffix(".gz") ||
+           lowercased.hasSuffix(".tar") || lowercased.hasSuffix(".rar") ||
+           lowercased.hasSuffix(".7z") {
+            return "doc.zipper"
+        }
+        
+        // Code/Data
+        if lowercased.hasSuffix(".json") || lowercased.hasSuffix(".xml") ||
+           lowercased.hasSuffix(".html") || lowercased.hasSuffix(".css") ||
+           lowercased.hasSuffix(".js") || lowercased.hasSuffix(".swift") ||
+           lowercased.hasSuffix(".py") || lowercased.hasSuffix(".ts") {
+            return "curlybraces"
+        }
+        
+        // Images (fallback if no thumbnail was generated)
+        if lowercased.hasSuffix(".jpg") || lowercased.hasSuffix(".jpeg") ||
+           lowercased.hasSuffix(".png") || lowercased.hasSuffix(".gif") ||
+           lowercased.hasSuffix(".webp") || lowercased.hasSuffix(".heic") {
+            return "photo"
+        }
+        
+        return "doc"
     }
 }
 

@@ -1,9 +1,11 @@
 import SwiftUI
 import UIKit
+import AVFoundation
 
 struct ShareView: View {
     let extensionContext: NSExtensionContext?
     let loadImage: () async throws -> (Data, String)
+    let loadFileURL: () async throws -> (URL, String, Int64)
 
     @State private var state: ShareState = .loading
     @State private var progress: Double = 0
@@ -12,22 +14,58 @@ struct ShareView: View {
     @State private var previewImage: UIImage?
     @State private var pendingFileData: Data?
     @State private var pendingFilename: String?
+    @State private var pendingFileURL: URL?  // For large file uploads
     @State private var fileSizeMB: Double = 0
     @State private var isMediaFile: Bool = true
+    @State private var isLargeFile: Bool = false  // Use file-based upload for large files
     @State private var selectedQuality: UploadQuality = UploadQualityService.shared.currentQuality
     @State private var estimatedSize: String = ""
     @State private var currentUser: User?
     @State private var storageWarning: String?
     @State private var wouldExceedStorage: Bool = false
+    @State private var compressionStatus: String = ""
+    @State private var needsCompression: Bool = false  // File exceeds 100MB limit
+    
+    // Compression control sliders (images)
+    @State private var compressionQuality: Double = 0.8  // 0.1 to 1.0
+    @State private var maxDimensionIndex: Int = 0  // Index into dimensionOptions
+    @State private var estimatedCompressedSize: Double = 0  // MB
+    @State private var isCalculatingSize: Bool = false
+    @State private var originalImageDimensions: CGSize = .zero
+    
+    // Video compression controls
+    @State private var isVideoFile: Bool = false
+    @State private var selectedVideoPreset: UploadQualityService.VideoQualityPreset = .medium
+    @State private var videoDuration: Double = 0
+    @State private var videoDimensions: CGSize = .zero
+    
+    // Dimension options for images (nil = original)
+    private let dimensionOptions: [(label: String, value: CGFloat?)] = [
+        ("Original", nil),
+        ("8K (8192px)", 8192),
+        ("6K (6144px)", 6144),
+        ("4K (4096px)", 4096),
+        ("3K (3072px)", 3072),
+        ("2K (2048px)", 2048),
+        ("1080p (1920px)", 1920),
+        ("1K (1024px)", 1024),
+    ]
+    
+    // Threshold for using file-based upload (50MB)
+    private let largeFileThreshold: Int64 = 50 * 1024 * 1024
+    // Maximum upload size (100MB backend limit)
+    private var maxUploadSize: Int64 { Config.maxUploadSizeBytes }
 
     private enum ShareState {
         case loading
         case ready
+        case compressing
         case uploading
         case success
         case error
         case notConfigured
         case storageFull
+        case fileTooLarge  // File exceeds limit and can't be compressed
     }
 
     var body: some View {
@@ -59,6 +97,12 @@ struct ShareView: View {
 
                 case .storageFull:
                     storageFullView
+
+                case .compressing:
+                    compressingView
+
+                case .fileTooLarge:
+                    fileTooLargeView
                 }
             }
             .padding(24)
@@ -88,11 +132,21 @@ struct ShareView: View {
         VStack(spacing: 16) {
             // Preview
             if let image = previewImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 120)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                ZStack {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    
+                    // Video play indicator
+                    if isVideoFile {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 36))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .shadow(radius: 2)
+                    }
+                }
             } else if let filename = pendingFilename {
                 VStack(spacing: 8) {
                     Image(systemName: fileIcon(for: filename))
@@ -110,8 +164,8 @@ struct ShareView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            // Quality picker (only for images)
-            if isMediaFile && previewImage != nil {
+            // Quality picker (only for small images - large files skip compression)
+            if isMediaFile && previewImage != nil && !isLargeFile && !needsCompression {
                 VStack(spacing: 8) {
                     Text("Quality")
                         .font(.caption)
@@ -131,6 +185,11 @@ struct ShareView: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
+            }
+            
+            // Compression controls for oversized files
+            if needsCompression {
+                compressionControlsView
             }
 
             // Storage warning
@@ -152,7 +211,7 @@ struct ShareView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(wouldExceedStorage)
+            .disabled(wouldExceedStorage || (needsCompression && (estimatedCompressedSize > 100 || isCalculatingSize)))
 
             Button("Cancel") {
                 dismiss()
@@ -327,6 +386,292 @@ struct ShareView: View {
         }
     }
 
+    private var compressionControlsView: some View {
+        VStack(spacing: 12) {
+            // Header
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.caption)
+                Text("Compression Required")
+                    .font(.caption.bold())
+            }
+            .foregroundStyle(.orange)
+            
+            if isVideoFile {
+                // Video compression controls
+                videoCompressionControls
+            } else {
+                // Image compression controls
+                imageCompressionControls
+            }
+            
+            // Estimated size display
+            HStack {
+                if isCalculatingSize {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("Calculating...")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    let exceedsLimit = estimatedCompressedSize > 100
+                    Image(systemName: exceedsLimit ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(exceedsLimit ? .red : .green)
+                    Text(String(format: "Estimated: %.1f MB", estimatedCompressedSize))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(exceedsLimit ? .red : .primary)
+                    
+                    if exceedsLimit {
+                        Text("(exceeds 100MB)")
+                            .font(.caption2)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .onAppear {
+            if isVideoFile {
+                loadVideoInfo()
+                calculateEstimatedVideoSize()
+            } else {
+                loadOriginalImageDimensions()
+                calculateEstimatedSize()
+            }
+        }
+    }
+    
+    private var imageCompressionControls: some View {
+        VStack(spacing: 12) {
+            // Original dimensions info
+            if originalImageDimensions != .zero {
+                Text("Original: \(Int(originalImageDimensions.width))×\(Int(originalImageDimensions.height))")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            // Quality slider
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Quality")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(Int(compressionQuality * 100))%")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                
+                Slider(value: $compressionQuality, in: 0.1...1.0, step: 0.05)
+                    .onChange(of: compressionQuality) { _, _ in
+                        calculateEstimatedSize()
+                    }
+                
+                HStack {
+                    Text("Smaller")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    Spacer()
+                    Text("Better")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            
+            // Dimension picker
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Max Size")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(dimensionOptions[maxDimensionIndex].label)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Slider(
+                    value: Binding(
+                        get: { Double(maxDimensionIndex) },
+                        set: { maxDimensionIndex = Int($0) }
+                    ),
+                    in: 0...Double(dimensionOptions.count - 1),
+                    step: 1
+                )
+                .onChange(of: maxDimensionIndex) { _, _ in
+                    calculateEstimatedSize()
+                }
+                
+                HStack {
+                    Text("Original")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    Spacer()
+                    Text("Smaller")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+    }
+    
+    private var videoCompressionControls: some View {
+        VStack(spacing: 12) {
+            // Video info
+            VStack(spacing: 4) {
+                if videoDimensions != .zero {
+                    Text("Original: \(Int(videoDimensions.width))×\(Int(videoDimensions.height))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                if videoDuration > 0 {
+                    Text("Duration: \(formatDuration(videoDuration))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            
+            // Quality preset picker
+            VStack(spacing: 8) {
+                Text("Video Quality")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Picker("Quality", selection: $selectedVideoPreset) {
+                    ForEach(UploadQualityService.VideoQualityPreset.allCases, id: \.self) { preset in
+                        Text(preset.displayName).tag(preset)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: selectedVideoPreset) { _, _ in
+                    calculateEstimatedVideoSize()
+                }
+            }
+            
+            // Quality description
+            Text(videoPresetDescription)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+        }
+    }
+    
+    private var videoPresetDescription: String {
+        switch selectedVideoPreset {
+        case .high:
+            return "Best quality, larger file size"
+        case .medium:
+            return "Good balance of quality and size"
+        case .low:
+            return "Smaller file, reduced quality"
+        case .veryLow:
+            return "Smallest file, lowest quality"
+        }
+    }
+    
+    private func formatDuration(_ seconds: Double) -> String {
+        let mins = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        if mins > 0 {
+            return "\(mins)m \(secs)s"
+        } else {
+            return "\(secs)s"
+        }
+    }
+
+    private var compressingView: some View {
+        VStack(spacing: 16) {
+            // Preview (image or video thumbnail)
+            if let image = previewImage {
+                ZStack {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    
+                    // Video indicator
+                    if isVideoFile {
+                        Image(systemName: "video.fill")
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                }
+            }
+
+            Text(isVideoFile ? "Compressing Video..." : "Compressing...")
+                .font(.headline)
+            
+            // Progress bar for video compression
+            if isVideoFile && progress > 0 {
+                VStack(spacing: 8) {
+                    ProgressView(value: progress)
+                        .progressViewStyle(.linear)
+                    
+                    Text("\(Int(progress * 100))%")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                ProgressView()
+                    .scaleEffect(1.2)
+            }
+
+            Text(compressionStatus.isEmpty ? "Reducing file size to fit 100MB limit" : compressionStatus)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Cancel") {
+                dismiss()
+            }
+            .foregroundStyle(.red)
+        }
+    }
+
+    private var fileTooLargeView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 50))
+                .foregroundStyle(.red)
+
+            Text("File Too Large")
+                .font(.headline)
+
+            VStack(spacing: 4) {
+                Text("This file is \(String(format: "%.0f MB", fileSizeMB)) and exceeds the 100MB limit.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let filename = pendingFilename {
+                    let canCompress = UploadQualityService.shared.canCompress(filename: filename)
+                    if !canCompress {
+                        Text("This file type cannot be compressed.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Could not compress below the size limit.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .multilineTextAlignment(.center)
+            .padding(.horizontal)
+
+            Button("Done") {
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+
     // MARK: - Actions
 
     private func prepareUpload() {
@@ -340,18 +685,19 @@ struct ShareView: View {
 
         Task {
             do {
-                // Fetch user info and file data concurrently
-                async let userTask = AuthService.shared.getCurrentUser()
-                async let fileTask = loadImage()
-
-                let (user, (fileData, filename)) = try await (userTask, fileTask)
-
-                // Store for later use
+                // First, get user info
+                let user = try await AuthService.shared.getCurrentUser()
+                
+                // Load file URL to check size first
+                let (fileURL, filename, fileSize) = try await loadFileURL()
+                
                 await MainActor.run {
                     currentUser = user
-                    pendingFileData = fileData
                     pendingFilename = filename
-                    fileSizeMB = Double(fileData.count) / (1024 * 1024)
+                    pendingFileURL = fileURL
+                    fileSizeMB = Double(fileSize) / (1024 * 1024)
+                    isLargeFile = fileSize >= largeFileThreshold
+                    needsCompression = fileSize > maxUploadSize
 
                     // Determine if this is a media file (image)
                     let lowercased = filename.lowercased()
@@ -359,20 +705,67 @@ struct ShareView: View {
                                   lowercased.hasSuffix(".png") || lowercased.hasSuffix(".gif") ||
                                   lowercased.hasSuffix(".heic") || lowercased.hasSuffix(".webp") ||
                                   lowercased.hasSuffix(".bmp") || lowercased.hasSuffix(".tiff")
-
-                    // Create preview for images
-                    if isMediaFile, let image = UIImage(data: fileData) {
-                        previewImage = image
+                    
+                    // Check if this is a video file
+                    isVideoFile = UploadQualityService.shared.isVideo(filename: filename)
+                }
+                
+                // Generate preview for media files
+                let isVideo = UploadQualityService.shared.isVideo(filename: filename)
+                
+                if isVideo {
+                    // Generate video thumbnail
+                    let thumbnail = await generateVideoThumbnail(fileURL: fileURL)
+                    await MainActor.run {
+                        previewImage = thumbnail
                     }
+                } else if !isLargeFile || isMediaFile {
+                    // For small files or images that need preview, load into memory
+                    // Only load data for preview/small files (up to 100MB for images to show preview)
+                    if fileSize < 100 * 1024 * 1024 {
+                        let fileData = try Data(contentsOf: fileURL)
+                        
+                        await MainActor.run {
+                            pendingFileData = fileData
+                            
+                            // Create preview for images
+                            if isMediaFile, let image = UIImage(data: fileData) {
+                                previewImage = image
+                            }
+                        }
+                    } else {
+                        // For very large files, generate thumbnail without loading full file
+                        await MainActor.run {
+                            if isMediaFile {
+                                previewImage = generateThumbnailFromURL(fileURL)
+                            }
+                        }
+                    }
+                }
 
+                await MainActor.run {
+                    // Check if file exceeds 100MB backend limit
+                    if fileSize > maxUploadSize {
+                        let canCompress = UploadQualityService.shared.canCompress(filename: filename)
+                        if canCompress {
+                            // Image can be compressed - go to ready state with compression notice
+                            needsCompression = true
+                            state = .ready
+                        } else {
+                            // Non-compressible file that's too large
+                            state = .fileTooLarge
+                        }
+                        return
+                    }
+                    
                     // Check if file would exceed storage (at original size)
-                    if !user.canUpload(bytes: fileData.count) {
+                    if !user.canUpload(bytes: Int(fileSize)) {
                         // Check if any quality setting could make it fit
-                        if isMediaFile && previewImage != nil {
+                        if isMediaFile && previewImage != nil && !isLargeFile {
                             // Maybe compression will help - go to ready state
                             state = .ready
                         } else {
-                            // Non-compressible file that won't fit
+                            // Non-compressible file or large file that won't fit
                             state = .storageFull
                         }
                     } else {
@@ -388,9 +781,149 @@ struct ShareView: View {
             }
         }
     }
+    
+    /// Generate thumbnail from file URL without loading entire file
+    private func generateThumbnailFromURL(_ url: URL) -> UIImage? {
+        guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+            return nil
+        }
+        
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: 400,
+            kCGImageSourceCreateThumbnailWithTransform: true
+        ]
+        
+        guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
+            return nil
+        }
+        
+        return UIImage(cgImage: thumbnail)
+    }
+    
+    /// Generate thumbnail from video file
+    private func generateVideoThumbnail(fileURL: URL) async -> UIImage? {
+        let asset = AVURLAsset(url: fileURL)
+        let imageGenerator = AVAssetImageGenerator(asset: asset)
+        imageGenerator.appliesPreferredTrackTransform = true
+        imageGenerator.maximumSize = CGSize(width: 400, height: 400)
+        
+        do {
+            let cgImage = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
+            return UIImage(cgImage: cgImage)
+        } catch {
+            return nil
+        }
+    }
+    
+    /// Load original image dimensions for display
+    private func loadOriginalImageDimensions() {
+        guard let fileURL = pendingFileURL else { return }
+        
+        Task.detached {
+            guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil),
+                  let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any],
+                  let width = properties[kCGImagePropertyPixelWidth] as? CGFloat,
+                  let height = properties[kCGImagePropertyPixelHeight] as? CGFloat else {
+                return
+            }
+            
+            await MainActor.run {
+                originalImageDimensions = CGSize(width: width, height: height)
+            }
+        }
+    }
+    
+    /// Calculate estimated compressed size based on current slider settings
+    private func calculateEstimatedSize() {
+        guard let fileURL = pendingFileURL else { return }
+        
+        isCalculatingSize = true
+        
+        // Debounce the calculation
+        Task {
+            try? await Task.sleep(nanoseconds: 200_000_000) // 200ms debounce
+            
+            let quality = compressionQuality
+            let maxDim = dimensionOptions[maxDimensionIndex].value
+            
+            let estimatedMB = await Task.detached { () -> Double in
+                // Load image
+                guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil),
+                      let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+                    return 0
+                }
+                
+                var image = UIImage(cgImage: cgImage)
+                
+                // Resize if needed
+                if let maxDimension = maxDim {
+                    image = ImageProcessor.shared.resize(image: image, maxDimension: maxDimension)
+                }
+                
+                // Compress and measure size
+                if let data = image.jpegData(compressionQuality: quality) {
+                    return Double(data.count) / (1024 * 1024)
+                }
+                
+                return 0
+            }.value
+            
+            await MainActor.run {
+                estimatedCompressedSize = estimatedMB
+                isCalculatingSize = false
+            }
+        }
+    }
+    
+    /// Load video information
+    private func loadVideoInfo() {
+        guard let fileURL = pendingFileURL else { return }
+        
+        Task {
+            if let info = await UploadQualityService.shared.getVideoInfo(fileURL: fileURL) {
+                await MainActor.run {
+                    videoDuration = info.duration
+                    videoDimensions = info.dimensions
+                }
+            }
+        }
+    }
+    
+    /// Calculate estimated compressed video size based on selected preset
+    private func calculateEstimatedVideoSize() {
+        isCalculatingSize = true
+        
+        Task {
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms debounce
+            
+            await MainActor.run {
+                estimatedCompressedSize = UploadQualityService.shared.estimateCompressedVideoSize(
+                    originalSizeMB: fileSizeMB,
+                    preset: selectedVideoPreset
+                )
+                isCalculatingSize = false
+            }
+        }
+    }
 
     private func startUpload() {
-        guard let data = pendingFileData, let filename = pendingFilename else { return }
+        guard let filename = pendingFilename else { return }
+
+        // Handle files that need compression (exceed 100MB limit)
+        if needsCompression, let fileURL = pendingFileURL {
+            performCompressedUpload(fileURL: fileURL, filename: filename)
+            return
+        }
+        
+        // For large files (but under 100MB), use file-based upload
+        if isLargeFile, let fileURL = pendingFileURL {
+            performFileUpload(fileURL: fileURL, filename: filename)
+            return
+        }
+        
+        // For small files, use data-based upload with quality processing
+        guard let data = pendingFileData else { return }
 
         // Apply selected quality settings
         let (processedData, processedFilename) = UploadQualityService.shared.processForUpload(
@@ -399,6 +932,173 @@ struct ShareView: View {
             quality: selectedQuality
         )
         performUpload(data: processedData, filename: processedFilename)
+    }
+    
+    /// Compress and upload a file that exceeds the 100MB limit
+    /// Uses the user-selected quality and dimension settings from sliders
+    private func performCompressedUpload(fileURL: URL, filename: String) {
+        state = .compressing
+        compressionStatus = "Preparing..."
+        
+        if isVideoFile {
+            performVideoCompressedUpload(fileURL: fileURL, filename: filename)
+        } else {
+            performImageCompressedUpload(fileURL: fileURL, filename: filename)
+        }
+    }
+    
+    /// Compress and upload an image file
+    private func performImageCompressedUpload(fileURL: URL, filename: String) {
+        compressionStatus = "Applying compression settings..."
+        
+        let quality = compressionQuality
+        let maxDim = dimensionOptions[maxDimensionIndex].value
+        
+        Task {
+            // Perform compression on background thread with user's settings
+            let result = await Task.detached { () -> (Data, String)? in
+                // Load image
+                guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil),
+                      let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+                    return nil
+                }
+                
+                var image = UIImage(cgImage: cgImage)
+                
+                // Resize if max dimension specified
+                if let maxDimension = maxDim {
+                    await MainActor.run {
+                        self.compressionStatus = "Resizing image..."
+                    }
+                    image = ImageProcessor.shared.resize(image: image, maxDimension: maxDimension)
+                }
+                
+                await MainActor.run {
+                    self.compressionStatus = "Compressing..."
+                }
+                
+                // Compress to JPEG with user-selected quality
+                guard let compressedData = image.jpegData(compressionQuality: quality) else {
+                    return nil
+                }
+                
+                // Update filename to .jpg
+                let newFilename = filename.replacingOccurrences(
+                    of: "\\.[^.]+$",
+                    with: ".jpg",
+                    options: .regularExpression
+                )
+                
+                let sizeMB = Double(compressedData.count) / (1024 * 1024)
+                await MainActor.run {
+                    self.compressionStatus = String(format: "Compressed to %.1f MB", sizeMB)
+                }
+                
+                return (compressedData, newFilename)
+            }.value
+            
+            await MainActor.run {
+                if let (compressedData, compressedFilename) = result {
+                    // Compression succeeded, now upload
+                    performUpload(data: compressedData, filename: compressedFilename)
+                } else {
+                    // Compression failed
+                    errorMessage = "Failed to compress image"
+                    state = .error
+                }
+            }
+        }
+    }
+    
+    /// Compress and upload a video file
+    private func performVideoCompressedUpload(fileURL: URL, filename: String) {
+        compressionStatus = "Starting video compression..."
+        progress = 0
+        
+        let preset = selectedVideoPreset
+        
+        Task {
+            let compressedURL = await UploadQualityService.shared.compressVideo(
+                fileURL: fileURL,
+                preset: preset
+            ) { status, progressValue in
+                Task { @MainActor in
+                    self.compressionStatus = status
+                    if let p = progressValue {
+                        self.progress = p * 0.5 // First half is compression
+                    }
+                }
+            }
+            
+            await MainActor.run {
+                if let outputURL = compressedURL {
+                    // Update filename to .mp4
+                    let newFilename = filename.replacingOccurrences(
+                        of: "\\.[^.]+$",
+                        with: ".mp4",
+                        options: .regularExpression
+                    )
+                    
+                    // Upload the compressed video file
+                    performFileUploadWithCleanup(fileURL: outputURL, filename: newFilename)
+                } else {
+                    errorMessage = "Failed to compress video"
+                    state = .error
+                }
+            }
+        }
+    }
+    
+    /// Upload a file and clean up after completion
+    private func performFileUploadWithCleanup(fileURL: URL, filename: String) {
+        state = .uploading
+        compressionStatus = ""
+        
+        Task {
+            do {
+                let record = try await UploadService.shared.uploadFromFile(
+                    fileURL: fileURL,
+                    filename: filename
+                ) { uploadProgress in
+                    Task { @MainActor in
+                        // Second half is upload (0.5 to 1.0)
+                        self.progress = 0.5 + (uploadProgress * 0.5)
+                    }
+                }
+                
+                // Copy formatted URL to clipboard
+                await MainActor.run {
+                    let formattedLink = LinkFormatService.shared.format(
+                        url: record.url,
+                        filename: record.originalFilename
+                    )
+                    UIPasteboard.general.string = formattedLink
+                }
+                
+                // Play haptic feedback
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+                
+                // Save to history
+                try? HistoryService.shared.save(record)
+                
+                await MainActor.run {
+                    uploadedURL = record.url
+                    state = .success
+                }
+                
+                // Clean up temp file
+                try? FileManager.default.removeItem(at: fileURL)
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    state = .error
+                }
+                
+                // Clean up temp file on error too
+                try? FileManager.default.removeItem(at: fileURL)
+            }
+        }
     }
 
     private func updateEstimatedSize() {
@@ -409,8 +1109,22 @@ struct ShareView: View {
             return
         }
 
-        if !isMediaFile || previewImage == nil {
-            estimatedSize = "No compression for this file type"
+        // Files that need compression to fit under 100MB limit
+        if needsCompression {
+            estimatedSize = "Will be compressed to fit limit"
+            // Can't accurately predict final size, assume it will fit
+            wouldExceedStorage = false
+            storageWarning = nil
+            return
+        }
+
+        // Large files or non-image files don't get compression
+        if isLargeFile || !isMediaFile || previewImage == nil {
+            if isLargeFile {
+                estimatedSize = "Large file - uploading original"
+            } else {
+                estimatedSize = "No compression for this file type"
+            }
             // Check storage for non-compressible files
             if let user = currentUser {
                 let fileBytes = Int(fileSizeMB * 1024 * 1024)
@@ -552,6 +1266,58 @@ struct ShareView: View {
             }
         }
     }
+    
+    /// Upload using file URL (for large files to avoid memory issues)
+    private func performFileUpload(fileURL: URL, filename: String) {
+        state = .uploading
+        progress = 0
+
+        Task {
+            do {
+                // Upload using file-based method
+                let record = try await UploadService.shared.uploadFromFile(
+                    fileURL: fileURL,
+                    filename: filename
+                ) { uploadProgress in
+                    Task { @MainActor in
+                        progress = uploadProgress
+                    }
+                }
+
+                // Copy formatted URL to clipboard immediately
+                await MainActor.run {
+                    let formattedLink = LinkFormatService.shared.format(
+                        url: record.url,
+                        filename: record.originalFilename
+                    )
+                    UIPasteboard.general.string = formattedLink
+                }
+
+                // Play haptic feedback
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+
+                // Save to history
+                try? HistoryService.shared.save(record)
+
+                await MainActor.run {
+                    uploadedURL = record.url
+                    state = .success
+                }
+                
+                // Clean up temp file
+                try? FileManager.default.removeItem(at: fileURL)
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    state = .error
+                }
+                
+                // Clean up temp file on error too
+                try? FileManager.default.removeItem(at: fileURL)
+            }
+        }
+    }
 
     private func dismiss() {
         extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
@@ -565,6 +1331,13 @@ struct ShareView: View {
             // Return mock data for preview
             let image = UIImage(systemName: "photo")!
             return (image.pngData()!, "test.png")
+        },
+        loadFileURL: {
+            // Return mock file URL for preview
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("test.png")
+            let image = UIImage(systemName: "photo")!
+            try? image.pngData()?.write(to: tempURL)
+            return (tempURL, "test.png", 1024)
         }
     )
 }

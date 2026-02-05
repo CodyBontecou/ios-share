@@ -33,9 +33,27 @@ export class ContentModerator {
    */
   async validateFileType(
     file: File,
-    allowedTypes: string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif']
+    allowedTypes: string[] = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif',
+      'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
+      'audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/ogg',
+      'application/pdf', 'application/zip', 'application/gzip', 'application/json',
+      'application/octet-stream', 'text/plain', 'text/html', 'text/css'
+    ]
   ): Promise<{ valid: boolean; detectedType: string | null; reason?: string }> {
-    // Check MIME type first
+    // For non-image types, skip magic byte validation (just check MIME)
+    if (!file.type.startsWith('image/')) {
+      const allowedPrefixes = ['video/', 'audio/', 'application/', 'text/'];
+      const isAllowed = allowedTypes.includes(file.type) || 
+                       allowedPrefixes.some(prefix => file.type.startsWith(prefix));
+      return {
+        valid: isAllowed,
+        detectedType: file.type,
+        reason: isAllowed ? undefined : `MIME type ${file.type} not allowed`,
+      };
+    }
+    
+    // Check MIME type first for images
     if (!allowedTypes.includes(file.type)) {
       return {
         valid: false,

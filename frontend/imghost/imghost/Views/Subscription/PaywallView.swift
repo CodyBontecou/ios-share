@@ -138,7 +138,7 @@ struct PaywallView: View {
                         ProductCard(
                             product: annual,
                             isSelected: selectedProduct?.id == annual.id,
-                            badge: "SAVE 33%"
+                            badge: "SAVE 50%"
                         ) {
                             selectedProduct = annual
                         }

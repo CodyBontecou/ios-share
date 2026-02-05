@@ -43,7 +43,7 @@ struct ContentView: View {
                 TabView(selection: $selectedTab) {
                     HistoryView()
                         .tabItem {
-                            Label("Photos", systemImage: "photo.on.rectangle.angled")
+                            Label("Media", systemImage: "square.grid.2x2")
                         }
                         .tag(0)
 

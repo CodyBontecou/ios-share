@@ -10,6 +10,16 @@ final class UploadService: NSObject {
     // For tracking upload progress
     private var progressHandler: ((Double) -> Void)?
     private var uploadTask: URLSessionUploadTask?
+    private var uploadContinuation: CheckedContinuation<(Data, URLResponse), Error>?
+    
+    // Background session for large file uploads (share extension)
+    private lazy var backgroundSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 300 // 5 minutes
+        config.timeoutIntervalForResource = 600 // 10 minutes
+        config.waitsForConnectivity = true
+        return URLSession(configuration: config, delegate: self, delegateQueue: nil)
+    }()
 
     // Test mode for UI development
     var testMode = false
@@ -138,6 +148,193 @@ final class UploadService: NSObject {
         )
     }
 
+    // MARK: - File-based Upload (for large files / share extension)
+    
+    /// Upload a file from URL - uses streaming to avoid memory issues with large files
+    func uploadFromFile(
+        fileURL: URL,
+        filename: String,
+        progressHandler: ((Double) -> Void)? = nil
+    ) async throws -> UploadRecord {
+        // Test mode for UI development
+        if testMode {
+            let data = try Data(contentsOf: fileURL)
+            return try await mockUpload(imageData: data, filename: filename, progressHandler: progressHandler)
+        }
+
+        self.progressHandler = progressHandler
+
+        // Get configuration
+        let backendUrl = Config.backendURL
+        guard !backendUrl.isEmpty else {
+            throw ImghostError.notConfigured
+        }
+
+        // Ensure we have a valid token, refresh if needed
+        try await AuthService.shared.ensureValidToken()
+
+        guard let token = keychainService.loadAccessToken() else {
+            throw ImghostError.notConfigured
+        }
+
+        guard let url = URL(string: "\(backendUrl)/upload") else {
+            throw ImghostError.invalidURL
+        }
+
+        // Create multipart body as temp file to avoid memory issues
+        let boundary = UUID().uuidString
+        let tempFileURL = try createMultipartBodyFile(fileURL: fileURL, filename: filename, boundary: boundary)
+        
+        defer {
+            // Clean up temp file
+            try? FileManager.default.removeItem(at: tempFileURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 600 // 10 minutes for large files
+
+        // Perform upload with progress tracking using file-based upload
+        let (data, response) = try await uploadFileWithProgress(request: request, fileURL: tempFileURL)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ImghostError.invalidResponse
+        }
+
+        // Handle 401 - try to refresh token and retry once
+        if httpResponse.statusCode == 401 {
+            try await AuthService.shared.refreshTokens()
+            guard let newToken = keychainService.loadAccessToken() else {
+                throw ImghostError.notConfigured
+            }
+
+            // Retry with new token
+            var retryRequest = request
+            retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+            let (retryData, retryResponse) = try await uploadFileWithProgress(request: retryRequest, fileURL: tempFileURL)
+
+            guard let retryHttpResponse = retryResponse as? HTTPURLResponse else {
+                throw ImghostError.invalidResponse
+            }
+
+            guard retryHttpResponse.statusCode == 200 else {
+                let message = String(data: retryData, encoding: .utf8)
+                throw ImghostError.uploadFailed(statusCode: retryHttpResponse.statusCode, message: message)
+            }
+
+            // Read a small chunk for thumbnail only
+            let thumbnailData = generateThumbnailFromFile(fileURL: fileURL)
+            return try parseUploadResponseWithThumbnail(data: retryData, thumbnailData: thumbnailData, filename: filename)
+        }
+
+        // Handle 403 - email verification required
+        if httpResponse.statusCode == 403 {
+            throw ImghostError.emailVerificationRequired
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            let message = String(data: data, encoding: .utf8)
+            throw ImghostError.uploadFailed(statusCode: httpResponse.statusCode, message: message)
+        }
+
+        // Read a small chunk for thumbnail only
+        let thumbnailData = generateThumbnailFromFile(fileURL: fileURL)
+        return try parseUploadResponseWithThumbnail(data: data, thumbnailData: thumbnailData, filename: filename)
+    }
+    
+    /// Create multipart body as a temp file (streaming, no memory pressure)
+    private func createMultipartBodyFile(fileURL: URL, filename: String, boundary: String) throws -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        let tempFileURL = tempDir.appendingPathComponent(UUID().uuidString + ".multipart")
+        
+        FileManager.default.createFile(atPath: tempFileURL.path, contents: nil)
+        let fileHandle = try FileHandle(forWritingTo: tempFileURL)
+        
+        defer {
+            try? fileHandle.close()
+        }
+        
+        let contentType = mimeType(for: filename)
+        
+        // Write header
+        let header = "--\(boundary)\r\nContent-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\nContent-Type: \(contentType)\r\n\r\n"
+        fileHandle.write(header.data(using: .utf8)!)
+        
+        // Stream file content in chunks
+        let inputHandle = try FileHandle(forReadingFrom: fileURL)
+        defer {
+            try? inputHandle.close()
+        }
+        
+        let chunkSize = 1024 * 1024 // 1MB chunks
+        while autoreleasepool(invoking: {
+            let chunk = inputHandle.readData(ofLength: chunkSize)
+            if chunk.isEmpty {
+                return false
+            }
+            fileHandle.write(chunk)
+            return true
+        }) {}
+        
+        // Write footer
+        let footer = "\r\n--\(boundary)--\r\n"
+        fileHandle.write(footer.data(using: .utf8)!)
+        
+        return tempFileURL
+    }
+    
+    /// Upload from file URL with progress tracking
+    private func uploadFileWithProgress(request: URLRequest, fileURL: URL) async throws -> (Data, URLResponse) {
+        try await withCheckedThrowingContinuation { continuation in
+            self.uploadContinuation = continuation
+            let task = backgroundSession.uploadTask(with: request, fromFile: fileURL)
+            self.uploadTask = task
+            task.resume()
+        }
+    }
+    
+    /// Generate thumbnail from file without loading entire file into memory
+    private func generateThumbnailFromFile(fileURL: URL) -> Data? {
+        // For images, try to load and generate thumbnail
+        // For non-images, return nil
+        guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil) else {
+            return nil
+        }
+        
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: Config.thumbnailSize,
+            kCGImageSourceCreateThumbnailWithTransform: true
+        ]
+        
+        guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
+            return nil
+        }
+        
+        let uiImage = UIImage(cgImage: thumbnail)
+        return uiImage.jpegData(compressionQuality: Config.thumbnailQuality)
+    }
+    
+    private func parseUploadResponseWithThumbnail(data: Data, thumbnailData: Data?, filename: String) throws -> UploadRecord {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let id = json["id"] as? String,
+              let urlString = json["url"] as? String,
+              let deleteUrl = json["deleteUrl"] as? String else {
+            throw ImghostError.invalidResponse
+        }
+
+        return UploadRecord(
+            id: id,
+            url: urlString,
+            deleteUrl: deleteUrl,
+            thumbnailData: thumbnailData,
+            createdAt: Date(),
+            originalFilename: filename
+        )
+    }
+
     // MARK: - Delete
 
     func delete(record: UploadRecord) async throws {
@@ -216,20 +413,10 @@ final class UploadService: NSObject {
     private func createMultipartBody(imageData: Data, filename: String, boundary: String) -> Data {
         var body = Data()
 
-        // Determine content type based on filename
-        let contentType: String
-        let lowercasedFilename = filename.lowercased()
-        if lowercasedFilename.hasSuffix(".png") {
-            contentType = "image/png"
-        } else if lowercasedFilename.hasSuffix(".gif") {
-            contentType = "image/gif"
-        } else if lowercasedFilename.hasSuffix(".webp") {
-            contentType = "image/webp"
-        } else {
-            contentType = "image/jpeg"
-        }
+        // Determine content type based on filename extension
+        let contentType = mimeType(for: filename)
 
-        // Add file part
+        // Add file part - backend expects "image" field name
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: \(contentType)\r\n\r\n".data(using: .utf8)!)
@@ -240,6 +427,73 @@ final class UploadService: NSObject {
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         return body
+    }
+
+    private func mimeType(for filename: String) -> String {
+        let lowercased = filename.lowercased()
+        
+        // Images
+        if lowercased.hasSuffix(".jpg") || lowercased.hasSuffix(".jpeg") { return "image/jpeg" }
+        if lowercased.hasSuffix(".png") { return "image/png" }
+        if lowercased.hasSuffix(".gif") { return "image/gif" }
+        if lowercased.hasSuffix(".webp") { return "image/webp" }
+        if lowercased.hasSuffix(".heic") { return "image/heic" }
+        if lowercased.hasSuffix(".heif") { return "image/heif" }
+        if lowercased.hasSuffix(".bmp") { return "image/bmp" }
+        if lowercased.hasSuffix(".tiff") || lowercased.hasSuffix(".tif") { return "image/tiff" }
+        if lowercased.hasSuffix(".svg") { return "image/svg+xml" }
+        if lowercased.hasSuffix(".ico") { return "image/x-icon" }
+        
+        // Videos
+        if lowercased.hasSuffix(".mp4") { return "video/mp4" }
+        if lowercased.hasSuffix(".mov") { return "video/quicktime" }
+        if lowercased.hasSuffix(".m4v") { return "video/x-m4v" }
+        if lowercased.hasSuffix(".avi") { return "video/x-msvideo" }
+        if lowercased.hasSuffix(".webm") { return "video/webm" }
+        if lowercased.hasSuffix(".mkv") { return "video/x-matroska" }
+        if lowercased.hasSuffix(".flv") { return "video/x-flv" }
+        if lowercased.hasSuffix(".wmv") { return "video/x-ms-wmv" }
+        if lowercased.hasSuffix(".mpeg") || lowercased.hasSuffix(".mpg") { return "video/mpeg" }
+        
+        // Audio
+        if lowercased.hasSuffix(".mp3") { return "audio/mpeg" }
+        if lowercased.hasSuffix(".wav") { return "audio/wav" }
+        if lowercased.hasSuffix(".m4a") { return "audio/mp4" }
+        if lowercased.hasSuffix(".aac") { return "audio/aac" }
+        if lowercased.hasSuffix(".ogg") { return "audio/ogg" }
+        if lowercased.hasSuffix(".flac") { return "audio/flac" }
+        if lowercased.hasSuffix(".aiff") || lowercased.hasSuffix(".aif") { return "audio/aiff" }
+        if lowercased.hasSuffix(".wma") { return "audio/x-ms-wma" }
+        
+        // Documents
+        if lowercased.hasSuffix(".pdf") { return "application/pdf" }
+        if lowercased.hasSuffix(".doc") { return "application/msword" }
+        if lowercased.hasSuffix(".docx") { return "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }
+        if lowercased.hasSuffix(".xls") { return "application/vnd.ms-excel" }
+        if lowercased.hasSuffix(".xlsx") { return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+        if lowercased.hasSuffix(".ppt") { return "application/vnd.ms-powerpoint" }
+        if lowercased.hasSuffix(".pptx") { return "application/vnd.openxmlformats-officedocument.presentationml.presentation" }
+        if lowercased.hasSuffix(".txt") { return "text/plain" }
+        if lowercased.hasSuffix(".rtf") { return "application/rtf" }
+        if lowercased.hasSuffix(".csv") { return "text/csv" }
+        if lowercased.hasSuffix(".md") { return "text/markdown" }
+        
+        // Web
+        if lowercased.hasSuffix(".html") || lowercased.hasSuffix(".htm") { return "text/html" }
+        if lowercased.hasSuffix(".css") { return "text/css" }
+        if lowercased.hasSuffix(".js") { return "application/javascript" }
+        if lowercased.hasSuffix(".json") { return "application/json" }
+        if lowercased.hasSuffix(".xml") { return "application/xml" }
+        
+        // Archives
+        if lowercased.hasSuffix(".zip") { return "application/zip" }
+        if lowercased.hasSuffix(".gz") || lowercased.hasSuffix(".gzip") { return "application/gzip" }
+        if lowercased.hasSuffix(".tar") { return "application/x-tar" }
+        if lowercased.hasSuffix(".rar") { return "application/vnd.rar" }
+        if lowercased.hasSuffix(".7z") { return "application/x-7z-compressed" }
+        
+        // Default
+        return "application/octet-stream"
     }
 
     private func uploadWithProgress(request: URLRequest, bodyData: Data) async throws -> (Data, URLResponse) {
@@ -289,9 +543,12 @@ final class UploadService: NSObject {
     }
 }
 
-// MARK: - URLSessionTaskDelegate
+// MARK: - URLSessionTaskDelegate & URLSessionDataDelegate
 
-extension UploadService: URLSessionTaskDelegate {
+extension UploadService: URLSessionTaskDelegate, URLSessionDataDelegate {
+    // Track response data for file-based uploads
+    private static var responseData = Data()
+    
     func urlSession(
         _ session: URLSession,
         task: URLSessionTask,
@@ -303,5 +560,30 @@ extension UploadService: URLSessionTaskDelegate {
         DispatchQueue.main.async {
             self.progressHandler?(progress)
         }
+    }
+    
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        UploadService.responseData.append(data)
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        defer {
+            UploadService.responseData = Data()
+        }
+        
+        if let error = error {
+            uploadContinuation?.resume(throwing: ImghostError.networkError(underlying: error))
+            uploadContinuation = nil
+            return
+        }
+        
+        guard let response = task.response else {
+            uploadContinuation?.resume(throwing: ImghostError.invalidResponse)
+            uploadContinuation = nil
+            return
+        }
+        
+        uploadContinuation?.resume(returning: (UploadService.responseData, response))
+        uploadContinuation = nil
     }
 }

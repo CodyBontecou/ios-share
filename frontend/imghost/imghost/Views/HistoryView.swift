@@ -24,13 +24,13 @@ struct HistoryView: View {
                         )
                     } else if records.isEmpty {
                         VStack(spacing: 24) {
-                            Text("NO\nPHOTOS\nYET")
+                            Text("NO\nMEDIA\nYET")
                                 .font(.system(size: 48, weight: .black))
                                 .foregroundStyle(.white)
                                 .multilineTextAlignment(.center)
 
                             VStack(spacing: 8) {
-                                Text("Share an image from Photos to get started.")
+                                Text("Upload files to get started.")
                                     .brutalTypography(.bodyMedium, color: .brutalTextSecondary)
                                     .multilineTextAlignment(.center)
 
@@ -58,7 +58,7 @@ struct HistoryView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("PHOTOS")
+                    Text("MEDIA")
                         .brutalTypography(.mono)
                         .tracking(2)
                 }
