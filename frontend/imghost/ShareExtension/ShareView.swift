@@ -615,19 +615,28 @@ struct ShareView: View {
             VStack(spacing: 32) {
                 Text("!")
                     .font(.system(size: 72, weight: .bold))
-                    .foregroundStyle(Color(hex: "FFD60A"))
+                    .foregroundStyle(Color(hex: "FF453A"))
                 
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
                     Text("UPLOAD FAILED")
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundStyle(.white)
                         .tracking(2)
                     
-                    Text(errorMessage.uppercased())
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.4))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+                    // Error message box
+                    ScrollView {
+                        Text(errorMessage)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxHeight: 120)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(Color.white.opacity(0.05))
+                    .overlay(Rectangle().stroke(Color.white.opacity(0.1), lineWidth: 1))
+                    .padding(.horizontal, 20)
                 }
             }
             
@@ -635,6 +644,10 @@ struct ShareView: View {
             
             VStack(spacing: 0) {
                 Button {
+                    // Reset item statuses before retry
+                    for item in items {
+                        item.status = .pending
+                    }
                     state = .ready
                 } label: {
                     Text("RETRY")
@@ -908,23 +921,40 @@ struct ShareView: View {
                 uploadedURLs = successfulUploads
                 overallProgress = 1.0
                 
-                // Copy to clipboard
-                if !successfulUploads.isEmpty {
-                    if successfulUploads.count == 1, let record = items.first(where: { $0.uploadedURL != nil }) {
-                        let formattedLink = LinkFormatService.shared.format(url: record.uploadedURL!, filename: record.filename)
-                        UIPasteboard.general.string = formattedLink
-                    } else {
-                        // Multiple URLs - join with newlines
-                        let formattedLinks = items.compactMap { item -> String? in
-                            guard let url = item.uploadedURL else { return nil }
-                            return LinkFormatService.shared.format(url: url, filename: item.filename)
+                // Check if all uploads failed
+                if successfulUploads.isEmpty {
+                    // Get the first failure message for display
+                    let firstFailure = items.compactMap { item -> String? in
+                        if case .failed(let error) = item.status {
+                            return error
                         }
-                        UIPasteboard.general.string = formattedLinks.joined(separator: "\n")
-                    }
+                        return nil
+                    }.first ?? "Unknown error"
+                    
+                    errorMessage = firstFailure
                     
                     let generator = UINotificationFeedbackGenerator()
-                    generator.notificationOccurred(.success)
+                    generator.notificationOccurred(.error)
+                    
+                    state = .error
+                    return
                 }
+                
+                // Copy to clipboard
+                if successfulUploads.count == 1, let record = items.first(where: { $0.uploadedURL != nil }) {
+                    let formattedLink = LinkFormatService.shared.format(url: record.uploadedURL!, filename: record.filename)
+                    UIPasteboard.general.string = formattedLink
+                } else {
+                    // Multiple URLs - join with newlines
+                    let formattedLinks = items.compactMap { item -> String? in
+                        guard let url = item.uploadedURL else { return nil }
+                        return LinkFormatService.shared.format(url: url, filename: item.filename)
+                    }
+                    UIPasteboard.general.string = formattedLinks.joined(separator: "\n")
+                }
+                
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
                 
                 state = .success
             }

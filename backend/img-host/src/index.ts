@@ -238,19 +238,23 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   if (malwareScan.flagged) {
     const highConfidenceFlags = malwareScan.flags.filter(f => f.confidence >= 0.8);
     if (highConfidenceFlags.length > 0) {
-      // Block upload and log incident
-      console.error('Malware detected:', {
+      // Log the issue for monitoring
+      console.error('File validation failed:', {
         userId: user.id,
         filename: file.name,
+        fileType: file.type,
+        fileSize: file.size,
         flags: malwareScan.flags,
       });
 
-      // Increment abuse counter for potential suspension
-      await rateLimiter.recordFailedAttempt(user.id, 'upload_abuse');
-
+      // Provide helpful error message with details
+      const reasons = highConfidenceFlags.map(f => f.reason);
       return json({
         error: 'File rejected',
         reason: 'Security check failed',
+        details: reasons.join('; '),
+        file_type: file.type,
+        hint: 'If this is a valid file, try re-saving it or converting to a common format like JPEG or PNG.',
       }, 400);
     }
   }

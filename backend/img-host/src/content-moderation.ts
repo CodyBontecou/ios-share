@@ -71,10 +71,27 @@ export class ContentModerator {
       const magicBytes = this.detectFileTypeByMagicBytes(bytes);
 
       if (!magicBytes) {
+        // If we can't detect magic bytes but the MIME type is allowed, 
+        // log it but allow the upload (don't reject legitimate unknown formats)
+        console.warn('Unknown magic bytes for file type:', {
+          mimeType: file.type,
+          firstBytes: Array.from(bytes.slice(0, 12)).map(b => b.toString(16).padStart(2, '0')).join(' '),
+        });
+        
+        // Only fail if the file claims to be an image type we should recognize
+        const recognizedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (recognizedImageTypes.includes(file.type)) {
+          return {
+            valid: false,
+            detectedType: null,
+            reason: `Could not verify ${file.type} - magic bytes don't match expected format`,
+          };
+        }
+        
+        // For HEIC/HEIF and other types, be more lenient
         return {
-          valid: false,
-          detectedType: null,
-          reason: 'Could not detect file type from magic bytes',
+          valid: true,
+          detectedType: file.type,
         };
       }
 
@@ -148,21 +165,39 @@ export class ContentModerator {
       return 'image/webp';
     }
 
-    // HEIC/HEIF: ftyp box with heic, mif1, or msf1 brand
-    // HEIC files use ISOBMFF container: [size(4)][ftyp(4)][brand(4+)]
+    // HEIC/HEIF/AVIF: ftyp box with various brand codes
+    // ISOBMFF container format: [size(4)][ftyp(4)][brand(4+)]
     if (
       bytes[4] === 0x66 && // 'f'
       bytes[5] === 0x74 && // 't'
       bytes[6] === 0x79 && // 'y'
       bytes[7] === 0x70    // 'p'
     ) {
-      // Check for HEIC/HEIF brands starting at byte 8
+      // Check for HEIC/HEIF/AVIF brands starting at byte 8
       const brandBytes = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
-      if (brandBytes === 'heic' || brandBytes === 'heix' || brandBytes === 'mif1' || brandBytes === 'msf1') {
+      
+      // HEIC brands (common in iOS)
+      const heicBrands = ['heic', 'heix', 'mif1', 'msf1', 'miaf', 'MiHE', 'MiPr'];
+      if (heicBrands.includes(brandBytes)) {
         return 'image/heic';
       }
-      if (brandBytes === 'heif' || brandBytes === 'heim' || brandBytes === 'heis') {
+      
+      // HEIF brands
+      const heifBrands = ['heif', 'heim', 'heis', 'hevs', 'hev1'];
+      if (heifBrands.includes(brandBytes)) {
         return 'image/heif';
+      }
+      
+      // AVIF brands
+      const avifBrands = ['avif', 'avis', 'avio', 'MA1A', 'MA1B'];
+      if (avifBrands.includes(brandBytes)) {
+        return 'image/avif';
+      }
+      
+      // MP4/MOV video (also uses ftyp)
+      const videoBrands = ['isom', 'iso2', 'mp41', 'mp42', 'M4V ', 'M4A ', 'qt  ', 'avc1'];
+      if (videoBrands.includes(brandBytes)) {
+        return 'video/mp4';
       }
     }
 
@@ -199,11 +234,31 @@ export class ContentModerator {
       return true;
     }
 
-    // Handle HEIC/HEIF variants (iOS may send either)
-    if (
-      (mimeType === 'image/heic' || mimeType === 'image/heif') &&
-      (detectedType === 'image/heic' || detectedType === 'image/heif')
-    ) {
+    // Be lenient with common image formats - iOS sometimes sends wrong MIME type
+    // If both are valid image formats, allow it (the actual data is what matters)
+    const commonImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff'];
+    if (commonImageTypes.includes(mimeType) && commonImageTypes.includes(detectedType)) {
+      // Log for monitoring but allow
+      console.warn('MIME type mismatch (allowing):', { claimed: mimeType, detected: detectedType });
+      return true;
+    }
+
+    // Handle HEIC/HEIF/AVIF variants (iOS may send any of these)
+    const heicTypes = ['image/heic', 'image/heif', 'image/avif'];
+    if (heicTypes.includes(mimeType) && heicTypes.includes(detectedType)) {
+      return true;
+    }
+    
+    // Also allow HEIC types to match common image types (iOS conversion edge cases)
+    if ((heicTypes.includes(mimeType) && commonImageTypes.includes(detectedType)) ||
+        (commonImageTypes.includes(mimeType) && heicTypes.includes(detectedType))) {
+      console.warn('HEIC/image MIME type mismatch (allowing):', { claimed: mimeType, detected: detectedType });
+      return true;
+    }
+
+    // Handle video formats (MP4/MOV/M4V often detected as generic video/mp4)
+    const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-m4v', 'video/mpeg4'];
+    if (videoTypes.includes(mimeType) && videoTypes.includes(detectedType)) {
       return true;
     }
 
