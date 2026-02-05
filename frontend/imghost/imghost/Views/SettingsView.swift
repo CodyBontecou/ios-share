@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var selectedLinkFormat: LinkFormat = LinkFormatService.shared.currentFormat
     @State private var customLinkTemplate: String = LinkFormatService.shared.customTemplate
     @State private var showCustomFormatSheet = false
+    @State private var selectedUploadQuality: UploadQuality = UploadQualityService.shared.currentQuality
 
     // Export state
     @State private var showingExportSheet = false
@@ -111,6 +112,63 @@ struct SettingsView: View {
                     SubscriptionStatusView()
                         .padding(.horizontal, 24)
                         .padding(.bottom, 24)
+
+                    // Upload Quality Section
+                    VStack(spacing: 0) {
+                        BrutalSectionHeader(title: "Upload Quality")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 12)
+
+                        BrutalCard(showBorder: true) {
+                            VStack(spacing: 0) {
+                                ForEach(Array(UploadQuality.allCases.enumerated()), id: \.element.id) { index, quality in
+                                    if index > 0 {
+                                        Rectangle()
+                                            .fill(Color.brutalBorder)
+                                            .frame(height: 1)
+                                    }
+
+                                    Button {
+                                        selectedUploadQuality = quality
+                                        UploadQualityService.shared.currentQuality = quality
+                                    } label: {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(quality.displayName)
+                                                    .brutalTypography(.bodyMedium)
+
+                                                Text(quality.description)
+                                                    .brutalTypography(.monoSmall, color: .brutalTextTertiary)
+                                            }
+
+                                            Spacer()
+
+                                            Text(quality.estimatedReduction)
+                                                .brutalTypography(.monoSmall, color: .brutalTextSecondary)
+                                                .padding(.trailing, 8)
+
+                                            if selectedUploadQuality == quality {
+                                                Text("*")
+                                                    .brutalTypography(.titleLarge, color: .brutalSuccess)
+                                            }
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 24)
+
+                        // Quality info hint
+                        Text("Lower quality = smaller files, faster uploads")
+                            .brutalTypography(.monoSmall, color: .brutalTextTertiary)
+                            .padding(.top, 12)
+                    }
+                    .padding(.bottom, 24)
 
                     // Link Format Section
                     VStack(spacing: 0) {

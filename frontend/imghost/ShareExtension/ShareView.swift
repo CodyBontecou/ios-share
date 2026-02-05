@@ -10,9 +10,10 @@ struct ShareView: View {
     @State private var uploadedURL: String = ""
     @State private var errorMessage: String = ""
     @State private var previewImage: UIImage?
-    @State private var pendingImageData: Data?
+    @State private var pendingFileData: Data?
     @State private var pendingFilename: String?
     @State private var fileSizeMB: Double = 0
+    @State private var isMediaFile: Bool = true
 
     // Share extensions have ~120MB memory limit, warn at 80MB to be safe
     private let memorySafetyLimitMB: Double = 80
@@ -80,13 +81,24 @@ struct ShareView: View {
 
     private var uploadingView: some View {
         VStack(spacing: 16) {
-            // Image preview
+            // Preview (image or file icon)
             if let image = previewImage {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxHeight: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else if let filename = pendingFilename {
+                VStack(spacing: 8) {
+                    Image(systemName: fileIcon(for: filename))
+                        .font(.system(size: 40))
+                        .foregroundStyle(.secondary)
+                    Text(filename)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .frame(maxHeight: 100)
             }
 
             Text("Uploading...")
@@ -160,7 +172,8 @@ struct ShareView: View {
                 }
                 .buttonStyle(.borderedProminent)
 
-                if fileSizeMB > 10 {
+                // Only show resize option for large images
+                if fileSizeMB > 10 && isMediaFile {
                     Button("Retry with Resize") {
                         uploadResized()
                     }
@@ -184,7 +197,7 @@ struct ShareView: View {
             Text("Not Logged In")
                 .font(.headline)
 
-            Text("Please log in via the imghost app to upload images.")
+            Text("Please log in via the imghost app to upload files.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -199,13 +212,23 @@ struct ShareView: View {
 
     private var fileTooLargeView: some View {
         VStack(spacing: 16) {
-            // Image preview
+            // Preview (image or file icon)
             if let image = previewImage {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxHeight: 120)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else if let filename = pendingFilename {
+                VStack(spacing: 8) {
+                    Image(systemName: fileIcon(for: filename))
+                        .font(.system(size: 40))
+                        .foregroundStyle(.secondary)
+                    Text(filename)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
 
             Image(systemName: "exclamationmark.triangle.fill")
@@ -215,29 +238,42 @@ struct ShareView: View {
             Text("Large File")
                 .font(.headline)
 
-            Text(String(format: "This image is %.1f MB. Files over %.0f MB may fail to upload due to memory limits.", fileSizeMB, memorySafetyLimitMB))
+            Text(String(format: "This file is %.1f MB. Files over %.0f MB may fail to upload due to memory limits.", fileSizeMB, memorySafetyLimitMB))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
             VStack(spacing: 10) {
-                Button {
-                    uploadResized()
-                } label: {
-                    Text("Resize & Upload")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-
-                if fileSizeMB < memoryHardLimitMB {
+                // Only show resize option for images
+                if isMediaFile, previewImage != nil {
                     Button {
-                        uploadOriginal()
+                        uploadResized()
                     } label: {
-                        Text("Upload Original")
+                        Text("Resize & Upload")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderedProminent)
+                }
+
+                if fileSizeMB < memoryHardLimitMB {
+                    if isMediaFile && previewImage != nil {
+                        Button {
+                            uploadOriginal()
+                        } label: {
+                            Text("Upload Original")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Button {
+                            uploadOriginal()
+                        } label: {
+                            Text("Upload Original")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 }
 
                 Button("Cancel") {
@@ -261,17 +297,24 @@ struct ShareView: View {
 
         Task {
             do {
-                // Load image
-                let (imageData, filename) = try await loadImage()
+                // Load file
+                let (fileData, filename) = try await loadImage()
 
                 // Store for later use
                 await MainActor.run {
-                    pendingImageData = imageData
+                    pendingFileData = fileData
                     pendingFilename = filename
-                    fileSizeMB = Double(imageData.count) / (1024 * 1024)
+                    fileSizeMB = Double(fileData.count) / (1024 * 1024)
 
-                    // Create preview
-                    if let image = UIImage(data: imageData) {
+                    // Determine if this is a media file (image)
+                    let lowercased = filename.lowercased()
+                    isMediaFile = lowercased.hasSuffix(".jpg") || lowercased.hasSuffix(".jpeg") ||
+                                  lowercased.hasSuffix(".png") || lowercased.hasSuffix(".gif") ||
+                                  lowercased.hasSuffix(".heic") || lowercased.hasSuffix(".webp") ||
+                                  lowercased.hasSuffix(".bmp") || lowercased.hasSuffix(".tiff")
+
+                    // Create preview for images
+                    if isMediaFile, let image = UIImage(data: fileData) {
                         previewImage = image
                     }
 
@@ -279,8 +322,12 @@ struct ShareView: View {
                     if fileSizeMB >= memorySafetyLimitMB {
                         state = .fileTooLarge
                     } else {
-                        // File is small enough, proceed with upload
-                        performUpload(data: imageData, filename: filename)
+                        // File is small enough, apply quality settings and proceed
+                        let (processedData, processedFilename) = UploadQualityService.shared.processForUpload(
+                            data: fileData,
+                            filename: filename
+                        )
+                        performUpload(data: processedData, filename: processedFilename)
                     }
                 }
             } catch {
@@ -293,14 +340,20 @@ struct ShareView: View {
     }
 
     private func uploadOriginal() {
-        guard let data = pendingImageData, let filename = pendingFilename else { return }
-        performUpload(data: data, filename: filename)
+        guard let data = pendingFileData, let filename = pendingFilename else { return }
+
+        // Apply quality settings from user preferences
+        let (processedData, processedFilename) = UploadQualityService.shared.processForUpload(
+            data: data,
+            filename: filename
+        )
+        performUpload(data: processedData, filename: processedFilename)
     }
 
     private func uploadResized() {
-        guard let data = pendingImageData, let filename = pendingFilename else { return }
+        guard let data = pendingFileData, let filename = pendingFilename else { return }
 
-        // Resize the image
+        // Resize only works for images
         if let image = UIImage(data: data),
            let resizedData = ImageProcessor.shared.prepareForUpload(image: image) {
             // Update filename to .jpg since we're converting
@@ -314,6 +367,57 @@ struct ShareView: View {
             // Fallback to original if resize fails
             performUpload(data: data, filename: filename)
         }
+    }
+
+    private func fileIcon(for filename: String) -> String {
+        let lowercased = filename.lowercased()
+        
+        // Videos
+        if lowercased.hasSuffix(".mp4") || lowercased.hasSuffix(".mov") ||
+           lowercased.hasSuffix(".avi") || lowercased.hasSuffix(".mkv") ||
+           lowercased.hasSuffix(".webm") {
+            return "film"
+        }
+        
+        // Audio
+        if lowercased.hasSuffix(".mp3") || lowercased.hasSuffix(".wav") ||
+           lowercased.hasSuffix(".m4a") || lowercased.hasSuffix(".aac") ||
+           lowercased.hasSuffix(".flac") {
+            return "waveform"
+        }
+        
+        // Documents
+        if lowercased.hasSuffix(".pdf") {
+            return "doc.richtext"
+        }
+        if lowercased.hasSuffix(".doc") || lowercased.hasSuffix(".docx") {
+            return "doc.text"
+        }
+        if lowercased.hasSuffix(".xls") || lowercased.hasSuffix(".xlsx") {
+            return "tablecells"
+        }
+        if lowercased.hasSuffix(".ppt") || lowercased.hasSuffix(".pptx") {
+            return "slider.horizontal.below.rectangle"
+        }
+        if lowercased.hasSuffix(".txt") || lowercased.hasSuffix(".md") {
+            return "doc.plaintext"
+        }
+        
+        // Archives
+        if lowercased.hasSuffix(".zip") || lowercased.hasSuffix(".gz") ||
+           lowercased.hasSuffix(".tar") || lowercased.hasSuffix(".rar") ||
+           lowercased.hasSuffix(".7z") {
+            return "doc.zipper"
+        }
+        
+        // Code/Data
+        if lowercased.hasSuffix(".json") || lowercased.hasSuffix(".xml") ||
+           lowercased.hasSuffix(".html") || lowercased.hasSuffix(".css") ||
+           lowercased.hasSuffix(".js") {
+            return "curlybraces"
+        }
+        
+        return "doc"
     }
 
     private func performUpload(data: Data, filename: String) {

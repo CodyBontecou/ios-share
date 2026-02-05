@@ -22,6 +22,9 @@ struct Config {
     static let linkFormatKey = "linkFormat"
     static let customLinkFormatKey = "customLinkFormat"
 
+    // Upload Quality Settings
+    static let uploadQualityKey = "uploadQuality"
+
     // Shared UserDefaults
     static var sharedDefaults: UserDefaults? {
         UserDefaults(suiteName: appGroup)

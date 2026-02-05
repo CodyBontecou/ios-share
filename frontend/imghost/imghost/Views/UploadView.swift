@@ -1,14 +1,35 @@
 import SwiftUI
 import PhotosUI
+import UniformTypeIdentifiers
 
 struct UploadView: View {
     @State private var selectedItem: PhotosPickerItem?
+    @State private var showFilePicker = false
+    @State private var selectedFileURL: URL?
     @State private var isUploading = false
     @State private var uploadProgress: Double = 0
     @State private var uploadState: UploadState = .idle
     @State private var errorMessage: String?
     @State private var uploadedRecord: UploadRecord?
     @State private var showCopiedFeedback = false
+
+    // Supported file types
+    private static let supportedTypes: [UTType] = [
+        // Images
+        .image, .jpeg, .png, .gif, .webP, .heic, .heif, .bmp, .tiff, .svg, .ico,
+        // Videos
+        .movie, .video, .mpeg4Movie, .quickTimeMovie, .avi,
+        // Audio
+        .audio, .mp3, .wav, .aiff, .mpeg4Audio,
+        // Documents
+        .pdf, .plainText, .rtf, .html,
+        // Archives
+        .zip, .gzip,
+        // Data
+        .json, .xml,
+        // Other common types
+        .data
+    ]
 
     private enum UploadState {
         case idle
@@ -68,39 +89,70 @@ struct UploadView: View {
                     .font(.system(size: 64, weight: .light))
                     .foregroundStyle(.white)
 
-                Text("UPLOAD\nPHOTO")
+                Text("UPLOAD\nFILE")
                     .font(.system(size: 36, weight: .black))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
 
-                Text("Select a photo from your library to upload")
+                Text("Images, videos, documents, and more")
                     .brutalTypography(.bodyMedium, color: .brutalTextSecondary)
                     .multilineTextAlignment(.center)
             }
 
             Spacer()
 
-            PhotosPicker(
-                selection: $selectedItem,
-                matching: .images,
-                photoLibrary: .shared()
-            ) {
-                HStack(spacing: 12) {
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.system(size: 20, weight: .semibold))
-                    Text("Choose Photo")
-                        .font(.system(size: 18, weight: .bold))
+            VStack(spacing: 12) {
+                // Photos picker for camera roll
+                PhotosPicker(
+                    selection: $selectedItem,
+                    matching: .any(of: [.images, .videos]),
+                    photoLibrary: .shared()
+                ) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.system(size: 20, weight: .semibold))
+                        Text("Photo Library")
+                            .font(.system(size: 18, weight: .bold))
+                    }
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .foregroundStyle(.black)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .onChange(of: selectedItem) { _, newItem in
+                    if let item = newItem {
+                        processSelectedPhotoItem(item)
+                    }
+                }
+
+                // File picker for documents
+                Button {
+                    showFilePicker = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "doc")
+                            .font(.system(size: 20, weight: .semibold))
+                        Text("Browse Files")
+                            .font(.system(size: 18, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
+                }
             }
-            .onChange(of: selectedItem) { _, newItem in
-                if let item = newItem {
-                    processSelectedItem(item)
-                }
+            .fileImporter(
+                isPresented: $showFilePicker,
+                allowedContentTypes: Self.supportedTypes,
+                allowsMultipleSelection: false
+            ) { result in
+                handleFileImport(result)
             }
 
             Spacer()
@@ -247,7 +299,9 @@ struct UploadView: View {
             VStack(spacing: 12) {
                 Button {
                     if let item = selectedItem {
-                        processSelectedItem(item)
+                        processSelectedPhotoItem(item)
+                    } else if let url = selectedFileURL {
+                        processSelectedFile(url)
                     }
                 } label: {
                     HStack(spacing: 12) {
@@ -278,54 +332,26 @@ struct UploadView: View {
 
     // MARK: - Actions
 
-    private func processSelectedItem(_ item: PhotosPickerItem) {
+    private func processSelectedPhotoItem(_ item: PhotosPickerItem) {
         uploadState = .loading
 
         Task {
             do {
-                // Load the image data
+                // Load the data
                 guard let data = try await item.loadTransferable(type: Data.self) else {
                     throw ImghostError.imageProcessingFailed
                 }
 
-                // Determine filename
-                let filename = generateFilename(for: data)
+                // Determine filename based on content type
+                let filename = generateFilenameFromData(data)
 
-                // Start upload
-                await MainActor.run {
-                    uploadState = .uploading
-                    uploadProgress = 0
-                }
-
-                let record = try await UploadService.shared.upload(
-                    imageData: data,
+                // Apply quality settings
+                let (processedData, processedFilename) = UploadQualityService.shared.processForUpload(
+                    data: data,
                     filename: filename
-                ) { progress in
-                    Task { @MainActor in
-                        uploadProgress = progress
-                    }
-                }
-
-                // Copy formatted URL to clipboard
-                let formattedLink = LinkFormatService.shared.format(
-                    url: record.url,
-                    filename: record.originalFilename
                 )
-                await MainActor.run {
-                    UIPasteboard.general.string = formattedLink
-                }
 
-                // Play haptic feedback
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.success)
-
-                // Save to history
-                try? HistoryService.shared.save(record)
-
-                await MainActor.run {
-                    uploadedRecord = record
-                    uploadState = .success
-                }
+                await performUpload(data: processedData, filename: processedFilename)
 
             } catch {
                 await MainActor.run {
@@ -336,30 +362,176 @@ struct UploadView: View {
         }
     }
 
-    private func generateFilename(for data: Data) -> String {
-        // Try to detect image type from data
-        let bytes = [UInt8](data.prefix(12))
+    private func handleFileImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            processSelectedFile(url)
+        case .failure(let error):
+            errorMessage = error.localizedDescription
+            uploadState = .error
+        }
+    }
 
-        let ext: String
-        if bytes.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
-            ext = "png"
-        } else if bytes.starts(with: [0x47, 0x49, 0x46]) {
-            ext = "gif"
-        } else if bytes.count >= 12 && bytes[4...11] == [0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63] {
-            ext = "heic"
-        } else if data.prefix(4).starts(with: [0x52, 0x49, 0x46, 0x46]) && data.count > 12 {
-            let webpBytes = [UInt8](data[8..<12])
-            if webpBytes == [0x57, 0x45, 0x42, 0x50] {
-                ext = "webp"
-            } else {
-                ext = "jpg"
+    private func processSelectedFile(_ url: URL) {
+        selectedFileURL = url
+        uploadState = .loading
+
+        Task {
+            do {
+                // Start accessing security-scoped resource
+                guard url.startAccessingSecurityScopedResource() else {
+                    throw ImghostError.imageProcessingFailed
+                }
+                defer { url.stopAccessingSecurityScopedResource() }
+
+                // Read file data
+                let data = try Data(contentsOf: url)
+                let filename = url.lastPathComponent
+
+                // Apply quality settings
+                let (processedData, processedFilename) = UploadQualityService.shared.processForUpload(
+                    data: data,
+                    filename: filename
+                )
+
+                await performUpload(data: processedData, filename: processedFilename)
+
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    uploadState = .error
+                }
             }
-        } else {
-            ext = "jpg"
+        }
+    }
+
+    private func performUpload(data: Data, filename: String) async {
+        await MainActor.run {
+            uploadState = .uploading
+            uploadProgress = 0
         }
 
+        do {
+            let record = try await UploadService.shared.upload(
+                imageData: data,
+                filename: filename
+            ) { progress in
+                Task { @MainActor in
+                    uploadProgress = progress
+                }
+            }
+
+            // Copy formatted URL to clipboard
+            let formattedLink = LinkFormatService.shared.format(
+                url: record.url,
+                filename: record.originalFilename
+            )
+            await MainActor.run {
+                UIPasteboard.general.string = formattedLink
+            }
+
+            // Play haptic feedback
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+
+            // Save to history
+            try? HistoryService.shared.save(record)
+
+            await MainActor.run {
+                uploadedRecord = record
+                uploadState = .success
+            }
+
+        } catch {
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+                uploadState = .error
+            }
+        }
+    }
+
+    private func generateFilenameFromData(_ data: Data) -> String {
+        let bytes = [UInt8](data.prefix(12))
         let timestamp = Int(Date().timeIntervalSince1970)
-        return "upload_\(timestamp).\(ext)"
+
+        // Video detection
+        if data.count >= 8 {
+            let ftypBytes = [UInt8](data[4..<8])
+            if ftypBytes == [0x66, 0x74, 0x79, 0x70] { // "ftyp"
+                if data.count >= 12 {
+                    let brandBytes = [UInt8](data[8..<12])
+                    let brand = String(bytes: brandBytes, encoding: .ascii) ?? ""
+                    if brand.hasPrefix("qt") {
+                        return "video_\(timestamp).mov"
+                    } else if brand.hasPrefix("M4V") {
+                        return "video_\(timestamp).m4v"
+                    }
+                }
+                return "video_\(timestamp).mp4"
+            }
+        }
+        
+        // WebM
+        if bytes.starts(with: [0x1A, 0x45, 0xDF, 0xA3]) {
+            return "video_\(timestamp).webm"
+        }
+        
+        // AVI
+        if bytes.starts(with: [0x52, 0x49, 0x46, 0x46]) && data.count > 12 {
+            let typeBytes = [UInt8](data[8..<12])
+            if typeBytes == [0x41, 0x56, 0x49, 0x20] {
+                return "video_\(timestamp).avi"
+            }
+            if typeBytes == [0x57, 0x45, 0x42, 0x50] {
+                return "upload_\(timestamp).webp"
+            }
+        }
+
+        // Image detection
+        if bytes.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
+            return "upload_\(timestamp).png"
+        }
+        if bytes.starts(with: [0x47, 0x49, 0x46]) {
+            return "upload_\(timestamp).gif"
+        }
+        if bytes.count >= 12 && bytes[4...11] == [0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63] {
+            return "upload_\(timestamp).heic"
+        }
+        if bytes.starts(with: [0xFF, 0xD8, 0xFF]) {
+            return "upload_\(timestamp).jpg"
+        }
+        
+        // PDF
+        if bytes.starts(with: [0x25, 0x50, 0x44, 0x46]) {
+            return "document_\(timestamp).pdf"
+        }
+        
+        // ZIP
+        if bytes.starts(with: [0x50, 0x4B, 0x03, 0x04]) {
+            return "archive_\(timestamp).zip"
+        }
+        
+        // GZIP
+        if bytes.starts(with: [0x1F, 0x8B]) {
+            return "archive_\(timestamp).gz"
+        }
+        
+        // MP3
+        if bytes.starts(with: [0x49, 0x44, 0x33]) || bytes.starts(with: [0xFF, 0xFB]) {
+            return "audio_\(timestamp).mp3"
+        }
+        
+        // WAV
+        if bytes.starts(with: [0x52, 0x49, 0x46, 0x46]) && data.count > 12 {
+            let typeBytes = [UInt8](data[8..<12])
+            if typeBytes == [0x57, 0x41, 0x56, 0x45] {
+                return "audio_\(timestamp).wav"
+            }
+        }
+
+        // Default to binary
+        return "file_\(timestamp).bin"
     }
 
     private func cancelUpload() {
@@ -369,6 +541,7 @@ struct UploadView: View {
 
     private func reset() {
         selectedItem = nil
+        selectedFileURL = nil
         uploadState = .idle
         uploadProgress = 0
         errorMessage = nil

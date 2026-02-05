@@ -10,19 +10,11 @@
 		14EBDD7432ABCF77C17602EE /* GoogleColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77EF9A77B62440BA76E7919A /* GoogleColors.swift */; };
 		22BE19555A3C3B23E913A532 /* GoogleSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A09518DA218CA8C573BCEEF /* GoogleSpacing.swift */; };
 		46C6716F291ACC3B60FD7C97 /* GoogleTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FBA8EDF575959E863DA8C8 /* GoogleTypography.swift */; };
-		D1000001001 /* LinkFormatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1000001000 /* LinkFormatService.swift */; };
-		D1000002001 /* LinkFormatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1000001000 /* LinkFormatService.swift */; };
-		E1000001001 /* SubscriptionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000001000 /* SubscriptionState.swift */; };
-		E1000002001 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000002000 /* SubscriptionService.swift */; };
-		E1000003001 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000003000 /* StoreKitManager.swift */; };
-		F1000001001 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000001000 /* PaywallView.swift */; };
-		F1000002001 /* SubscriptionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000002000 /* SubscriptionStatusView.swift */; };
 		A1000001001 /* ImghostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000 /* ImghostApp.swift */; };
 		A1000002001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002000 /* ContentView.swift */; };
 		A1000003001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000003000 /* SettingsView.swift */; };
 		A1000004001 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004000 /* HistoryView.swift */; };
 		A1000005001 /* UploadDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000005000 /* UploadDetailView.swift */; };
-		G1000001001 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1000001000 /* UploadView.swift */; };
 		A1000010001 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010000 /* Config.swift */; };
 		A1000011001 /* UploadRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011000 /* UploadRecord.swift */; };
 		A1000012001 /* ImghostError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012000 /* ImghostError.swift */; };
@@ -54,13 +46,23 @@
 		A100003A001 /* AuthState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A000 /* AuthState.swift */; };
 		A1000040001 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1000040000 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF090D7998F3920533D43773 /* GoogleComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33B2B177AAB3C2D4F56ED74B /* GoogleComponents.swift */; };
+		B1000001001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001000 /* OnboardingView.swift */; };
 		BF090D7998F3920533D43774 /* BrutalComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B2B177AAB3C2D4F56ED74C /* BrutalComponents.swift */; };
+		C1000001001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1000001000 /* Assets.xcassets */; };
+		D1000001001 /* LinkFormatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1000001000 /* LinkFormatService.swift */; };
+		D1000002001 /* LinkFormatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1000001000 /* LinkFormatService.swift */; };
 		D65665EB6905B182E0F76EBC /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92EC531C9EE3CD96675D03D8 /* PhotoGridView.swift */; };
+		E1000001001 /* SubscriptionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000001000 /* SubscriptionState.swift */; };
+		E1000002001 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000002000 /* SubscriptionService.swift */; };
+		E1000003001 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000003000 /* StoreKitManager.swift */; };
+		F1000001001 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000001000 /* PaywallView.swift */; };
+		F1000002001 /* SubscriptionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000002000 /* SubscriptionStatusView.swift */; };
 		F33ED62A592B4F05B51C4625 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8915CA80904ADBA74F2AB9 /* ExportService.swift */; };
+		G1000001001 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1000001000 /* UploadView.swift */; };
 		H1000001001 /* PhotosExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1000001000 /* PhotosExportService.swift */; };
 		I1000001001 /* ImageSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = I1000001000 /* ImageSyncService.swift */; };
-		B1000001001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001000 /* OnboardingView.swift */; };
-		C1000001001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1000001000 /* Assets.xcassets */; };
+		J1000001001 /* UploadQualityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1000001000 /* UploadQualityService.swift */; };
+		J1000002001 /* UploadQualityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = J1000001000 /* UploadQualityService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,11 +91,10 @@
 
 /* Begin PBXFileReference section */
 		0F8915CA80904ADBA74F2AB9 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
-		H1000001000 /* PhotosExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosExportService.swift; sourceTree = "<group>"; };
-		I1000001000 /* ImageSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageSyncService.swift; sourceTree = "<group>"; };
 		33B2B177AAB3C2D4F56ED74B /* GoogleComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleComponents.swift; sourceTree = "<group>"; };
 		43B2B177AAB3C2D4F56ED74C /* BrutalComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BrutalComponents.swift; sourceTree = "<group>"; };
 		4A09518DA218CA8C573BCEEF /* GoogleSpacing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleSpacing.swift; sourceTree = "<group>"; };
+		6231EC7A2F30C82400E42DCC /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		77EF9A77B62440BA76E7919A /* GoogleColors.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleColors.swift; sourceTree = "<group>"; };
 		92EC531C9EE3CD96675D03D8 /* PhotoGridView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
 		A1000001000 /* ImghostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImghostApp.swift; sourceTree = "<group>"; };
@@ -101,7 +102,6 @@
 		A1000003000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A1000004000 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		A1000005000 /* UploadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadDetailView.swift; sourceTree = "<group>"; };
-		G1000001000 /* UploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadView.swift; sourceTree = "<group>"; };
 		A1000006000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000007000 /* imghost.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = imghost.entitlements; sourceTree = "<group>"; };
 		A1000010000 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
@@ -137,6 +137,10 @@
 		E1000003000 /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		F1000001000 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		F1000002000 /* SubscriptionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionStatusView.swift; sourceTree = "<group>"; };
+		G1000001000 /* UploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadView.swift; sourceTree = "<group>"; };
+		H1000001000 /* PhotosExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosExportService.swift; sourceTree = "<group>"; };
+		I1000001000 /* ImageSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageSyncService.swift; sourceTree = "<group>"; };
+		J1000001000 /* UploadQualityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadQualityService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -166,13 +170,13 @@
 				33B2B177AAB3C2D4F56ED74B /* GoogleComponents.swift */,
 				43B2B177AAB3C2D4F56ED74C /* BrutalComponents.swift */,
 			);
-			name = DesignSystem;
 			path = DesignSystem;
 			sourceTree = "<group>";
 		};
 		A10000A0000 = {
 			isa = PBXGroup;
 			children = (
+				6231EC7A2F30C82400E42DCC /* Products.storekit */,
 				A10000F3000 /* Config */,
 				A10000B0000 /* imghost */,
 				A10000C0000 /* ShareExtension */,
@@ -210,15 +214,6 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		F10000B4000 /* Subscription */ = {
-			isa = PBXGroup;
-			children = (
-				F1000001000 /* PaywallView.swift */,
-				F1000002000 /* SubscriptionStatusView.swift */,
-			);
-			path = Subscription;
-			sourceTree = "<group>";
-		};
 		A10000B2000 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
@@ -229,14 +224,6 @@
 				A100001F000 /* ResetPasswordView.swift */,
 			);
 			path = Auth;
-			sourceTree = "<group>";
-		};
-		B10000B3000 /* Onboarding */ = {
-			isa = PBXGroup;
-			children = (
-				B1000001000 /* OnboardingView.swift */,
-			);
-			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		A10000C0000 /* ShareExtension */ = {
@@ -287,6 +274,7 @@
 				D1000001000 /* LinkFormatService.swift */,
 				E1000002000 /* SubscriptionService.swift */,
 				E1000003000 /* StoreKitManager.swift */,
+				J1000001000 /* UploadQualityService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -307,6 +295,23 @@
 				A10000F2000 /* Release.xcconfig */,
 			);
 			path = Config;
+			sourceTree = "<group>";
+		};
+		B10000B3000 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				B1000001000 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		F10000B4000 /* Subscription */ = {
+			isa = PBXGroup;
+			children = (
+				F1000001000 /* PaywallView.swift */,
+				F1000002000 /* SubscriptionStatusView.swift */,
+			);
+			path = Subscription;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -446,6 +451,7 @@
 				E1000003001 /* StoreKitManager.swift in Sources */,
 				F1000001001 /* PaywallView.swift in Sources */,
 				F1000002001 /* SubscriptionStatusView.swift in Sources */,
+				J1000001001 /* UploadQualityService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -467,6 +473,7 @@
 				A1000039001 /* User.swift in Sources */,
 				A100003A001 /* AuthState.swift in Sources */,
 				D1000002001 /* LinkFormatService.swift in Sources */,
+				J1000002001 /* UploadQualityService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
