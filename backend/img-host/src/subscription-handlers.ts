@@ -162,7 +162,7 @@ export async function handleSubscriptionStatus(request: Request, env: Env): Prom
     if (!subscription) {
       return json({
         status: 'none',
-        tier: 'free',
+        tier: 'trial',
         has_access: false,
         will_renew: false,
         user: {
@@ -363,29 +363,29 @@ export async function checkSubscriptionAccess(userId: string, db: Database): Pro
 }> {
   const user = await db.getUserById(userId);
   if (!user) {
-    return { hasAccess: false, tier: 'free', status: 'none', reason: 'User not found' };
+    return { hasAccess: false, tier: 'trial', status: 'none', reason: 'User not found' };
   }
 
   const subscription = await db.getSubscriptionByUserId(userId);
 
-  // No subscription record means free tier with no access
+  // No subscription record means trial tier with no access
   if (!subscription) {
-    return { hasAccess: false, tier: 'free', status: 'none', reason: 'No subscription' };
+    return { hasAccess: false, tier: 'trial', status: 'none', reason: 'No subscription' };
   }
 
   const now = Date.now();
 
   // Check trial expiration
   if (subscription.status === 'trialing' && subscription.trial_ends_at && subscription.trial_ends_at < now) {
-    await db.updateSubscriptionTierAndStatus(userId, 'free', 'expired');
-    return { hasAccess: false, tier: 'free', status: 'expired', reason: 'Trial expired' };
+    await db.updateSubscriptionTierAndStatus(userId, 'trial', 'expired');
+    return { hasAccess: false, tier: 'trial', status: 'expired', reason: 'Trial expired' };
   }
 
   // Check subscription period expiration
   if (subscription.current_period_end && subscription.current_period_end < now) {
     if (subscription.status === 'active' || subscription.status === 'trialing') {
-      await db.updateSubscriptionTierAndStatus(userId, 'free', 'expired');
-      return { hasAccess: false, tier: 'free', status: 'expired', reason: 'Subscription expired' };
+      await db.updateSubscriptionTierAndStatus(userId, 'trial', 'expired');
+      return { hasAccess: false, tier: 'trial', status: 'expired', reason: 'Subscription expired' };
     }
   }
 

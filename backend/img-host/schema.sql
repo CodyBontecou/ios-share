@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at INTEGER NOT NULL, -- Unix timestamp
   subscription_tier TEXT NOT NULL DEFAULT 'free', -- 'free', 'pro', 'enterprise'
   api_token TEXT UNIQUE NOT NULL,
-  storage_limit_bytes INTEGER NOT NULL DEFAULT 104857600, -- 100MB for free tier
+  storage_limit_bytes INTEGER NOT NULL DEFAULT 10000000000, -- 10GB for trial tier
   UNIQUE(email),
   UNIQUE(api_token)
 );
@@ -74,9 +74,9 @@ CREATE TABLE IF NOT EXISTS tier_limits (
 
 -- Insert default tier limits
 INSERT OR REPLACE INTO tier_limits (tier, storage_limit_bytes, max_file_size_bytes, max_images, features) VALUES
-  ('free', 104857600, 10485760, 100, '{"custom_domains":false,"analytics":false,"api_access":true}'), -- 100MB storage, 10MB per file, 100 images
-  ('pro', 10737418240, 52428800, NULL, '{"custom_domains":true,"analytics":true,"api_access":true}'), -- 10GB storage, 50MB per file, unlimited images
-  ('enterprise', 107374182400, 104857600, NULL, '{"custom_domains":true,"analytics":true,"api_access":true,"priority_support":true}'); -- 100GB storage, 100MB per file, unlimited images
+  ('trial', 10000000000, 50000000, NULL, '{"custom_domains":false,"analytics":false,"api_access":true}'), -- 10GB storage, 50MB per file, unlimited images
+  ('pro', 10000000000, 50000000, NULL, '{"custom_domains":true,"analytics":true,"api_access":true}'), -- 10GB storage, 50MB per file, unlimited images
+  ('enterprise', 100000000000, 100000000, NULL, '{"custom_domains":true,"analytics":true,"api_access":true,"priority_support":true}'); -- 100GB storage, 100MB per file, unlimited images
 
 -- API usage tracking (optional - for rate limiting and analytics)
 CREATE TABLE IF NOT EXISTS api_usage (
@@ -326,9 +326,9 @@ UPDATE tier_limits SET daily_upload_limit = 0, daily_api_limit = 100 WHERE tier 
 UPDATE tier_limits SET daily_upload_limit = 1000, daily_api_limit = 10000 WHERE tier = 'pro';
 UPDATE tier_limits SET daily_upload_limit = NULL, daily_api_limit = NULL WHERE tier = 'enterprise'; -- NULL means unlimited
 
--- Add trial tier for subscription-required flow (Pro features, limited to 100 uploads and 100MB)
+-- Add trial tier for subscription-required flow (Pro features during trial)
 INSERT OR REPLACE INTO tier_limits (tier, storage_limit_bytes, max_file_size_bytes, max_images, features, daily_upload_limit, daily_api_limit) VALUES
-  ('trial', 104857600, 52428800, 100, '{"custom_domains":false,"analytics":false,"api_access":true}', 100, 5000); -- 100MB storage, 50MB per file, 100 images max
+  ('trial', 10000000000, 50000000, NULL, '{"custom_domains":false,"analytics":false,"api_access":true}', 100, 5000); -- 10GB storage, 50MB per file, unlimited images
 
 -- Add Apple subscription columns to subscriptions table
 ALTER TABLE subscriptions ADD COLUMN apple_original_transaction_id TEXT;

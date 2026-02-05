@@ -99,10 +99,10 @@ export async function handleRegisterV2(request: Request, env: Env): Promise<Resp
     const apiToken = Auth.generateApiToken();
 
     // Create user
-    const user = await db.createUser(email, passwordHash, apiToken, 'free');
+    const user = await db.createUser(email, passwordHash, apiToken, 'trial');
 
-    // Create free subscription
-    await db.createSubscription(user.id, 'free', 'active');
+    // Create trial subscription
+    await db.createSubscription(user.id, 'trial', 'trialing');
 
     // Generate email verification token
     const verificationToken = Auth.generateSecureToken();
@@ -673,10 +673,10 @@ export async function handleAppleSignIn(request: Request, env: Env): Promise<Res
         }
       } else {
         // Create new user with Apple credentials
-        user = await db.createAppleUser(email, appleUserId, 'free');
+        user = await db.createAppleUser(email, appleUserId, 'trial');
 
-        // Create free subscription for new user
-        await db.createSubscription(user.id, 'free', 'active');
+        // Create trial subscription for new user
+        await db.createSubscription(user.id, 'trial', 'trialing');
       }
     }
 

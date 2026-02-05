@@ -5,7 +5,7 @@ export interface User {
   email: string;
   password_hash: string;
   created_at: number;
-  subscription_tier: 'free' | 'trial' | 'pro' | 'enterprise';
+  subscription_tier: 'trial' | 'pro' | 'enterprise';
   api_token: string;
   storage_limit_bytes: number;
   email_verified: number;
@@ -47,7 +47,7 @@ export interface Image {
 export interface Subscription {
   id: string;
   user_id: string;
-  tier: 'free' | 'trial' | 'pro' | 'enterprise';
+  tier: 'trial' | 'pro' | 'enterprise';
   status: 'active' | 'cancelled' | 'past_due' | 'trialing' | 'expired';
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
@@ -92,13 +92,12 @@ export class Database {
   constructor(private db: D1Database) {}
 
   // Helper to get storage limit for tier
-  private getStorageLimitForTier(tier: 'free' | 'trial' | 'pro' | 'enterprise'): number {
+  private getStorageLimitForTier(tier: 'trial' | 'pro' | 'enterprise'): number {
     switch (tier) {
-      case 'free': return 104857600;      // 100MB
-      case 'trial': return 10737418240;   // 10GB (full Pro experience during trial)
-      case 'pro': return 10737418240;     // 10GB
-      case 'enterprise': return 107374182400; // 100GB
-      default: return 104857600;
+      case 'trial': return 10000000000;   // 10GB
+      case 'pro': return 10000000000;     // 10GB
+      case 'enterprise': return 100000000000; // 100GB
+      default: return 10000000000;        // 10GB default
     }
   }
 
@@ -107,7 +106,7 @@ export class Database {
     email: string,
     passwordHash: string,
     apiToken: string,
-    tier: 'free' | 'trial' | 'pro' | 'enterprise' = 'free'
+    tier: 'trial' | 'pro' | 'enterprise' = 'trial'
   ): Promise<User> {
     const id = crypto.randomUUID();
     const createdAt = Date.now();
@@ -175,7 +174,7 @@ export class Database {
   async createAppleUser(
     email: string,
     appleUserId: string,
-    tier: 'free' | 'trial' | 'pro' | 'enterprise' = 'free'
+    tier: 'trial' | 'pro' | 'enterprise' = 'trial'
   ): Promise<User> {
     const id = crypto.randomUUID();
     const createdAt = Date.now();
@@ -206,7 +205,7 @@ export class Database {
     };
   }
 
-  async updateUserTier(userId: string, tier: 'free' | 'trial' | 'pro' | 'enterprise'): Promise<void> {
+  async updateUserTier(userId: string, tier: 'trial' | 'pro' | 'enterprise'): Promise<void> {
     const storageLimitBytes = this.getStorageLimitForTier(tier);
     await this.db
       .prepare('UPDATE users SET subscription_tier = ?, storage_limit_bytes = ? WHERE id = ?')
@@ -308,7 +307,7 @@ export class Database {
   // Subscription operations
   async createSubscription(
     userId: string,
-    tier: 'free' | 'trial' | 'pro' | 'enterprise',
+    tier: 'trial' | 'pro' | 'enterprise',
     status: 'active' | 'cancelled' | 'past_due' | 'trialing' | 'expired',
     stripeCustomerId?: string,
     stripeSubscriptionId?: string
@@ -415,7 +414,7 @@ export class Database {
   // Update subscription status and tier
   async updateSubscriptionTierAndStatus(
     userId: string,
-    tier: 'free' | 'trial' | 'pro' | 'enterprise',
+    tier: 'trial' | 'pro' | 'enterprise',
     status: 'active' | 'cancelled' | 'past_due' | 'trialing' | 'expired'
   ): Promise<void> {
     const now = Date.now();

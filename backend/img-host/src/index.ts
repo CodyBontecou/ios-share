@@ -449,10 +449,10 @@ async function handleRegister(request: Request, env: Env): Promise<Response> {
     const apiToken = Auth.generateApiToken();
 
     // Create user
-    const user = await db.createUser(email, passwordHash, apiToken, 'free');
+    const user = await db.createUser(email, passwordHash, apiToken, 'trial');
 
-    // Create free subscription
-    await db.createSubscription(user.id, 'free', 'active');
+    // Create trial subscription
+    await db.createSubscription(user.id, 'trial', 'trialing');
 
     // Clear any failed attempts on successful registration
     await rateLimiter.clearFailedAttempts(email, 'register');
