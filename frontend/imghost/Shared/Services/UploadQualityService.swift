@@ -77,16 +77,17 @@ final class UploadQualityService {
         }
     }
 
-    /// Process image data according to current quality settings
+    /// Process image data according to quality settings
     /// - Parameters:
     ///   - data: Original image data
     ///   - filename: Original filename
+    ///   - quality: Optional quality override. If nil, uses the current saved preference.
     /// - Returns: Processed data and possibly updated filename, or original if not an image
-    func processForUpload(data: Data, filename: String) -> (Data, String) {
-        let quality = currentQuality
+    func processForUpload(data: Data, filename: String, quality: UploadQuality? = nil) -> (Data, String) {
+        let effectiveQuality = quality ?? currentQuality
 
         // If original quality, return data as-is
-        if quality == .original {
+        if effectiveQuality == .original {
             return (data, filename)
         }
 
@@ -103,12 +104,12 @@ final class UploadQualityService {
 
         // Resize if needed
         var processedImage = image
-        if let maxDim = quality.maxDimension {
+        if let maxDim = effectiveQuality.maxDimension {
             processedImage = ImageProcessor.shared.resize(image: image, maxDimension: maxDim)
         }
 
         // Compress to JPEG
-        if let compressedData = processedImage.jpegData(compressionQuality: quality.jpegQuality) {
+        if let compressedData = processedImage.jpegData(compressionQuality: effectiveQuality.jpegQuality) {
             // Update filename to .jpg since we're converting
             let newFilename: String
             if lowercased.hasSuffix(".png") || lowercased.hasSuffix(".heic") ||
